@@ -37,9 +37,6 @@
 .s1-password input { padding-right: 78px; }
 .s1-password button { position: absolute; right: 10px; top: 10px; padding: 4px; color: var(--brand-purple); border: 0; background: none; font-size: 12px; }
 .s1-login-card form > .s1-button { width: 100%; }
-.s1-demo-controls { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 22px; }
-.s1-demo-controls summary { cursor: pointer; color: var(--brand-purple); font-size: 12px; font-weight: 600; margin-bottom: 14px; }
-.s1-demo-controls .s1-field { margin-top: 14px; margin-bottom: 0; }
 .s1-shell { min-height: 100svh; display: grid; grid-template-columns: 245px 1fr; background: #f8f7f9; }
 .s1-sidebar { background: white; border-right: 1px solid var(--line); padding: 20px 22px; display: flex; flex-direction: column; }
 .s1-sidebar .s1-logo { width: 200px; height: 90px; }
@@ -105,4 +102,3 @@
   .s1 table { min-width: 660px; }
   .s1-profile { font-size: 11px; }
 }
-
