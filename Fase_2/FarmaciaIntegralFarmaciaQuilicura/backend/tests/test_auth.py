@@ -63,7 +63,7 @@ def test_valid_login_exposes_only_public_user_and_secure_cookie(setup):
     assert (
         "HttpOnly" in cookie
         and "SameSite=strict" in cookie
-        and "Path=/api/auth" in cookie
+        and "Path=/api;" in cookie
     )
     assert f"Max-Age={settings.access_token_expire_minutes * 60}" in cookie
     assert response.headers["cache-control"] == "no-store"

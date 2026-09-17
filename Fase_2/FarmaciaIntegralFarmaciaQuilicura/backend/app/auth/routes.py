@@ -6,9 +6,11 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.auth.security import create_token, dummy_hash, validate_token, verify_password
 from app.auth.state import LoginLimited
+from app.auth.users import User
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 COOKIE_NAME = "sigfq_session"
+COOKIE_PATH = "/api"
 
 
 class LoginRequest(BaseModel):
@@ -69,13 +71,14 @@ def login(data: LoginRequest, request: Request, response: Response) -> SessionRe
     token, expires = create_token(user.id, settings)
     claims = validate_token(token, settings)
     auth.register_session(claims["jti"], claims["exp"])
+    response.delete_cookie(COOKIE_NAME, path="/api/auth")
     response.set_cookie(
         COOKIE_NAME,
         token,
         httponly=True,
         secure=settings.cookie_secure,
         samesite="strict",
-        path="/api/auth",
+        path=COOKIE_PATH,
         max_age=settings.access_token_expire_minutes * 60,
     )
     return SessionResponse(
@@ -83,8 +86,7 @@ def login(data: LoginRequest, request: Request, response: Response) -> SessionRe
     )
 
 
-@router.get("/me", response_model=SessionResponse)
-def me(request: Request) -> SessionResponse:
+def authenticated_user(request: Request) -> tuple[User, dict]:
     token = request.cookies.get(COOKIE_NAME)
     try:
         claims = validate_token(token or "", request.app.state.settings)
@@ -96,6 +98,12 @@ def me(request: Request) -> SessionResponse:
     user = request.app.state.users.by_id(user_id)
     if user is None or not user.is_active:
         raise HTTPException(401, "La sesión no es válida o expiró.")
+    return user, claims
+
+
+@router.get("/me", response_model=SessionResponse)
+def me(request: Request) -> SessionResponse:
+    user, claims = authenticated_user(request)
     return SessionResponse(
         user=PublicUser(id=user.id, email=user.email),
         expires_at=datetime.fromtimestamp(claims["exp"], timezone.utc),
@@ -113,9 +121,10 @@ def logout(request: Request) -> Response:
     except (InvalidTokenError, ValueError, TypeError, KeyError):
         pass
     response = Response(status_code=204)
+    response.delete_cookie(COOKIE_NAME, path="/api/auth")
     response.delete_cookie(
         COOKIE_NAME,
-        path="/api/auth",
+        path=COOKIE_PATH,
         httponly=True,
         secure=request.app.state.settings.cookie_secure,
         samesite="strict",

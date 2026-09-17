@@ -1,8 +1,9 @@
-# SIGFQ — E1-H1: inicio de sesión interno
+# SIGFQ — E1-H1 y E1-H2: acceso y usuarios internos
 
 Implementación de E1-H1 sobre el frontend existente React + TypeScript + Vite.
 El login mantiene su diseño y utiliza FastAPI para autenticar usuarios activos.
-No se implementaron otras historias de usuario.
+E1-H2 agrega gestión de usuarios con JSON temporal, autorización de administrador
+y menú compartido. Ver [implementación, contratos y pruebas de E1-H2](docs/E1-H2.md).
 
 ## Estructura inspeccionada
 
@@ -30,10 +31,10 @@ No se implementaron otras historias de usuario.
 9. Antes de alcanzar el límite, cualquier credencial incorrecta o cuenta inactiva recibe el mismo 401 y mensaje:
    **Correo o contraseña incorrectos.** No se revela qué dato falló.
 10. Si el acceso es válido, el backend firma un JWT y lo entrega mediante una cookie
-    `sigfq_session` HttpOnly, SameSite=Strict, con duración limitada y ruta `/api/auth`.
+    `sigfq_session` HttpOnly, SameSite=Strict, con duración limitada y ruta `/api`.
 11. El JSON contiene solamente `{ user: { id, email }, expires_at }`.
     El token no se expone a JavaScript, localStorage ni sessionStorage.
-12. React navega a `/session`: una página blanca con el botón «Cerrar sesión», solicitada como destino temporal.
+12. React navega a `/session`: contenido vacío dentro del menú compartido, con «Cerrar sesión».
 13. `RequireAuth` consulta `GET /api/auth/me` antes de mostrar las rutas internas.
     FastAPI comprueba firma, algoritmo, emisor, destinatario y expiración del JWT,
     comprueba que el identificador de sesión siga registrado, busca nuevamente al usuario y confirma que siga activo.
@@ -48,9 +49,11 @@ No se implementaron otras historias de usuario.
 
 `RequireAuth` verifica autenticación, no implementa roles ni permisos de E1-H3.
 Las pantallas de sucursales e inventario conservan sus comportamientos de prototipo.
-El texto «Administrador de ejemplo» de sucursales sigue siendo parte de ese diseño,
+El prototipo de inventario se conserva en `/prototypes/inventory`; `/admin/inventory`
+ahora muestra una sección vacía del menú. El texto «Administrador de ejemplo» de sucursales sigue siendo parte de ese diseño,
 no un rol concedido por el backend. Sus enlaces «Volver al inicio de sesión» solamente
-navegan. El cierre real está en el botón de `/session`.
+navegan. El cierre real está en la cabecera del layout compartido. E1-H2 verifica
+el rol Administrador en backend, adicionalmente a la autenticación.
 
 ## Límites y cierre de sesión solicitados
 
@@ -71,7 +74,7 @@ navegan. El cierre real está en el botón de `/session`.
   de IP enviadas libremente por clientes. En el proxy local varios clientes pueden compartir IP.
 
 Cerrar una pestaña no cierra la sesión. La cookie persistente puede sobrevivir al cierre
-del navegador, dentro de sus 30 minutos de validez. «Cerrar sesión» la invalida de inmediato
+del navegador, dentro de sus 9 horas de validez desde el login. «Cerrar sesión» la invalida de inmediato
 en el servidor; otras pestañas lo detectan al consultar `/me` (foco, recarga o revisión periódica).
 HTTPS puede configurarse también localmente con un certificado confiable; no exige hosting.
 Esta configuración de desarrollo continúa utilizando HTTP y `COOKIE_SECURE=false`.
@@ -95,8 +98,8 @@ Esta configuración de desarrollo continúa utilizando HTTP y `COOKIE_SECURE=fal
 | `backend/.env.example` | Plantilla sin clave real. |
 | `src/pages/e1-access-users-branches/auth/login.api.ts` | Cliente HTTP tipado y mensajes de error seguros. |
 | `src/pages/e1-access-users-branches/auth/RequireAuth.tsx` | Comprobación y recuperación de sesión para las rutas internas. |
-| `src/pages/e1-access-users-branches/auth/SessionPage.tsx` | Página blanca y cierre de sesión real. |
-| `src/pages/e1-access-users-branches/auth/auth.css` | Estilo mínimo de la página temporal. |
+| `src/pages/e1-access-users-branches/auth/LogoutButton.tsx` | Cierre de sesión reutilizable; sustituye la antigua SessionPage. |
+| `src/layouts/AdminLayout.tsx` | Menú y cabecera compartidos; `/session` conserva contenido vacío. |
 
 Durante la preparación local se generan `backend/.venv/`, `backend/.env` y
 `backend/data/users.json`; están excluidos de Git. El último contiene hashes, nunca
@@ -115,6 +118,12 @@ contraseñas en texto plano. `.env` contiene una clave privada aleatoria no vers
 | `README.md` | Documenta el funcionamiento, las decisiones y los pasos para reproducirlo. |
 
 ## Cómo funciona el frontend
+
+Al abrir `/login`, `LoginPage` consulta primero `/api/auth/me`. Si la sesión sigue
+vigente, redirige a `/session` sin pedir credenciales nuevamente. Mientras consulta,
+muestra «Verificando sesión…». Sin sesión válida muestra el formulario; si falla la
+conexión, informa el error. Las otras rutas internas mantienen su validación en
+`RequireAuth`; iniciar sesión no concede permisos por rol todavía.
 
 `LoginPage.tsx` usa `visible` para mostrar/ocultar contraseña, `loading` para el botón
 y `error` para el aviso accesible (`role="alert"`). `sending`, un `useRef`, bloquea
@@ -141,7 +150,7 @@ El acceso exitoso se anuncia con un estado accesible y la navegación a `/sessio
 - **Token:** PyJWT firma un comprobante temporal de identidad. Contiene solamente
   `sub` (ID), `jti` (sesión), `iat`, `exp`, `iss` y `aud`. Un JWT está firmado, no cifrado; por eso no
   contiene contraseñas, hashes ni información de perfil innecesaria.
-- **Expiración:** por defecto 30 minutos, sin renovación automática. Esta expiración
+- **Expiración:** por defecto 9 horas (540 minutos) desde el login, sin renovación automática. Esta expiración
   corresponde exclusivamente al login; no altera las reglas de QR de otras historias.
 - **Cookies:** HttpOnly impide leer el JWT desde JavaScript. SameSite=Strict y la
   comprobación del encabezado Origin del login limitan peticiones desde otros sitios.
@@ -247,7 +256,7 @@ servidores activos, no usan las cuentas locales y no modifican `data/users.json`
 
 | Caso | Datos / acción | Resultado esperado |
 | --- | --- | --- |
-| Activo | `interno@farmacia.cl` / `Desarrollo-E1H1!2026` | Accede a `/session`, página blanca con «Cerrar sesión». |
+| Activo | `interno@farmacia.cl` / `Desarrollo-E1H1!2026` | Accede a `/session`, contenido vacío, menú y «Cerrar sesión». |
 | Límite | Fallar 8 veces con el mismo correo | Mensaje de demasiados intentos con tiempo de espera. |
 | Cierre | Pulsar «Cerrar sesión» y volver a `/session` | Regresa al login; no permite reutilizar la sesión. |
 | Contraseña incorrecta | Mismo correo / cualquier contraseña incorrecta | Permanece en login, mensaje genérico. |
@@ -257,7 +266,7 @@ servidores activos, no usan las cuentas locales y no modifican `data/users.json`
 | Recarga | F5 después del acceso válido | `/me` valida la cookie y permite continuar. |
 | Acceso directo sin sesión | Abrir `/admin/branches` en ventana privada | Redirige a `/login`. |
 | Backend desconectado | Detener FastAPI e intentar login | Mensaje de conexión o indisponibilidad, sin detalles técnicos. |
-| Sesión expirada | Configurar `ACCESS_TOKEN_EXPIRE_MINUTES=1`, reiniciar FastAPI e iniciar sesión nuevamente | Después del minuto vuelve al login; restaurar 30 al terminar. |
+| Sesión expirada | Configurar `ACCESS_TOKEN_EXPIRE_MINUTES=1`, reiniciar FastAPI e iniciar sesión nuevamente | Después del minuto vuelve al login; restaurar 540 al terminar. |
 
 También se puede comprobar la cookie por HTTP desde PowerShell, con ambos servidores activos:
 
@@ -273,7 +282,7 @@ Invoke-RestMethod -Uri http://127.0.0.1:5173/api/auth/me -WebSession $authSessio
 - ESLint: correcto.
 - TypeScript y build Vite: correctos.
 - Ruff: correcto.
-- Pytest: **39 pruebas aprobadas**. Hay dos avisos de deprecación en dependencias
+- Pytest: **73 pruebas aprobadas** (39 de autenticación y 34 de usuarios). Hay dos avisos de deprecación en dependencias
   (Starlette/httpx y AnyIO); no son fallos de pruebas.
 - FastAPI iniciado mediante Uvicorn: correcto.
 - HTTP real contra puerto 8000 y proxy 5173: acceso válido, cookie HttpOnly,

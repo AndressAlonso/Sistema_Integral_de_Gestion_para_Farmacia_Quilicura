@@ -1,9 +1,8 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthError, logout } from './login.api'
-import './auth.css'
 
-export default function SessionPage() {
+export default function LogoutButton() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -26,12 +25,11 @@ export default function SessionPage() {
   }
 
   return (
-    <main className="s1 auth-session">
-      <h1 className="sr-only">Sesión iniciada</h1>
-      <button className="s1-button" disabled={loading} onClick={closeSession}>
+    <div className="auth-logout">
+      <button type="button" className="auth-logout-button" disabled={loading} onClick={closeSession}>
         {loading ? 'Cerrando sesión…' : 'Cerrar sesión'}
       </button>
-      {error && <p className="s1-error" role="alert">{error}</p>}
-    </main>
+      {error && <p className="auth-logout-error" role="alert">{error}</p>}
+    </div>
   )
 }

@@ -6,10 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
-from app.auth.routes import COOKIE_NAME, router
+from app.auth.routes import COOKIE_NAME, COOKIE_PATH, router
 from app.auth.state import AuthState
 from app.auth.users import LocalUserRepository
 from app.config import Settings
+from app.users.routes import router as users_router
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -21,13 +22,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.auth = AuthState()
         yield
 
-    app = FastAPI(title="SIGFQ — E1-H1", lifespan=lifespan)
+    app = FastAPI(title="SIGFQ — Acceso y usuarios internos", lifespan=lifespan)
     app.state.settings = settings
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST"],
+        allow_methods=["GET", "POST", "PATCH"],
         allow_headers=["Content-Type"],
         expose_headers=["Retry-After"],
     )
@@ -44,7 +45,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # No devolver el cuerpo de entrada: contiene la contraseña.
         return JSONResponse(
             status_code=422,
-            content={"detail": "Revisa el correo y la contraseña ingresados."},
+            content={
+                "detail": (
+                    "Revisa los datos obligatorios, el correo y los roles. La contraseña inicial debe tener al menos 12 caracteres."
+                    if request.url.path.startswith("/api/users")
+                    else "Revisa el correo y la contraseña ingresados."
+                )
+            },
         )
 
     @app.exception_handler(HTTPException)
@@ -55,9 +62,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             headers=exc.headers,
         )
         if exc.status_code == 401:
+            response.delete_cookie(COOKIE_NAME, path="/api/auth")
             response.delete_cookie(
                 COOKIE_NAME,
-                path="/api/auth",
+                path=COOKIE_PATH,
                 httponly=True,
                 secure=settings.cookie_secure,
                 samesite="strict",
@@ -73,4 +81,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(router)
+    app.include_router(users_router)
     return app
