@@ -1,0 +1,92 @@
+name: sigfq-local
+
+x-backend: &backend
+  build: ./backend
+  environment: &backend-env
+    APP_ENV: local
+    DB_HOST: db
+    DB_PORT: "5432"
+    DB_USER: ${POSTGRES_USER:?Copia .env.example a .env}
+    DB_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD}
+    DB_NAME: ${POSTGRES_DB:-sigfq}
+    WEB_ORIGINS: http://localhost:${WEB_PORT:-5173},http://127.0.0.1:${WEB_PORT:-5173},http://localhost:${API_PORT:-8000},http://127.0.0.1:${API_PORT:-8000}
+    SESSION_MINUTES: ${SESSION_MINUTES:-60}
+
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Copia .env.example a .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-sigfq}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    <<: *backend
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  seed:
+    <<: *backend
+    command: ["python", "-m", "app.seed"]
+    environment:
+      <<: *backend-env
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Falta DEMO_PASSWORD}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  api:
+    <<: *backend
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/migrations:/app/migrations
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  web:
+    build: ./frontend
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    environment:
+      API_PROXY_TARGET: http://api:8000
+    ports:
+      - "127.0.0.1:${WEB_PORT:-5173}:5173"
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      api:
+        condition: service_healthy
+
+  tests:
+    <<: *backend
+    profiles: ["test"]
+    environment:
+      <<: *backend-env
+      APP_ENV: test
+    command: ["pytest", "-q"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+

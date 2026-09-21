@@ -1,5 +1,5 @@
 export interface AuthSession {
-  user: { id: number; email: string }
+  user: { id: string; email: string }
   expires_at: string
 }
 
@@ -48,7 +48,7 @@ async function requestSession(path: string, credentials?: { email: string; passw
   const response = await request(path, credentials)
   try {
     const data: AuthSession = await response.json()
-    if (!Number.isInteger(data.user?.id) || typeof data.user?.email !== 'string' ||
+    if (typeof data.user?.id !== 'string' || typeof data.user?.email !== 'string' ||
       !Number.isFinite(Date.parse(data.expires_at))) throw new Error('Invalid session')
     return data
   } catch {

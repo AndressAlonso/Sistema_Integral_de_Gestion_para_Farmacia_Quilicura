@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Literal
-
+from sqlalchemy import URL
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -35,3 +35,29 @@ class Settings(BaseSettings):
         if not value or any(origin == "*" for origin in value):
             raise ValueError("Configura orígenes explícitos")
         return value
+
+class DatabaseSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=BACKEND_DIR / ".env",
+        env_file_encoding="utf-8-sig",
+        extra="ignore",
+    )
+
+    db_host: str = "localhost"
+    db_port: int = Field(default=5433, ge=1, le=65535)
+    db_name: str = "sigfq"
+    db_user: str = "sigfq"
+    db_password: SecretStr
+
+
+def database_url() -> URL:
+    settings = DatabaseSettings()
+
+    return URL.create(
+        drivername="postgresql+psycopg",
+        username=settings.db_user,
+        password=settings.db_password.get_secret_value(),
+        host=settings.db_host,
+        port=settings.db_port,
+        database=settings.db_name,
+    )

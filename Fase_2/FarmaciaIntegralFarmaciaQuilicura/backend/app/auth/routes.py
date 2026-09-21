@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-
+from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request, Response
 from jwt import InvalidTokenError
 from pydantic import BaseModel, EmailStr, Field, field_validator
@@ -22,7 +22,7 @@ class LoginRequest(BaseModel):
 
 
 class PublicUser(BaseModel):
-    id: int
+    id: UUID
     email: EmailStr
 
 
@@ -88,7 +88,7 @@ def me(request: Request) -> SessionResponse:
     token = request.cookies.get(COOKIE_NAME)
     try:
         claims = validate_token(token or "", request.app.state.settings)
-        user_id = int(claims["sub"])
+        user_id = UUID(claims["sub"])
     except (InvalidTokenError, ValueError, TypeError, KeyError):
         raise HTTPException(401, "La sesión no es válida o expiró.") from None
     if not request.app.state.auth.session_active(claims["jti"]):

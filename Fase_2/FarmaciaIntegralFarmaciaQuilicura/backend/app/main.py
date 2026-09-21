@@ -8,7 +8,8 @@ from starlette.exceptions import HTTPException
 
 from app.auth.routes import COOKIE_NAME, router
 from app.auth.state import AuthState
-from app.auth.users import LocalUserRepository
+from app.auth.users import PostgresUserRepository
+from app.db import create_database_engine, create_session_factory
 from app.config import Settings
 
 
@@ -17,20 +18,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        app.state.users = LocalUserRepository(settings.users_file)
-        app.state.auth = AuthState()
-        yield
+        engine = create_database_engine()
+        try:
+            app.state.users = PostgresUserRepository(
+                create_session_factory(engine)
+            )
+            app.state.auth = AuthState()
+            yield
+        finally:
+            engine.dispose()
 
-    app = FastAPI(title="SIGFQ — E1-H1", lifespan=lifespan)
+    app = FastAPI(lifespan=lifespan)
     app.state.settings = settings
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST"],
-        allow_headers=["Content-Type"],
-        expose_headers=["Retry-After"],
-    )
 
     @app.middleware("http")
     async def private_responses(request: Request, call_next):
