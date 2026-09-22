@@ -7,7 +7,7 @@ from test_auth import login
 
 from app.auth.security import password_hasher
 from app.auth.users import DuplicateEmail
-from app.models import SesionInterna, UsuarioInterno
+from app.models import SesionInterna, Sucursal, UsuarioInterno
 
 
 def payload(ctx, **changes):
@@ -338,3 +338,154 @@ def test_transaction_failure_does_not_persist_partial_user(setup, monkeypatch):
             )
             is None
         )
+def test_create_user_rejects_inactive_branch(setup):
+    inactive_branch_id = uuid4()
+
+    with setup.factory.begin() as db:
+        db.add(
+            Sucursal(
+                id=inactive_branch_id,
+                codigo=f"INACTIVE-{setup.suffix[:8]}",
+                nombre="Sucursal inactiva temporal",
+                direccion_local="Direccion temporal",
+                activa=False,
+            )
+        )
+
+    login(setup)
+
+    response = setup.client.post(
+        "/api/users",
+        json=payload(
+            setup,
+            branch_id=str(inactive_branch_id),
+        ),
+    )
+
+    assert response.status_code == 422
+    assert (
+        setup.app.state.users.by_email(
+            payload(setup)["email"]
+        )
+        is None
+    )
+
+
+def test_update_user_changes_active_branch(setup):
+    second_branch_id = uuid4()
+
+    with setup.factory.begin() as db:
+        db.add(
+            Sucursal(
+                id=second_branch_id,
+                codigo=f"ACTIVE-{setup.suffix[:8]}",
+                nombre="Segunda sucursal activa",
+                direccion_local="Direccion temporal",
+                activa=True,
+            )
+        )
+
+    login(setup)
+
+    target = setup.ids["operator"]
+    before = setup.app.state.users.by_id(target)
+
+    response = setup.client.patch(
+        f"/api/users/{target}",
+        json={
+            "branch_id": str(second_branch_id),
+        },
+    )
+
+    assert response.status_code == 200
+
+    user = response.json()
+
+    assert user["branch_id"] == str(second_branch_id)
+    assert user["branch_name"] == "Segunda sucursal activa"
+
+    persisted = setup.app.state.users.by_id(target)
+
+    assert before is not None
+    assert persisted is not None
+    assert persisted.id == before.id
+    assert persisted.password_hash == before.password_hash
+    assert persisted.role_ids == before.role_ids
+    assert persisted.branch_id == second_branch_id
+    assert persisted.branch_name == "Segunda sucursal activa"
+
+
+def test_update_user_rejects_inactive_branch(setup):
+    inactive_branch_id = uuid4()
+
+    with setup.factory.begin() as db:
+        db.add(
+            Sucursal(
+                id=inactive_branch_id,
+                codigo=f"DISABLED-{setup.suffix[:8]}",
+                nombre="Sucursal inactiva temporal",
+                direccion_local="Direccion temporal",
+                activa=False,
+            )
+        )
+
+    login(setup)
+
+    target = setup.ids["operator"]
+    before = setup.app.state.users.by_id(target)
+
+    response = setup.client.patch(
+        f"/api/users/{target}",
+        json={
+            "branch_id": str(inactive_branch_id),
+        },
+    )
+
+    assert response.status_code == 422
+
+    after = setup.app.state.users.by_id(target)
+
+    assert before is not None
+    assert after is not None
+    assert after.branch_id == before.branch_id
+    assert after.branch_name == before.branch_name
+
+
+def test_update_user_rejects_unknown_branch(setup):
+    login(setup)
+
+    target = setup.ids["operator"]
+    before = setup.app.state.users.by_id(target)
+
+    response = setup.client.patch(
+        f"/api/users/{target}",
+        json={
+            "branch_id": str(uuid4()),
+        },
+    )
+
+    assert response.status_code == 422
+
+    after = setup.app.state.users.by_id(target)
+
+    assert before is not None
+    assert after is not None
+    assert after.branch_id == before.branch_id
+
+
+def test_user_options_include_branch_status(setup):
+    login(setup)
+
+    response = setup.client.get("/api/users")
+
+    assert response.status_code == 200
+
+    branches = response.json()["branches"]
+    test_branch = next(
+        branch
+        for branch in branches
+        if branch["id"] == str(setup.ids["branch"])
+    )
+
+    assert test_branch["name"] == "Sucursal de prueba temporal"
+    assert test_branch["is_active"] is True

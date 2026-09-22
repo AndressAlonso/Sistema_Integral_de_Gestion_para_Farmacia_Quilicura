@@ -1,65 +1,501 @@
-// HU: E1-H5 — Crear, actualizar y desactivar sucursales
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import logo from '../../../assets/logo-farmacia-quilicura.jpg'
-import { deactivationIssues, initialBranches, type Branch } from './branches.mock'
-import BranchDialog from './BranchDialog'
+// HU: E1-H5 - Crear, actualizar y desactivar sucursales
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ApiError } from '../../../services/http'
+import BranchDialog, { type BranchEditor } from './BranchDialog'
+import {
+  createBranch,
+  deactivateBranch,
+  listBranches,
+  updateBranch,
+  type Branch,
+  type BranchInput,
+} from './branches.api'
 import '../sprint-one.css'
-
-type Editor = { mode: 'create' | 'edit' | 'deactivate'; branch: Branch | null }
+import './branches.css'
 
 export default function BranchesPage() {
-  const [branches, setBranches] = useState(initialBranches)
-  const [editor, setEditor] = useState<Editor | null>(null)
+  const navigate = useNavigate()
+
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [attempt, setAttempt] = useState(0)
+
+  const [query, setQuery] = useState('')
+  const [status, setStatus] = useState('')
+
+  const [editor, setEditor] = useState<BranchEditor | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  function save(name: string, address: string) {
-    if (editor?.mode === 'edit' && editor.branch) {
-      const id = editor.branch.id
-      setBranches((current) => current.map((branch) => branch.id === id ? { ...branch, name, address } : branch))
-      setMessage('Cambios guardados en esta demostración.')
-    } else {
-      setBranches((current) => [...current, { id: `SUC-${String(current.length + 1).padStart(3, '0')}`, name, address, active: true, openRegisters: 0, pendingOrders: 0, pendingTransfers: 0 }])
-      setMessage('Sucursal creada en esta demostración.')
+
+  const sending = useRef(false)
+
+  useEffect(() => {
+    let active = true
+
+    listBranches()
+      .then((result) => {
+        if (!active) {
+          return
+        }
+
+        setBranches(result.branches)
+        setLoading(false)
+      })
+      .catch((cause: unknown) => {
+        if (!active) {
+          return
+        }
+
+        if (cause instanceof ApiError && cause.status === 401) {
+          navigate('/login', { replace: true })
+          return
+        }
+
+        setLoadError(
+          cause instanceof ApiError
+            ? cause.message
+            : 'No pudimos cargar las sucursales.',
+        )
+
+        setLoading(false)
+      })
+
+    return () => {
+      active = false
     }
-    setEditor(null)
+  }, [attempt, navigate])
+
+  function openEditor(value: BranchEditor) {
+    setError('')
+    setMessage('')
+    setEditor(value)
   }
-  function deactivate() {
-    if (!editor?.branch || deactivationIssues(editor.branch).length > 0) return
-    const id = editor.branch.id
-    setBranches((current) => current.map((branch) => branch.id === id ? { ...branch, active: false } : branch))
-    setMessage('Sucursal desactivada en esta demostración. Su registro se conserva.')
-    setEditor(null)
+
+  async function mutate(
+    operation: () => Promise<Branch>,
+    successMessage: string,
+  ) {
+    if (sending.current) {
+      return
+    }
+
+    sending.current = true
+    setBusy(true)
+    setError('')
+
+    try {
+      const saved = await operation()
+
+      setBranches((current) => {
+        const exists = current.some(
+          (branch) => branch.id === saved.id,
+        )
+
+        const updated = exists
+          ? current.map((branch) =>
+              branch.id === saved.id ? saved : branch,
+            )
+          : [...current, saved]
+
+        return updated.sort((first, second) =>
+          first.name.localeCompare(second.name, 'es'),
+        )
+      })
+
+      setEditor(null)
+      setMessage(successMessage)
+    } catch (cause: unknown) {
+      if (cause instanceof ApiError && cause.status === 401) {
+        navigate('/login', { replace: true })
+        return
+      }
+
+      if (cause instanceof ApiError && cause.status === 403) {
+        setEditor(null)
+        setLoadError(cause.message)
+        return
+      }
+
+      setError(
+        cause instanceof ApiError
+          ? cause.message
+          : 'No pudimos guardar la sucursal. Intenta nuevamente.',
+      )
+    } finally {
+      sending.current = false
+      setBusy(false)
+    }
   }
-  return (
-    <div className="s1 s1-shell">
-      <aside className="s1-sidebar">
-        <img className="s1-logo" src={logo} alt="Farmacia Quilicura — Cuidando tu salud" />
-        <p className="s1-sidebar-label">ADMINISTRACIÓN</p>
-        <Link className="s1-nav" to="/admin/branches" aria-current="page"><span className="s1-nav-icon" aria-hidden="true">⌂</span>Sucursales</Link>
-        <div className="s1-sidebar-bottom"><Link className="s1-button" to="/login">Volver al inicio de sesión</Link><p>SIGFQ · Diseño del Sprint 1</p></div>
-      </aside>
-      <div className="s1-shell-content">
-        <header className="s1-topbar"><span>Administración / Sucursales</span><div className="s1-profile"><span className="s1-avatar" aria-hidden="true">A</span><span>Administrador de ejemplo</span></div></header>
-        <main className="s1-content">
-          <p className="s1-kicker">Ubicaciones operativas</p>
-          <div className="s1-heading"><div><h1>Sucursales</h1><p>Administra las ubicaciones de Farmacia Quilicura.</p></div><button className="s1-button primary" onClick={() => { setMessage(''); setEditor({ mode: 'create', branch: null }) }}><span aria-hidden="true">+</span>Nueva sucursal</button></div>
-          <p className="s1-notice">Prototipo visual con datos ficticios. Puedes crear, editar y probar la desactivación; los cambios se reinician al salir de esta pantalla o recargarla.</p>
-          {message && <p className="s1-success" role="status">{message}</p>}
-          <section className="s1-branch-panel" aria-labelledby="branch-list-title">
-            <div className="s1-panel-head"><div><h2 id="branch-list-title">Directorio de sucursales</h2><p>Ubicaciones activas e inactivas del sistema.</p></div><span className="s1-count">{branches.length} sucursales</span></div>
-            <div className="s1-table-wrap" tabIndex={0} role="region" aria-label="Listado de sucursales">
-              <table><thead><tr><th scope="col">Sucursal</th><th scope="col">Dirección</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
-                <tbody>{branches.map((branch) => <tr key={branch.id}><th scope="row">{branch.name}<small>{branch.id}</small></th><td className="s1-address">{branch.address || 'Sin dirección registrada'}</td><td><span className={branch.active ? 's1-state' : 's1-state inactive'}>{branch.active ? 'Activa' : 'Inactiva'}</span></td><td><div className="s1-actions"><button className="s1-button" aria-label={`Editar ${branch.name}`} onClick={() => setEditor({ mode: 'edit', branch })}>Editar</button>{branch.active && <button className="s1-button danger" aria-label={`Desactivar ${branch.name}`} onClick={() => setEditor({ mode: 'deactivate', branch })}>Desactivar</button>}</div></td></tr>)}</tbody>
-              </table>
-            </div>
-            <p className="s1-panel-foot">Las sucursales inactivas conservan su registro. La desactivación no elimina información.</p>
-          </section>
-          <section className="s1-check-note"><h2>Desactivación controlada</h2><p>No se puede desactivar una sucursal con cajas abiertas, pedidos pendientes o transferencias pendientes que impidan el cierre. Prueba con Sucursal A para ver la confirmación y con Sucursal B para ver el bloqueo.</p></section>
-          <p style={{ marginTop: 25, fontSize: 12 }}><Link to="/login">← Revisar diseño de inicio de sesión</Link></p>
-        </main>
+
+  async function save(input: BranchInput) {
+    if (editor?.mode === 'create') {
+      await mutate(
+        () =>
+          createBranch({
+            ...input,
+            is_active: true,
+          }),
+        'Sucursal creada correctamente.',
+      )
+
+      return
+    }
+
+    if (editor?.mode === 'edit' && editor.branch) {
+      const branchId = editor.branch.id
+
+      await mutate(
+        () => updateBranch(branchId, input),
+        'Sucursal actualizada correctamente.',
+      )
+    }
+  }
+
+  async function deactivate() {
+    if (!editor?.branch) {
+      return
+    }
+
+    const branchId = editor.branch.id
+
+    await mutate(
+      () => deactivateBranch(branchId),
+      'Sucursal desactivada. Su registro se conserva.',
+    )
+  }
+
+  if (loading) {
+    return <p role="status">Cargando sucursales...</p>
+  }
+
+  if (loadError) {
+    return (
+      <div>
+        <p className="s1-error" role="alert">
+          {loadError}
+        </p>
+
+        <button
+          className="branches-button"
+          type="button"
+          onClick={() => {
+            setLoading(true)
+            setLoadError('')
+            setAttempt((value) => value + 1)
+          }}
+        >
+          Reintentar
+        </button>
       </div>
-      {editor && <BranchDialog key={`${editor.mode}-${editor.branch?.id ?? 'new'}`} {...editor} onClose={() => setEditor(null)} onSave={save} onDeactivate={deactivate} />}
+    )
+  }
+
+  const normalizedQuery = query.trim().toLocaleLowerCase('es')
+
+  const filteredBranches = branches.filter((branch) => {
+    const searchableText =
+      `${branch.code} ${branch.name} ${branch.address}`
+        .toLocaleLowerCase('es')
+
+    const matchesQuery =
+      !normalizedQuery ||
+      searchableText.includes(normalizedQuery)
+
+    const matchesStatus =
+      !status ||
+      branch.is_active === (status === 'active')
+
+    return matchesQuery && matchesStatus
+  })
+
+  const activeBranches = branches.filter(
+    (branch) => branch.is_active,
+  ).length
+
+  const inactiveBranches = branches.filter(
+    (branch) => !branch.is_active,
+  ).length
+
+  const availability =
+    branches.length > 0
+      ? Math.round((activeBranches / branches.length) * 100)
+      : 0
+
+  const statistics = [
+    {
+      label: 'Sucursales activas',
+      value: activeBranches,
+      detail: 'Ubicaciones operativas',
+      symbol: 'A',
+      style: 'green',
+    },
+    {
+      label: 'Sucursales registradas',
+      value: branches.length,
+      detail: 'Total en el sistema',
+      symbol: 'S',
+      style: 'purple',
+    },
+    {
+      label: 'Sucursales inactivas',
+      value: inactiveBranches,
+      detail: 'Registros históricos',
+      symbol: '!',
+      style: 'red',
+    },
+    {
+      label: 'Disponibilidad',
+      value: `${availability}%`,
+      detail: 'Sucursales habilitadas',
+      symbol: '%',
+      style: 'blue',
+    },
+  ]
+
+  return (
+    <div className="branches-page">
+      <header className="branches-heading">
+        <h1>Gestión de sucursales</h1>
+
+        <p>
+          Administra las ubicaciones operativas de Farmacia Quilicura.
+        </p>
+      </header>
+
+      <div className="branches-statistics">
+        {statistics.map((statistic) => (
+          <section
+            className="branches-stat"
+            key={statistic.label}
+            aria-label={statistic.label}
+          >
+            <span
+              className={`branches-stat-icon ${statistic.style}`}
+              aria-hidden="true"
+            >
+              {statistic.symbol}
+            </span>
+
+            <div>
+              <p>{statistic.label}</p>
+              <strong>{statistic.value}</strong>
+              <small>{statistic.detail}</small>
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div className="branches-filters">
+        <label className="branches-search">
+          <span className="sr-only">
+            Buscar por código, nombre o dirección
+          </span>
+
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            aria-hidden="true"
+          >
+            <circle cx="10" cy="10" r="6" />
+            <path d="m15 15 5 5" />
+          </svg>
+
+          <input
+            type="search"
+            placeholder="Buscar por código, nombre o dirección..."
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+
+        <label>
+          <span className="sr-only">
+            Filtrar por estado
+          </span>
+
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+          >
+            <option value="">Todos los estados</option>
+            <option value="active">Activas</option>
+            <option value="inactive">Inactivas</option>
+          </select>
+        </label>
+
+        <button
+          className="branches-button primary"
+          type="button"
+          onClick={() =>
+            openEditor({
+              mode: 'create',
+              branch: null,
+            })
+          }
+        >
+          + Nueva sucursal
+        </button>
+      </div>
+
+      {message && (
+        <p className="branches-message" role="status">
+          {message}
+        </p>
+      )}
+
+      <section
+        className="branches-panel"
+        aria-labelledby="branch-list-title"
+      >
+        <div className="branches-panel-heading">
+          <div>
+            <h2 id="branch-list-title">
+              Sucursales registradas
+            </h2>
+
+            <p role="status">
+              {filteredBranches.length}{' '}
+              {filteredBranches.length === 1
+                ? 'sucursal encontrada'
+                : 'sucursales encontradas'}
+            </p>
+          </div>
+
+          <span className="branches-count">
+            {branches.length}{' '}
+            {branches.length === 1
+              ? 'sucursal total'
+              : 'sucursales totales'}
+          </span>
+        </div>
+
+        <div
+          className="branches-table-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Listado de sucursales"
+        >
+          <table className="branches-table">
+            <thead>
+              <tr>
+                <th scope="col">Sucursal</th>
+                <th scope="col">Código</th>
+                <th scope="col">Dirección</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filteredBranches.map((branch) => (
+                <tr key={branch.id}>
+                  <th scope="row">
+                    <div className="branches-name">
+                      <strong>{branch.name}</strong>
+                      <small title={branch.id}>
+                        {branch.id.slice(0, 8)}
+                      </small>
+                    </div>
+                  </th>
+
+                  <td>{branch.code}</td>
+
+                  <td>{branch.address}</td>
+
+                  <td>
+                    <span
+                      className={
+                        branch.is_active
+                          ? 'branches-status'
+                          : 'branches-status inactive'
+                      }
+                    >
+                      {branch.is_active ? 'Activa' : 'Inactiva'}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="branches-actions">
+                      <button
+                        type="button"
+                        aria-label={`Editar ${branch.name}`}
+                        onClick={() =>
+                          openEditor({
+                            mode: 'edit',
+                            branch,
+                          })
+                        }
+                      >
+                        Editar
+                      </button>
+
+                      {branch.is_active && (
+                        <button
+                          className="danger"
+                          type="button"
+                          aria-label={`Desactivar ${branch.name}`}
+                          onClick={() =>
+                            openEditor({
+                              mode: 'deactivate',
+                              branch,
+                            })
+                          }
+                        >
+                          Desactivar
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+              {filteredBranches.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="branches-empty"
+                  >
+                    No se encontraron sucursales con esos filtros.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="s1-check-note">
+        <h2>Desactivación controlada</h2>
+
+        <p>
+          Una sucursal no puede desactivarse mientras tenga usuarios
+          activos asignados. Primero debes reasignar o desactivar esas
+          cuentas.
+        </p>
+      </section>
+
+      {editor && (
+        <BranchDialog
+          key={`${editor.mode}-${editor.branch?.id ?? 'new'}`}
+          editor={editor}
+          busy={busy}
+          error={error}
+          onClose={() => {
+            if (!sending.current) {
+              setEditor(null)
+            }
+          }}
+          onSave={save}
+          onDeactivate={deactivate}
+        />
+      )}
     </div>
   )
 }
-
