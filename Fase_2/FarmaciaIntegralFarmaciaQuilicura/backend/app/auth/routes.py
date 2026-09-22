@@ -1,14 +1,17 @@
 from datetime import datetime, timezone
 from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Request, Response
 from jwt import InvalidTokenError
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.auth.security import create_token, dummy_hash, validate_token, verify_password
 from app.auth.state import LoginLimited
+from app.auth.users import User
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 COOKIE_NAME = "sigfq_session"
+COOKIE_PATH = "/api"
 
 
 class LoginRequest(BaseModel):
@@ -24,6 +27,8 @@ class LoginRequest(BaseModel):
 class PublicUser(BaseModel):
     id: UUID
     email: EmailStr
+    name: str
+    permissions: list[str]
 
 
 class SessionResponse(BaseModel):
@@ -67,37 +72,48 @@ def login(data: LoginRequest, request: Request, response: Response) -> SessionRe
             too_many_attempts(wait)
         raise HTTPException(401, "Correo o contraseña incorrectos.")
     token, expires = create_token(user.id, settings)
-    claims = validate_token(token, settings)
-    auth.register_session(claims["jti"], claims["exp"])
+    if not request.app.state.sessions.register(token, user.id, expires):
+        raise HTTPException(401, "Correo o contraseña incorrectos.")
+    response.delete_cookie(COOKIE_NAME, path="/api/auth")
     response.set_cookie(
         COOKIE_NAME,
         token,
         httponly=True,
         secure=settings.cookie_secure,
         samesite="strict",
-        path="/api/auth",
+        path=COOKIE_PATH,
         max_age=settings.access_token_expire_minutes * 60,
     )
     return SessionResponse(
-        user=PublicUser(id=user.id, email=user.email), expires_at=expires
+        user=PublicUser(
+            id=user.id, email=user.email, name=user.name, permissions=user.permissions
+        ),
+        expires_at=expires,
     )
 
 
-@router.get("/me", response_model=SessionResponse)
-def me(request: Request) -> SessionResponse:
+def authenticated_user(request: Request) -> tuple[User, dict]:
     token = request.cookies.get(COOKIE_NAME)
     try:
         claims = validate_token(token or "", request.app.state.settings)
         user_id = UUID(claims["sub"])
     except (InvalidTokenError, ValueError, TypeError, KeyError):
         raise HTTPException(401, "La sesión no es válida o expiró.") from None
-    if not request.app.state.auth.session_active(claims["jti"]):
+    if not request.app.state.sessions.active(token, user_id):
         raise HTTPException(401, "La sesión no es válida o expiró.")
     user = request.app.state.users.by_id(user_id)
     if user is None or not user.is_active:
         raise HTTPException(401, "La sesión no es válida o expiró.")
+    return user, claims
+
+
+@router.get("/me", response_model=SessionResponse)
+def me(request: Request) -> SessionResponse:
+    user, claims = authenticated_user(request)
     return SessionResponse(
-        user=PublicUser(id=user.id, email=user.email),
+        user=PublicUser(
+            id=user.id, email=user.email, name=user.name, permissions=user.permissions
+        ),
         expires_at=datetime.fromtimestamp(claims["exp"], timezone.utc),
     )
 
@@ -106,16 +122,15 @@ def me(request: Request) -> SessionResponse:
 def logout(request: Request) -> Response:
     check_origin(request)
     try:
-        claims = validate_token(
-            request.cookies.get(COOKIE_NAME, ""), request.app.state.settings
-        )
-        request.app.state.auth.revoke_session(claims["jti"])
+        validate_token(request.cookies.get(COOKIE_NAME, ""), request.app.state.settings)
+        request.app.state.sessions.revoke(request.cookies.get(COOKIE_NAME, ""))
     except (InvalidTokenError, ValueError, TypeError, KeyError):
         pass
     response = Response(status_code=204)
+    response.delete_cookie(COOKIE_NAME, path="/api/auth")
     response.delete_cookie(
         COOKIE_NAME,
-        path="/api/auth",
+        path=COOKIE_PATH,
         httponly=True,
         secure=request.app.state.settings.cookie_secure,
         samesite="strict",

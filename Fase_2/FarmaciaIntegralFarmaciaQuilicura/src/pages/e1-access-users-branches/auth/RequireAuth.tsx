@@ -58,5 +58,5 @@ export default function RequireAuth() {
   if (invalid) return <Navigate to="/login" replace state={{ sessionExpired: true }} />
   if (error) return <main className="s1 s1-content"><p className="s1-error" role="alert">{error}</p><button className="s1-button" onClick={() => { setError(''); setAttempt(value => value + 1) }}>Reintentar</button></main>
   if (!session) return <main className="s1 s1-content"><p role="status">Verificando sesión…</p></main>
-  return <><p className="sr-only" role="status">Sesión iniciada como {session.user.email}.</p><Outlet /></>
+  return <><p className="sr-only" role="status">Sesión iniciada como {session.user.email}.</p><Outlet context={session} /></>
 }

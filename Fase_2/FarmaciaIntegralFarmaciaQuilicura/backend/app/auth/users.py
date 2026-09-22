@@ -1,19 +1,40 @@
+"""Persistencia E1-H1/E1-H2 sobre el modelo PostgreSQL existente."""
+
+from datetime import datetime, timezone
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import UsuarioInterno
+from app.models import Rol, SesionInterna, Sucursal, UsuarioInterno
 
 
 class User(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-
     id: UUID
     email: EmailStr
     password_hash: str = Field(pattern=r"^\$argon2id\$")
     is_active: bool
+    name: str
+    roles: list[str]
+    role_ids: list[UUID]
+    permissions: list[str]
+    branch_id: UUID
+    branch_name: str
+
+
+class DuplicateEmail(Exception):
+    pass
+
+
+class UserNotFound(Exception):
+    pass
+
+
+class InvalidReference(Exception):
+    pass
 
 
 class PostgresUserRepository:
@@ -21,15 +42,19 @@ class PostgresUserRepository:
         self.session_factory = session_factory
 
     @staticmethod
-    def _to_user(row: UsuarioInterno | None) -> User | None:
-        if row is None:
-            return None
-
+    def _to_user(row: UsuarioInterno) -> User:
+        roles = sorted(row.roles, key=lambda role: role.codigo)
         return User(
             id=row.id,
             email=row.correo,
             password_hash=row.password_hash,
             is_active=row.activo,
+            name=row.nombre,
+            roles=[r.codigo for r in roles],
+            role_ids=[r.id for r in roles],
+            permissions=sorted(row.permisos_efectivos()),
+            branch_id=row.sucursal_id,
+            branch_name=row.sucursal.nombre,
         )
 
     def by_email(self, email: str) -> User | None:
@@ -39,8 +64,112 @@ class PostgresUserRepository:
                     UsuarioInterno.correo == email.strip().lower()
                 )
             )
-            return self._to_user(row)
+            return self._to_user(row) if row else None
 
     def by_id(self, user_id: UUID) -> User | None:
         with self.session_factory() as db:
-            return self._to_user(db.get(UsuarioInterno, user_id))
+            row = db.get(UsuarioInterno, user_id)
+            return self._to_user(row) if row else None
+
+    def list_users(self) -> list[User]:
+        with self.session_factory() as db:
+            return [
+                self._to_user(row)
+                for row in db.scalars(
+                    select(UsuarioInterno).order_by(
+                        UsuarioInterno.nombre, UsuarioInterno.id
+                    )
+                )
+            ]
+
+    def options(self) -> dict:
+        with self.session_factory() as db:
+            return {
+                "roles": [
+                    {"id": r.id, "code": r.codigo, "name": r.nombre}
+                    for r in db.scalars(select(Rol).order_by(Rol.nombre))
+                ],
+                "branches": [
+                    {"id": b.id, "name": b.nombre}
+                    for b in db.scalars(select(Sucursal).order_by(Sucursal.nombre))
+                ],
+            }
+
+    @staticmethod
+    def _roles(db: Session, ids: list[UUID]) -> list[Rol]:
+        roles = list(db.scalars(select(Rol).where(Rol.id.in_(ids))))
+        if len(roles) != len(ids):
+            raise InvalidReference
+        return roles
+
+    @staticmethod
+    def _integrity_error(exc: IntegrityError):
+        if (
+            getattr(exc.orig, "sqlstate", None) == "23505"
+            and getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+            == "usuario_interno_correo_key"
+        ):
+            raise DuplicateEmail from None
+        if getattr(exc.orig, "sqlstate", None) == "23503":
+            raise InvalidReference from None
+        raise exc
+
+    def create(
+        self,
+        *,
+        name: str,
+        email: str,
+        password_hash: str,
+        is_active: bool,
+        role_ids: list[UUID],
+        branch_id: UUID,
+    ) -> User:
+        try:
+            with self.session_factory.begin() as db:
+                if db.get(Sucursal, branch_id) is None:
+                    raise InvalidReference
+                row = UsuarioInterno(
+                    nombre=name,
+                    correo=email.lower(),
+                    password_hash=password_hash,
+                    activo=is_active,
+                    sucursal_id=branch_id,
+                    roles=self._roles(db, role_ids),
+                )
+                db.add(row)
+                db.flush()
+                return self._to_user(row)
+        except IntegrityError as exc:
+            self._integrity_error(exc)
+
+    def update(self, user_id: UUID, changes: dict) -> User:
+        try:
+            with self.session_factory.begin() as db:
+                row = db.scalar(
+                    select(UsuarioInterno)
+                    .where(UsuarioInterno.id == user_id)
+                    .with_for_update(of=UsuarioInterno)
+                )
+                if row is None:
+                    raise UserNotFound
+                if "name" in changes:
+                    row.nombre = changes["name"]
+                if "email" in changes:
+                    row.correo = changes["email"].lower()
+                if "role_ids" in changes:
+                    row.roles = self._roles(db, changes["role_ids"])
+                if "is_active" in changes:
+                    row.activo = changes["is_active"]
+                    if not row.activo:
+                        db.execute(
+                            update(SesionInterna)
+                            .where(
+                                SesionInterna.usuario_id == user_id,
+                                SesionInterna.revocada_en.is_(None),
+                            )
+                            .values(revocada_en=datetime.now(timezone.utc))
+                        )
+                db.flush()
+                return self._to_user(row)
+        except IntegrityError as exc:
+            self._integrity_error(exc)

@@ -6,30 +6,45 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
-from app.auth.routes import COOKIE_NAME, router
+from app.auth.routes import COOKIE_NAME, COOKIE_PATH, router
+from app.auth.sessions import SessionRepository
 from app.auth.state import AuthState
 from app.auth.users import PostgresUserRepository
-from app.db import create_database_engine, create_session_factory
 from app.config import Settings
+from app.db import create_database_engine, create_session_factory
+from app.users.routes import router as users_router
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, session_factory=None) -> FastAPI:
     settings = settings or Settings()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        engine = create_database_engine()
+        engine = None if session_factory is not None else create_database_engine()
         try:
-            app.state.users = PostgresUserRepository(
-                create_session_factory(engine)
+            factory = (
+                session_factory
+                if session_factory is not None
+                else create_session_factory(engine)
             )
+            app.state.users = PostgresUserRepository(factory)
+            app.state.sessions = SessionRepository(factory)
             app.state.auth = AuthState()
             yield
         finally:
-            engine.dispose()
+            if engine is not None:
+                engine.dispose()
 
     app = FastAPI(lifespan=lifespan)
     app.state.settings = settings
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH"],
+        allow_headers=["Content-Type"],
+        expose_headers=["Retry-After"],
+    )
 
     @app.middleware("http")
     async def private_responses(request: Request, call_next):
@@ -43,7 +58,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # No devolver el cuerpo de entrada: contiene la contraseña.
         return JSONResponse(
             status_code=422,
-            content={"detail": "Revisa el correo y la contraseña ingresados."},
+            content={
+                "detail": "Revisa los datos, los roles y la sucursal. La contraseña inicial requiere al menos 12 caracteres."
+                if request.url.path.startswith("/api/users")
+                else "Revisa el correo y la contraseña ingresados."
+            },
         )
 
     @app.exception_handler(HTTPException)
@@ -54,9 +73,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             headers=exc.headers,
         )
         if exc.status_code == 401:
+            response.delete_cookie(COOKIE_NAME, path="/api/auth")
             response.delete_cookie(
                 COOKIE_NAME,
-                path="/api/auth",
+                path=COOKIE_PATH,
                 httponly=True,
                 secure=settings.cookie_secure,
                 samesite="strict",
@@ -72,4 +92,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     app.include_router(router)
+    app.include_router(users_router)
     return app

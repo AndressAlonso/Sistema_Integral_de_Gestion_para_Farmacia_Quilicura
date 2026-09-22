@@ -1,7 +1,7 @@
 // HU: E1-H1 — Iniciar sesión en la plataforma
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { AuthError, login } from './login.api'
+import { AuthError, getSession, login } from './login.api'
 import logo from '../../../assets/logo-farmacia-quilicura.jpg'
 import '../sprint-one.css'
 
@@ -10,11 +10,35 @@ export default function LoginPage() {
   const location = useLocation()
   const [visible, setVisible] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const sending = useRef(false)
   const [error, setError] = useState(location.state?.sessionExpired ? 'Tu sesión no es válida o expiró. Inicia sesión nuevamente.' : '')
+
+  useEffect(() => {
+    let active = true
+
+    async function checkSession() {
+      try {
+        const session = await getSession()
+        if (active && Date.parse(session.expires_at) > Date.now()) {
+          navigate('/session', { replace: true })
+        }
+      } catch (cause) {
+        if (active && !(cause instanceof AuthError && cause.status === 401)) {
+          setError(cause instanceof AuthError ? cause.message : 'No pudimos verificar tu sesión. Intenta nuevamente.')
+        }
+      } finally {
+        if (active) setCheckingSession(false)
+      }
+    }
+
+    void checkSession()
+    return () => { active = false }
+  }, [navigate])
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (sending.current) return
+    if (checkingSession || sending.current) return
     const form = event.currentTarget
     if (!form.reportValidity()) return
     const data = new FormData(form)
@@ -32,6 +56,10 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
+  if (checkingSession) {
+    return <main className="s1 s1-content"><p role="status">Verificando sesión…</p></main>
+  }
+
   return (
     <div className="s1 s1-login">
       <aside className="s1-login-story">

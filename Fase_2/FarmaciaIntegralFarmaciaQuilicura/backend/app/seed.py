@@ -4,9 +4,9 @@ import os
 
 from sqlalchemy import select, text
 
+from app.auth.security import password_hasher
 from app.db import create_database_engine, create_session_factory
 from app.models import Permiso, Rol, Sucursal, UsuarioInterno
-from app.auth.security import password_hasher
 
 CUENTAS = (
     ("interno@farmacia.cl", "Administrador de prueba", "ADMIN", True),

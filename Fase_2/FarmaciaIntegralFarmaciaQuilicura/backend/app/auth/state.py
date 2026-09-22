@@ -1,9 +1,9 @@
-"""Estado temporal de un único proceso; migrar a persistencia compartida con PostgreSQL."""
+"""Límites de login de un único proceso. Las sesiones se guardan en PostgreSQL."""
 
 from collections import deque
 from math import ceil
 from threading import Lock
-from time import monotonic, time
+from time import monotonic
 from uuid import uuid4
 
 
@@ -17,7 +17,6 @@ class AuthState:
         self.clock = clock
         self.lock = Lock()
         self.attempts: dict[str, deque[tuple[str, float]]] = {}
-        self.sessions: dict[str, float] = {}
         self.window = 15 * 60
 
     def _prune(self):
@@ -60,23 +59,3 @@ class AuthState:
                     entry for entry in self.attempts[key] if entry[0] != ticket
                 )
             return self._wait(email, ip)
-
-    def _prune_sessions(self):
-        now = time()
-        self.sessions = {
-            key: expiry for key, expiry in self.sessions.items() if expiry > now
-        }
-
-    def register_session(self, session_id: str, expires: float):
-        with self.lock:
-            self._prune_sessions()
-            self.sessions[session_id] = expires
-
-    def session_active(self, session_id: str) -> bool:
-        with self.lock:
-            self._prune_sessions()
-            return session_id in self.sessions
-
-    def revoke_session(self, session_id: str):
-        with self.lock:
-            self.sessions.pop(session_id, None)
