@@ -1,11 +1,12 @@
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth.routes import authenticated_user, check_origin
-from app.auth.users import DuplicateEmail, User, UserNotFound
+from app.auth.users import DuplicateEmail, InvalidReference, User, UserNotFound
 from app.users.schemas import CreateUser, UpdateUser, UserListResponse, UserResponse
-from app.users.service import ROLES, AccessDenied, UserService
+from app.users.service import AccessDenied, UserService
 
 
 def administrator(request: Request) -> User:
@@ -21,7 +22,7 @@ router = APIRouter(
     prefix="/api/users", tags=["users"], dependencies=[Depends(administrator)]
 )
 Actor = Annotated[User, Depends(administrator)]
-UserId = Annotated[int, Path(gt=0)]
+UserId = UUID
 
 
 def service(request: Request) -> UserService:
@@ -35,13 +36,19 @@ def conflict_response(operation):
         raise HTTPException(409, "Ya existe un usuario con ese correo.") from None
     except UserNotFound:
         raise HTTPException(404, "El usuario no existe.") from None
+    except InvalidReference:
+        raise HTTPException(
+            422, "Selecciona roles y una sucursal existentes."
+        ) from None
+    except AccessDenied:
+        raise HTTPException(403, "No tienes permiso para asignar roles.") from None
 
 
 @router.get("", response_model=UserListResponse)
 def list_users(request: Request, actor: Actor):
     return {
         "users": service(request).list_users(actor),
-        "roles": ROLES,
+        **request.app.state.users.options(),
         "current_user": actor,
     }
 

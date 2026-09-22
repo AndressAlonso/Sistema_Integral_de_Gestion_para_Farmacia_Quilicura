@@ -1,14 +1,10 @@
 """E1-H2: reglas independientes del adaptador de persistencia."""
 
-from app.auth.security import password_hasher
-from app.auth.users import DuplicateEmail, User, UserNotFound, UserRepository
-from app.users.schemas import CreateUser, UpdateUser
+from uuid import UUID
 
-# Catálogo temporal para E1-H2; no implementa administración de roles (E1-H3).
-ROLES = [
-    {"code": "ADMINISTRADOR", "name": "Administrador"},
-    {"code": "CAJERO", "name": "Cajero"},
-]
+from app.auth.security import password_hasher
+from app.auth.users import DuplicateEmail, PostgresUserRepository, User, UserNotFound
+from app.users.schemas import CreateUser, UpdateUser
 
 
 class AccessDenied(Exception):
@@ -16,12 +12,12 @@ class AccessDenied(Exception):
 
 
 class UserService:
-    def __init__(self, repository: UserRepository):
+    def __init__(self, repository: PostgresUserRepository):
         self.repository = repository
 
     @staticmethod
     def authorize(actor: User):
-        if not actor.is_active or "ADMINISTRADOR" not in actor.roles:
+        if not actor.is_active or "usuarios.gestionar" not in actor.permissions:
             raise AccessDenied
 
     def list_users(self, actor: User) -> list[User]:
@@ -30,6 +26,8 @@ class UserService:
 
     def create(self, actor: User, data: CreateUser) -> User:
         self.authorize(actor)
+        if "roles.gestionar" not in actor.permissions:
+            raise AccessDenied
         if self.repository.by_email(str(data.email)):
             raise DuplicateEmail
         return self.repository.create(
@@ -37,22 +35,28 @@ class UserService:
             email=str(data.email).lower(),
             password_hash=password_hasher.hash(data.password),
             is_active=data.is_active,
-            roles=list(data.roles),
+            role_ids=data.role_ids,
+            branch_id=data.branch_id,
         )
 
-    def update(self, actor: User, user_id: int, data: UpdateUser) -> User:
+    def update(self, actor: User, user_id: UUID, data: UpdateUser) -> User:
         self.authorize(actor)
-        if self.repository.by_id(user_id) is None:
+        target = self.repository.by_id(user_id)
+        if target is None:
             raise UserNotFound
         changes = data.model_dump(exclude_unset=True)
+        if "role_ids" in changes and "roles.gestionar" not in actor.permissions:
+            if set(changes["role_ids"]) != set(target.role_ids):
+                raise AccessDenied
+            del changes["role_ids"]
         if "email" in changes:
             changes["email"] = str(changes["email"]).lower()
             existing = self.repository.by_email(changes["email"])
             if existing and existing.id != user_id:
                 raise DuplicateEmail
-        # Repositorio vuelve a comprobar unicidad dentro de la escritura atómica.
+        # PostgreSQL garantiza unicidad incluso ante escrituras simultáneas.
         return self.repository.update(user_id, changes)
 
-    def deactivate(self, actor: User, user_id: int) -> User:
+    def deactivate(self, actor: User, user_id: UUID) -> User:
         self.authorize(actor)
         return self.repository.update(user_id, {"is_active": False})

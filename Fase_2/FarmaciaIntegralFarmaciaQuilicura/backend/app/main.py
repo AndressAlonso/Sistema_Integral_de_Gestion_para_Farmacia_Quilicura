@@ -7,22 +7,35 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from app.auth.routes import COOKIE_NAME, COOKIE_PATH, router
+from app.auth.sessions import SessionRepository
 from app.auth.state import AuthState
-from app.auth.users import LocalUserRepository
+from app.auth.users import PostgresUserRepository
 from app.config import Settings
+from app.db import create_database_engine, create_session_factory
 from app.users.routes import router as users_router
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, session_factory=None) -> FastAPI:
     settings = settings or Settings()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        app.state.users = LocalUserRepository(settings.users_file)
-        app.state.auth = AuthState()
-        yield
+        engine = None if session_factory is not None else create_database_engine()
+        try:
+            factory = (
+                session_factory
+                if session_factory is not None
+                else create_session_factory(engine)
+            )
+            app.state.users = PostgresUserRepository(factory)
+            app.state.sessions = SessionRepository(factory)
+            app.state.auth = AuthState()
+            yield
+        finally:
+            if engine is not None:
+                engine.dispose()
 
-    app = FastAPI(title="SIGFQ — Acceso y usuarios internos", lifespan=lifespan)
+    app = FastAPI(lifespan=lifespan)
     app.state.settings = settings
     app.add_middleware(
         CORSMiddleware,
@@ -46,11 +59,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(
             status_code=422,
             content={
-                "detail": (
-                    "Revisa los datos obligatorios, el correo y los roles. La contraseña inicial debe tener al menos 12 caracteres."
-                    if request.url.path.startswith("/api/users")
-                    else "Revisa el correo y la contraseña ingresados."
-                )
+                "detail": "Revisa los datos, los roles y la sucursal. La contraseña inicial requiere al menos 12 caracteres."
+                if request.url.path.startswith("/api/users")
+                else "Revisa el correo y la contraseña ingresados."
             },
         )
 

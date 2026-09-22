@@ -20,7 +20,7 @@ export default function AdminLayout() {
           <img src={logo} alt="Farmacia Quilicura — Cuidando tu salud" />
         </NavLink>
         <nav aria-label="Secciones del sistema">
-          {adminNavigation.map(item => (
+          {adminNavigation.filter(item => item.path !== '/admin/users' || session.user.permissions.includes('usuarios.gestionar')).map(item => (
             <NavLink key={item.path} to={item.path} end onClick={() => setExpanded(false)} className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={item.icon} /></svg>
               <span>{item.label}</span>

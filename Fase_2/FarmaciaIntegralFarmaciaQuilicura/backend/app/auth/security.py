@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from secrets import token_urlsafe
+from uuid import UUID
 
 import jwt
 from pwdlib import PasswordHash
@@ -19,7 +20,7 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_token(user_id: int, settings: Settings) -> tuple[str, datetime]:
+def create_token(user_id: UUID, settings: Settings) -> tuple[str, datetime]:
     now = datetime.now(timezone.utc)
     expires = now + timedelta(minutes=settings.access_token_expire_minutes)
     token = jwt.encode(

@@ -1,17 +1,22 @@
 import { apiRequest } from '../../../services/http'
 
 export interface InternalUser {
-  id: number
+  id: string
   name: string
   email: string
   roles: string[]
+  role_ids: string[]
+  permissions: string[]
+  branch_id: string
+  branch_name: string
   is_active: boolean
 }
 
-export interface Role { code: string; name: string }
-export interface UserList { users: InternalUser[]; roles: Role[]; current_user: InternalUser }
-export interface UserInput { name: string; email: string; roles: string[] }
-export interface NewUserInput extends UserInput { password: string; is_active: boolean }
+export interface Role { id: string; code: string; name: string }
+export interface Branch { id: string; name: string }
+export interface UserList { users: InternalUser[]; roles: Role[]; branches: Branch[]; current_user: InternalUser }
+export interface UserInput { name: string; email: string; role_ids: string[] }
+export interface NewUserInput extends UserInput { password: string; is_active: boolean; branch_id: string }
 
 async function request<T>(path: string, method = 'GET', data?: UserInput | NewUserInput): Promise<T> {
   const response = await apiRequest(`/api/users${path}`, {
@@ -20,7 +25,7 @@ async function request<T>(path: string, method = 'GET', data?: UserInput | NewUs
     body: data ? JSON.stringify(data) : undefined,
   }, {
     409: 'Ya existe un usuario con ese correo. Utiliza otro correo electrónico.',
-    422: 'Revisa los datos obligatorios, el correo y los roles. La contraseña inicial debe tener al menos 12 caracteres.',
+    422: 'Revisa los datos, los roles y la sucursal. La contraseña inicial debe tener al menos 12 caracteres.',
     400: 'No pudimos guardar los datos. Revisa el formulario.',
   })
   return response.json() as Promise<T>
@@ -28,5 +33,5 @@ async function request<T>(path: string, method = 'GET', data?: UserInput | NewUs
 
 export const listUsers = () => request<UserList>('')
 export const createUser = (data: NewUserInput) => request<InternalUser>('', 'POST', data)
-export const updateUser = (id: number, data: UserInput) => request<InternalUser>(`/${id}`, 'PATCH', data)
-export const deactivateUser = (id: number) => request<InternalUser>(`/${id}/deactivate`, 'POST')
+export const updateUser = (id: string, data: UserInput) => request<InternalUser>(`/${id}`, 'PATCH', data)
+export const deactivateUser = (id: string) => request<InternalUser>(`/${id}/deactivate`, 'POST')
