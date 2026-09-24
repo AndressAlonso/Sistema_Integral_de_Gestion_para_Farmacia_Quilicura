@@ -1,6 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
-
+from decimal import Decimal
+from sqlalchemy import Numeric, Text, UniqueConstraint, false, true
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -96,3 +97,74 @@ class SesionInterna(Base):
     creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     expira_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+class Categoria(Base):
+    __tablename__ = "categoria"
+    __table_args__ = (
+        CheckConstraint("btrim(nombre) <> ''", name="ck_categoria_nombre"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    nombre: Mapped[str] = mapped_column(String(150))
+
+    productos: Mapped[list["Producto"]] = relationship(
+        back_populates="categoria", passive_deletes="all"
+    )
+
+
+class Producto(Base):
+    __tablename__ = "producto"
+    __table_args__ = (
+        UniqueConstraint("sku", name="uq_producto_sku"),
+        CheckConstraint(
+            "btrim(sku) <> '' AND sku = btrim(sku)",
+            name="ck_producto_sku",
+        ),
+        CheckConstraint("btrim(nombre) <> ''", name="ck_producto_nombre"),
+        CheckConstraint(
+            "precio_actual >= 0 AND precio_actual < 1000000000000",
+            name="ck_producto_precio_actual",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    sku: Mapped[str] = mapped_column(String(64))
+    nombre: Mapped[str] = mapped_column(String(150))
+    descripcion: Mapped[str] = mapped_column(Text)
+    activo: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    publicado_online: Mapped[bool] = mapped_column(
+        Boolean, server_default=false()
+    )
+    requiere_receta: Mapped[bool] = mapped_column(Boolean)
+    precio_actual: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    categoria_id: Mapped[UUID] = mapped_column(
+        ForeignKey("categoria.id", ondelete="RESTRICT"), index=True
+    )
+
+    categoria: Mapped["Categoria"] = relationship(
+        back_populates="productos"
+    )
+    codigos_barra: Mapped[list["CodigoBarra"]] = relationship(
+        back_populates="producto", passive_deletes="all"
+    )
+
+
+class CodigoBarra(Base):
+    __tablename__ = "codigo_barra"
+    __table_args__ = (
+        UniqueConstraint("valor", name="uq_codigo_barra_valor"),
+        CheckConstraint(
+            "btrim(valor) <> '' AND valor = btrim(valor)",
+            name="ck_codigo_barra_valor",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    valor: Mapped[str] = mapped_column(String(128))
+    producto_id: Mapped[UUID] = mapped_column(
+        ForeignKey("producto.id", ondelete="RESTRICT"), index=True
+    )
+
+    producto: Mapped["Producto"] = relationship(
+        back_populates="codigos_barra"
+    )
