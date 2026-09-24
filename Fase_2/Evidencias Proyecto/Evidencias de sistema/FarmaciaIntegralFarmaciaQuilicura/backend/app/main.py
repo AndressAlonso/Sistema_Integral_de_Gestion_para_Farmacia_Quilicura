@@ -5,7 +5,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
-
+from app.catalog.repository import PostgresCatalogRepository
+from app.catalog.routes import router as catalog_router
 from app.auth.routes import COOKIE_NAME, COOKIE_PATH, router
 from app.auth.sessions import SessionRepository
 from app.auth.state import AuthState
@@ -33,6 +34,7 @@ def create_app(settings: Settings | None = None, session_factory=None) -> FastAP
 
             app.state.users = PostgresUserRepository(factory)
             app.state.branches = PostgresBranchRepository(factory)
+            app.state.catalog = PostgresCatalogRepository(factory)
             app.state.sessions = SessionRepository(factory)
             app.state.auth = AuthState()
 
@@ -71,6 +73,10 @@ def create_app(settings: Settings | None = None, session_factory=None) -> FastAP
             detail = (
                 "Revisa el código, el nombre y la dirección de la sucursal."
             )
+        elif request.url.path.startswith("/api/categories"):
+            detail = "Ingresa un nombre de categoría de entre 1 y 150 caracteres."
+        elif request.url.path.startswith("/api/products"):
+            detail = "Revisa los datos del producto."
         else:
             detail = "Revisa el correo y la contraseña ingresados."
 
@@ -110,5 +116,5 @@ def create_app(settings: Settings | None = None, session_factory=None) -> FastAP
     app.include_router(router)
     app.include_router(users_router)
     app.include_router(branches_router)
-
+    app.include_router(catalog_router)
     return app
