@@ -6,6 +6,8 @@ export interface Branch {
   name: string
   address: string
   is_active: boolean
+  can_delete: boolean
+  assigned_users_count: number
 }
 
 export interface BranchList {
@@ -50,6 +52,20 @@ async function request<T>(
 export const listBranches = () =>
   request<BranchList>('')
 
+export interface AssignedUser {
+  id: string
+  name: string
+  email: string
+  roles: string[]
+  is_active: boolean
+}
+
+export const listAssignedUsers = (branchId: string) =>
+  request<{ users: AssignedUser[] }>(`/${branchId}/users`, 'GET', undefined, {
+    403: 'No tienes permiso para consultar los usuarios de esta sucursal.',
+    404: 'La sucursal ya no está disponible.',
+  })
+
 export const createBranch = (data: NewBranchInput) =>
   request<Branch>(
     '',
@@ -73,6 +89,9 @@ export const updateBranch = (
     },
   )
 
+export const activateBranch = (id: string) =>
+  request<Branch>(`/${id}/activate`, 'POST')
+
 export const deactivateBranch = (id: string) =>
   request<Branch>(
     `/${id}/deactivate`,
@@ -83,3 +102,14 @@ export const deactivateBranch = (id: string) =>
         'No se puede desactivar la sucursal porque tiene usuarios activos asignados.',
     },
   )
+
+export async function deleteBranch(id: string, confirmationId: string): Promise<void> {
+  await apiRequest(`/api/branches/${id}/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirmation_id: confirmationId }),
+  }, {
+    409: 'No se puede eliminar: existen usuarios o registros asociados a esta sucursal.',
+    422: 'Escribe el ID completo de la sucursal para confirmar.',
+  })
+}

@@ -12,7 +12,7 @@ from app.auth.sessions import SessionRepository
 from app.auth.state import AuthState
 from app.config import Settings
 from app.main import create_app
-from app.models import SesionInterna, UsuarioInterno
+from app.models import SesionInterna, Sucursal, UsuarioInterno
 
 
 def login(ctx, name="admin", password=PASSWORD):
@@ -34,6 +34,35 @@ def test_valid_login_and_private_cookie(setup):
     assert "Max-Age=32400" in cookie
     assert response.headers["cache-control"] == "no-store"
     assert setup.client.get("/api/auth/me").status_code == 200
+
+
+def test_login_and_me_include_assigned_branch(setup):
+    response = login(setup)
+    for payload in (response.json(), setup.client.get("/api/auth/me").json()):
+        assert payload["user"]["branch_id"] == str(setup.ids["branch"])
+        assert payload["user"]["branch_name"] == "Sucursal de prueba temporal"
+
+
+def test_me_refreshes_branch_after_assignment_without_new_login(setup):
+    login(setup)
+    original = setup.client.get("/api/auth/me").json()
+    branch_id = uuid4()
+    with setup.factory.begin() as db:
+        db.add(Sucursal(
+            id=branch_id, codigo=f"CTX-{setup.suffix[:20]}",
+            nombre="Sucursal nueva", direccion_local="Ficticia", activa=True,
+        ))
+    response = setup.client.patch(
+        f"/api/users/{setup.ids['admin']}", json={"branch_id": str(branch_id)},
+    )
+    assert response.status_code == 200
+    response = setup.client.get("/api/auth/me")
+    assert response.status_code == 200
+    current = response.json()
+    assert current["user"]["branch_id"] == str(branch_id)
+    assert current["user"]["branch_name"] == "Sucursal nueva"
+    assert current["user"]["permissions"] == original["user"]["permissions"]
+    assert current["expires_at"] == original["expires_at"]
 
 
 @pytest.mark.parametrize(

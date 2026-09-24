@@ -1,11 +1,14 @@
+import ActionIcon from '../ActionIcon'
 // HU: E1-H5 - Crear, actualizar y desactivar sucursales
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError } from '../../../services/http'
 import BranchDialog, { type BranchEditor } from './BranchDialog'
 import {
+  activateBranch,
   createBranch,
   deactivateBranch,
+  deleteBranch,
   listBranches,
   updateBranch,
   type Branch,
@@ -23,7 +26,7 @@ export default function BranchesPage() {
   const [attempt, setAttempt] = useState(0)
 
   const [query, setQuery] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState('active')
 
   const [editor, setEditor] = useState<BranchEditor | null>(null)
   const [busy, setBusy] = useState(false)
@@ -69,14 +72,16 @@ export default function BranchesPage() {
   }, [attempt, navigate])
 
   function openEditor(value: BranchEditor) {
+    if (value.mode === 'delete' && !value.branch?.can_delete) return
     setError('')
     setMessage('')
     setEditor(value)
   }
 
   async function mutate(
-    operation: () => Promise<Branch>,
+    operation: () => Promise<Branch | void>,
     successMessage: string,
+    deletedId?: string,
   ) {
     if (sending.current) {
       return
@@ -90,6 +95,7 @@ export default function BranchesPage() {
       const saved = await operation()
 
       setBranches((current) => {
+        if (!saved) return current.filter((branch) => branch.id !== deletedId)
         const exists = current.some(
           (branch) => branch.id === saved.id,
         )
@@ -108,6 +114,14 @@ export default function BranchesPage() {
       setEditor(null)
       setMessage(successMessage)
     } catch (cause: unknown) {
+      if (deletedId && cause instanceof ApiError && cause.status === 409) {
+        setBranches((current) => current.map((branch) =>
+          branch.id === deletedId ? { ...branch, can_delete: false } : branch,
+        ))
+        setEditor(null)
+        setMessage(cause.message)
+        return
+      }
       if (cause instanceof ApiError && cause.status === 401) {
         navigate('/login', { replace: true })
         return
@@ -154,6 +168,12 @@ export default function BranchesPage() {
     }
   }
 
+  async function activate() {
+    if (!editor?.branch) return
+    const id = editor.branch.id
+    await mutate(() => activateBranch(id), 'Sucursal activada correctamente.')
+  }
+
   async function deactivate() {
     if (!editor?.branch) {
       return
@@ -165,6 +185,12 @@ export default function BranchesPage() {
       () => deactivateBranch(branchId),
       'Sucursal desactivada. Su registro se conserva.',
     )
+  }
+
+  async function remove(confirmationId: string) {
+    if (editor?.mode !== 'delete' || !editor.branch?.can_delete) return
+    const id = editor.branch.id
+    await mutate(() => deleteBranch(id, confirmationId), 'Sucursal eliminada definitivamente.', id)
   }
 
   if (loading) {
@@ -219,41 +245,7 @@ export default function BranchesPage() {
     (branch) => !branch.is_active,
   ).length
 
-  const availability =
-    branches.length > 0
-      ? Math.round((activeBranches / branches.length) * 100)
-      : 0
 
-  const statistics = [
-    {
-      label: 'Sucursales activas',
-      value: activeBranches,
-      detail: 'Ubicaciones operativas',
-      symbol: 'A',
-      style: 'green',
-    },
-    {
-      label: 'Sucursales registradas',
-      value: branches.length,
-      detail: 'Total en el sistema',
-      symbol: 'S',
-      style: 'purple',
-    },
-    {
-      label: 'Sucursales inactivas',
-      value: inactiveBranches,
-      detail: 'Registros históricos',
-      symbol: '!',
-      style: 'red',
-    },
-    {
-      label: 'Disponibilidad',
-      value: `${availability}%`,
-      detail: 'Sucursales habilitadas',
-      symbol: '%',
-      style: 'blue',
-    },
-  ]
 
   return (
     <div className="branches-page">
@@ -265,28 +257,11 @@ export default function BranchesPage() {
         </p>
       </header>
 
-      <div className="branches-statistics">
-        {statistics.map((statistic) => (
-          <section
-            className="branches-stat"
-            key={statistic.label}
-            aria-label={statistic.label}
-          >
-            <span
-              className={`branches-stat-icon ${statistic.style}`}
-              aria-hidden="true"
-            >
-              {statistic.symbol}
-            </span>
-
-            <div>
-              <p>{statistic.label}</p>
-              <strong>{statistic.value}</strong>
-              <small>{statistic.detail}</small>
-            </div>
-          </section>
-        ))}
-      </div>
+      <p className="access-summary" aria-label="Recuento de sucursales">
+        <span><strong>{branches.length}</strong> {branches.length === 1 ? 'sucursal' : 'sucursales'}</span>
+        <span><i className="access-summary-dot active" aria-hidden="true" /><strong>{activeBranches}</strong> activas</span>
+        <span><i className="access-summary-dot" aria-hidden="true" /><strong>{inactiveBranches}</strong> inactivas</span>
+      </p>
 
       <div className="branches-filters">
         <label className="branches-search">
@@ -315,16 +290,10 @@ export default function BranchesPage() {
           />
         </label>
 
-        <label>
-          <span className="sr-only">
-            Filtrar por estado
-          </span>
-
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="">Todos los estados</option>
+        <label className="branches-state-filter">
+          <span>Estado</span>
+          <select value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="">Todas</option>
             <option value="active">Activas</option>
             <option value="inactive">Inactivas</option>
           </select>
@@ -340,7 +309,7 @@ export default function BranchesPage() {
             })
           }
         >
-          + Nueva sucursal
+          <ActionIcon name="add" />Nueva sucursal
         </button>
       </div>
 
@@ -357,9 +326,10 @@ export default function BranchesPage() {
         <div className="branches-panel-heading">
           <div>
             <h2 id="branch-list-title">
-              Sucursales registradas
+              {status === 'active' ? 'Sucursales activas' : status === 'inactive' ? 'Sucursales inactivas' : 'Todas las sucursales'}
             </h2>
 
+            <p>Pulsa el nombre para gestionar la sucursal.</p>
             <p role="status">
               {filteredBranches.length}{' '}
               {filteredBranches.length === 1
@@ -368,12 +338,6 @@ export default function BranchesPage() {
             </p>
           </div>
 
-          <span className="branches-count">
-            {branches.length}{' '}
-            {branches.length === 1
-              ? 'sucursal total'
-              : 'sucursales totales'}
-          </span>
         </div>
 
         <div
@@ -388,8 +352,9 @@ export default function BranchesPage() {
                 <th scope="col">Sucursal</th>
                 <th scope="col">Código</th>
                 <th scope="col">Dirección</th>
+                <th scope="col">Usuarios asignados</th>
                 <th scope="col">Estado</th>
-                <th scope="col">Acciones</th>
+
               </tr>
             </thead>
 
@@ -398,7 +363,7 @@ export default function BranchesPage() {
                 <tr key={branch.id}>
                   <th scope="row">
                     <div className="branches-name">
-                      <strong>{branch.name}</strong>
+                      <button type="button" className="branches-open-profile" aria-label={`Abrir ficha de ${branch.name}`} onClick={() => openEditor({ mode: 'edit', branch })}>{branch.name}<ActionIcon name="edit" /></button>
                       <small title={branch.id}>
                         {branch.id.slice(0, 8)}
                       </small>
@@ -408,6 +373,7 @@ export default function BranchesPage() {
                   <td>{branch.code}</td>
 
                   <td>{branch.address}</td>
+                  <td>{branch.assigned_users_count}</td>
 
                   <td>
                     <span
@@ -421,38 +387,7 @@ export default function BranchesPage() {
                     </span>
                   </td>
 
-                  <td>
-                    <div className="branches-actions">
-                      <button
-                        type="button"
-                        aria-label={`Editar ${branch.name}`}
-                        onClick={() =>
-                          openEditor({
-                            mode: 'edit',
-                            branch,
-                          })
-                        }
-                      >
-                        Editar
-                      </button>
 
-                      {branch.is_active && (
-                        <button
-                          className="danger"
-                          type="button"
-                          aria-label={`Desactivar ${branch.name}`}
-                          onClick={() =>
-                            openEditor({
-                              mode: 'deactivate',
-                              branch,
-                            })
-                          }
-                        >
-                          Desactivar
-                        </button>
-                      )}
-                    </div>
-                  </td>
                 </tr>
               ))}
 
@@ -471,15 +406,7 @@ export default function BranchesPage() {
         </div>
       </section>
 
-      <section className="s1-check-note">
-        <h2>Desactivación controlada</h2>
-
-        <p>
-          Una sucursal no puede desactivarse mientras tenga usuarios
-          activos asignados. Primero debes reasignar o desactivar esas
-          cuentas.
-        </p>
-      </section>
+      
 
       {editor && (
         <BranchDialog
@@ -493,7 +420,10 @@ export default function BranchesPage() {
             }
           }}
           onSave={save}
+          onActivate={activate}
           onDeactivate={deactivate}
+          onDelete={remove}
+          branches={branches}
         />
       )}
     </div>

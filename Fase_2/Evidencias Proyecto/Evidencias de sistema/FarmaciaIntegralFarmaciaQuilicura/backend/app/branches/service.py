@@ -13,6 +13,10 @@ class AccessDenied(Exception):
     pass
 
 
+class InvalidConfirmation(Exception):
+    pass
+
+
 class BranchService:
     def __init__(self, repository: PostgresBranchRepository):
         self.repository = repository
@@ -28,6 +32,10 @@ class BranchService:
     def list_branches(self, actor: User):
         self.authorize(actor)
         return self.repository.list_branches()
+
+    def assigned_users(self, actor: User, branch_id: UUID):
+        self.authorize(actor)
+        return self.repository.assigned_users(branch_id)
 
     def create(
         self,
@@ -75,3 +83,13 @@ class BranchService:
         self.authorize(actor)
 
         return self.repository.deactivate(branch_id)
+
+    def activate(self, actor: User, branch_id: UUID) -> Branch:
+        self.authorize(actor)
+        return self.repository.activate(branch_id)
+
+    def delete(self, actor: User, branch_id: UUID, confirmation_id: UUID) -> None:
+        self.authorize(actor)
+        if confirmation_id != branch_id:
+            raise InvalidConfirmation
+        self.repository.delete(branch_id)

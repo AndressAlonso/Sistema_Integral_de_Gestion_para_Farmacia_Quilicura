@@ -107,12 +107,27 @@ class UserResponse(BaseModel):
     branch_id: UUID
     branch_name: str
     is_active: bool
+    can_delete: bool = False
+    deletion_block_reason: str | None = None
+
+
+class DeleteUser(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    confirmation_email: EmailStr
+
+
+class RolePermissionResponse(BaseModel):
+    code: str
+    description: str
+    implemented: bool
 
 
 class RoleResponse(BaseModel):
     id: UUID
     code: str
     name: str
+    description: str
+    permissions: list[RolePermissionResponse]
 
 
 class BranchResponse(BaseModel):

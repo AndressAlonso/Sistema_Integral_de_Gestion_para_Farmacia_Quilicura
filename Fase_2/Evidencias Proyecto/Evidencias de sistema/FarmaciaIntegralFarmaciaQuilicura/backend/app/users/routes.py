@@ -1,11 +1,24 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.auth.routes import authenticated_user, check_origin
-from app.auth.users import DuplicateEmail, InvalidReference, User, UserNotFound
-from app.users.schemas import CreateUser, UpdateUser, UserListResponse, UserResponse
+from app.auth.users import (
+    DuplicateEmail,
+    InvalidDeletionConfirmation,
+    InvalidReference,
+    User,
+    UserDeletionBlocked,
+    UserNotFound,
+)
+from app.users.schemas import (
+    CreateUser,
+    DeleteUser,
+    UpdateUser,
+    UserListResponse,
+    UserResponse,
+)
 from app.users.service import AccessDenied, UserService
 
 
@@ -34,6 +47,10 @@ def conflict_response(operation):
         return operation()
     except DuplicateEmail:
         raise HTTPException(409, "Ya existe un usuario con ese correo.") from None
+    except InvalidDeletionConfirmation:
+        raise HTTPException(422, "El correo de confirmación no coincide.") from None
+    except UserDeletionBlocked as exc:
+        raise HTTPException(409, str(exc)) from None
     except UserNotFound:
         raise HTTPException(404, "El usuario no existe.") from None
     except InvalidReference:
@@ -46,8 +63,15 @@ def conflict_response(operation):
 
 @router.get("", response_model=UserListResponse)
 def list_users(request: Request, actor: Actor):
+    users = service(request).list_users(actor)
+    options = request.app.state.users.deletion_options(actor.id)
     return {
-        "users": service(request).list_users(actor),
+        "users": [
+            UserResponse.model_validate(user).model_copy(update={
+                "can_delete": user.id in options and options[user.id] is None,
+                "deletion_block_reason": options.get(user.id),
+            }) for user in users
+        ],
         **request.app.state.users.options(),
         "current_user": actor,
     }
@@ -69,3 +93,16 @@ def update_user(user_id: UserId, data: UpdateUser, request: Request, actor: Acto
 def deactivate_user(user_id: UserId, request: Request, actor: Actor):
     check_origin(request)
     return conflict_response(lambda: service(request).deactivate(actor, user_id))
+
+
+@router.post("/{user_id}/delete", status_code=204, response_class=Response)
+def delete_user(user_id: UserId, data: DeleteUser, request: Request, actor: Actor):
+    check_origin(request)
+    conflict_response(lambda: service(request).delete(actor, user_id, str(data.confirmation_email)))
+    return Response(status_code=204)
+
+
+@router.post("/{user_id}/activate", response_model=UserResponse)
+def activate_user(user_id: UserId, request: Request, actor: Actor):
+    check_origin(request)
+    return conflict_response(lambda: service(request).activate(actor, user_id))

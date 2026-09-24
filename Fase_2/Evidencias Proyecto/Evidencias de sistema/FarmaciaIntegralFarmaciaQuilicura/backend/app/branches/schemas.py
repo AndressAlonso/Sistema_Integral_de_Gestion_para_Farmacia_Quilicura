@@ -105,7 +105,27 @@ class BranchResponse(BaseModel):
     name: str
     address: str
     is_active: bool
+    can_delete: bool
+    assigned_users_count: int = Field(ge=0)
 
 
 class BranchListResponse(BaseModel):
     branches: list[BranchResponse]
+
+
+class DeleteBranch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirmation_id: UUID
+
+
+class AssignedUserResponse(BaseModel):
+    id: UUID
+    name: str
+    email: str
+    roles: list[str]
+    is_active: bool
+
+
+class AssignedUserListResponse(BaseModel):
+    users: list[AssignedUserResponse]

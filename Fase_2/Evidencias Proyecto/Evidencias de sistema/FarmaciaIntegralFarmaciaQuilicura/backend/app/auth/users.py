@@ -4,11 +4,12 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from sqlalchemy import select, update
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.models import Rol, SesionInterna, Sucursal, UsuarioInterno
+from app.role_catalog import ADMIN_ROLE, PERMISSIONS, ROLE_CATALOG
 
 
 class User(BaseModel):
@@ -43,12 +44,77 @@ class InvalidReference(Exception):
     pass
 
 
+class UserDeletionBlocked(Exception):
+    pass
+
+
+class InvalidDeletionConfirmation(Exception):
+    pass
+
+
 class PostgresUserRepository:
     def __init__(
         self,
         session_factory: sessionmaker[Session],
     ):
         self.session_factory = session_factory
+
+    @staticmethod
+    def _lock_access_changes(db: Session) -> None:
+        # Serializa cambios de estado/roles y borrados que protegen al último administrador.
+        db.execute(text("SELECT pg_advisory_xact_lock(73412002)"))
+
+    @staticmethod
+    def _deletion_reason(row, actor_id, active_admins):
+        if row.id == actor_id:
+            return "No puedes eliminar tu propia cuenta."
+        if row.activo and any(role.codigo == ADMIN_ROLE for role in row.roles) and active_admins <= 1:
+            return "No se puede eliminar al último administrador activo."
+        return None
+
+    @staticmethod
+    def _active_admin_count(db: Session) -> int:
+        return db.scalar(select(func.count()).select_from(UsuarioInterno).where(
+            UsuarioInterno.activo.is_(True),
+            UsuarioInterno.roles.any(Rol.codigo == ADMIN_ROLE),
+        ))
+
+    def deletion_options(self, actor_id: UUID) -> dict:
+        with self.session_factory() as db:
+            active_admins = self._active_admin_count(db)
+            rows = db.scalars(select(UsuarioInterno))
+            return {
+                row.id: self._deletion_reason(row, actor_id, active_admins)
+                for row in rows
+            }
+
+    def delete(self, actor_id: UUID, user_id: UUID, confirmation_email: str) -> None:
+        try:
+            with self.session_factory.begin() as db:
+                self._lock_access_changes(db)
+                row = db.scalar(select(UsuarioInterno).where(
+                    UsuarioInterno.id == user_id,
+                ).with_for_update(of=UsuarioInterno))
+                if row is None:
+                    raise UserNotFound
+                if row.correo != confirmation_email.strip().lower():
+                    raise InvalidDeletionConfirmation
+                reason = self._deletion_reason(
+                    row, actor_id, self._active_admin_count(db),
+                )
+                if reason:
+                    raise UserDeletionBlocked(reason)
+                db.execute(delete(SesionInterna).where(SesionInterna.usuario_id == user_id))
+                row.roles.clear()
+                db.flush()
+                db.delete(row)
+                db.flush()
+        except IntegrityError as exc:
+            if getattr(exc.orig, "sqlstate", None) == "23503":
+                raise UserDeletionBlocked(
+                    "El usuario tiene registros asociados. Utiliza Desactivar."
+                ) from None
+            raise
 
     @staticmethod
     def _to_user(row: UsuarioInterno) -> User:
@@ -150,6 +216,20 @@ class PostgresUserRepository:
                         "id": role.id,
                         "code": role.codigo,
                         "name": role.nombre,
+                        "description": ROLE_CATALOG[role.codigo].description
+                        if role.codigo in ROLE_CATALOG else "Rol personalizado del sistema.",
+                        "permissions": [
+                            {
+                                "code": permission.codigo,
+                                "description": PERMISSIONS.get(
+                                    permission.codigo, (permission.descripcion, False)
+                                )[0],
+                                "implemented": PERMISSIONS.get(
+                                    permission.codigo, (permission.descripcion, False)
+                                )[1],
+                            }
+                            for permission in sorted(role.permisos, key=lambda item: item.codigo)
+                        ],
                     }
                     for role in roles
                 ],
@@ -272,6 +352,7 @@ class PostgresUserRepository:
     ) -> User:
         try:
             with self.session_factory.begin() as db:
+                self._lock_access_changes(db)
                 row = db.scalar(
                     select(UsuarioInterno)
                     .where(

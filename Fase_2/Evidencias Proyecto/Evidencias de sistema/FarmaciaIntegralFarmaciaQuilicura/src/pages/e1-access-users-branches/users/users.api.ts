@@ -10,12 +10,20 @@ export interface InternalUser {
   branch_id: string
   branch_name: string
   is_active: boolean
+  can_delete: boolean
+  deletion_block_reason: string | null
 }
 
 export interface Role {
   id: string
   code: string
   name: string
+  description: string
+  permissions: Array<{
+    code: string
+    description: string
+    implemented: boolean
+  }>
 }
 
 export interface Branch {
@@ -87,3 +95,17 @@ export const deactivateUser = (id: string) =>
     `/${id}/deactivate`,
     'POST',
   )
+
+export const activateUser = (id: string) =>
+  request<InternalUser>(`/${id}/activate`, 'POST')
+
+export async function deleteUser(id: string, confirmationEmail: string): Promise<void> {
+  await apiRequest(`/api/users/${id}/delete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ confirmation_email: confirmationEmail }),
+  }, {
+    422: 'El correo de confirmación no coincide con el usuario.',
+    409: 'No se puede eliminar esta cuenta: puede ser tu cuenta, el último administrador activo o tener otros registros asociados. Utiliza Desactivar cuando corresponda.',
+  })
+}

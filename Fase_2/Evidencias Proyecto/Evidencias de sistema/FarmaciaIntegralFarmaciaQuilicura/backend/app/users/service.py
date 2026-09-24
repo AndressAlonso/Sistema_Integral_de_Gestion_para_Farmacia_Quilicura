@@ -60,3 +60,11 @@ class UserService:
     def deactivate(self, actor: User, user_id: UUID) -> User:
         self.authorize(actor)
         return self.repository.update(user_id, {"is_active": False})
+
+    def activate(self, actor: User, user_id: UUID) -> User:
+        self.authorize(actor)
+        return self.repository.update(user_id, {"is_active": True})
+
+    def delete(self, actor: User, user_id: UUID, confirmation_email: str) -> None:
+        self.authorize(actor)
+        self.repository.delete(actor.id, user_id, confirmation_email)

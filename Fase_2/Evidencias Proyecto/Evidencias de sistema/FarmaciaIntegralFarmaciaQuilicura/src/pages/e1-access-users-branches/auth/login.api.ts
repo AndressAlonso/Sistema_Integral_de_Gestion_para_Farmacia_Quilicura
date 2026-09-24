@@ -3,7 +3,7 @@ import { ApiError as AuthError, apiRequest } from '../../../services/http'
 export { ApiError as AuthError } from '../../../services/http'
 
 export interface AuthSession {
-  user: { id: string; email: string; name: string; permissions: string[] }
+  user: { id: string; email: string; name: string; permissions: string[]; roles: string[]; branch_id: string; branch_name: string }
   expires_at: string
 }
 
@@ -25,7 +25,12 @@ async function requestSession(path: string, credentials?: { email: string; passw
   try {
     const data: AuthSession = await response.json()
     if (typeof data.user?.id !== 'string' || typeof data.user?.email !== 'string' ||
+      !Array.isArray(data.user?.roles) ||
+      !data.user.roles.every(role => typeof role === 'string') ||
       !Array.isArray(data.user?.permissions) ||
+      !data.user.permissions.every(permission => typeof permission === 'string') ||
+      typeof data.user.branch_id !== 'string' || !data.user.branch_id ||
+      typeof data.user.branch_name !== 'string' ||
       !Number.isFinite(Date.parse(data.expires_at))) throw new Error('Invalid session')
     return data
   } catch {

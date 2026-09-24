@@ -1,29 +1,48 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useLocation, useOutletContext } from 'react-router-dom'
+import { useState, type CSSProperties } from 'react'
+import { Navigate, NavLink, Outlet, useLocation, useOutletContext } from 'react-router-dom'
 import logo from '../assets/logo-farmacia-quilicura.jpg'
 import LogoutButton from '../pages/e1-access-users-branches/auth/LogoutButton'
 import type { AuthSession } from '../pages/e1-access-users-branches/auth/login.api'
-import { adminNavigation } from './adminNavigation'
+import { adminNavigation, canAccessAdminPage } from './adminNavigation'
 import './admin-layout.css'
 
 export default function AdminLayout() {
   const session = useOutletContext<AuthSession>()
   const { pathname } = useLocation()
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(() => {
+    try {
+      const preference = localStorage.getItem('sigfq-menu-expanded')
+      if (preference !== null) return preference === 'true'
+    } catch { /* El menú funciona también sin almacenamiento disponible. */ }
+    return !window.matchMedia('(max-width: 800px)').matches
+  })
+  const navigation = adminNavigation.filter(item => canAccessAdminPage(item.path, session.user.permissions, session.user.roles))
+  function toggleMenu() {
+    const next = !expanded
+    setExpanded(next)
+    try { localStorage.setItem('sigfq-menu-expanded', String(next)) } catch { /* Preferencia opcional. */ }
+  }
+  function closeMobileMenu() {
+    if (window.matchMedia('(max-width: 800px)').matches) setExpanded(false)
+  }
   const current = adminNavigation.find(item => item.path === pathname)
 
+  if (!canAccessAdminPage(pathname, session.user.permissions, session.user.roles)) {
+    return <Navigate to="/session" replace />
+  }
+
   return (
-    <div className={`admin-shell${expanded ? ' admin-menu-open' : ''}`}>
+    <div className={`admin-shell${expanded ? ' admin-menu-open' : ' admin-menu-compact'}`}>
       <a className="admin-skip" href="#admin-content">Saltar al contenido</a>
       <aside className="admin-sidebar" id="admin-sidebar" aria-label="Menú principal">
-        <NavLink className="admin-brand" to="/session" onClick={() => setExpanded(false)} aria-label="Farmacia Quilicura, resumen">
-          <img src={logo} alt="Farmacia Quilicura — Cuidando tu salud" />
+        <NavLink className="admin-brand" to="/session" onClick={closeMobileMenu} aria-label="Farmacia Quilicura, resumen">
+          {expanded ? <img src={logo} alt="Farmacia Quilicura — Cuidando tu salud" /> : <span className="admin-brand-short" aria-hidden="true">FQ</span>}
         </NavLink>
-        <nav aria-label="Secciones del sistema">
-          {adminNavigation.filter(item => item.path !== '/admin/users' || session.user.permissions.includes('usuarios.gestionar')).map(item => (
-            <NavLink key={item.path} to={item.path} end onClick={() => setExpanded(false)} className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`}>
+        <nav aria-label="Secciones del sistema" style={{ '--nav-count': navigation.length } as CSSProperties}>
+          {navigation.map(item => (
+            <NavLink key={item.path} to={item.path} end onClick={closeMobileMenu} aria-label={item.label} title={!expanded ? item.label : undefined} className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={item.icon} /></svg>
-              <span>{item.label}</span>
+              <span className="admin-nav-label">{item.label}</span>
             </NavLink>
           ))}
         </nav>
@@ -31,7 +50,7 @@ export default function AdminLayout() {
       </aside>
       <div className="admin-workspace">
         <header className="admin-topbar">
-          <button className="admin-menu-toggle" type="button" aria-label={expanded ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={expanded} aria-controls="admin-sidebar" onClick={() => setExpanded(value => !value)}>
+          <button className="admin-menu-toggle" type="button" title={expanded ? 'Mostrar solo iconos' : 'Mostrar iconos y nombres'} aria-label={expanded ? 'Contraer menú a iconos' : 'Expandir menú'} aria-expanded={expanded} aria-controls="admin-sidebar" onClick={toggleMenu}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <span className="admin-section-name">{current?.label}</span>

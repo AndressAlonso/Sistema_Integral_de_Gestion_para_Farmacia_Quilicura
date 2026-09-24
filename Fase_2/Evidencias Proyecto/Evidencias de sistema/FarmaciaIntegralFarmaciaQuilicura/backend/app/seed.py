@@ -6,7 +6,8 @@ from sqlalchemy import select, text
 
 from app.auth.security import password_hasher
 from app.db import create_database_engine, create_session_factory
-from app.models import Permiso, Rol, Sucursal, UsuarioInterno
+from app.models import Sucursal, UsuarioInterno
+from app.role_catalog import sync_roles
 
 SUCURSALES = (
     (
@@ -27,62 +28,22 @@ CUENTAS = (
     (
         "interno@farmacia.cl",
         "Administrador de prueba",
-        "ADMIN",
+        "ADMINISTRADOR",
         True,
     ),
     (
         "operador@farmacia.cl",
         "Operador de prueba",
-        "OPERADOR",
+        "ENCARGADO_INVENTARIO",
         True,
     ),
     (
         "inactivo@farmacia.cl",
         "Usuario inactivo de prueba",
-        "OPERADOR",
+        "ENCARGADO_INVENTARIO",
         False,
     ),
 )
-
-PERMISOS = (
-    (
-        "usuarios.gestionar",
-        "Gestionar usuarios internos",
-    ),
-    (
-        "roles.gestionar",
-        "Gestionar roles y permisos",
-    ),
-    (
-        "sucursales.gestionar",
-        "Gestionar sucursales",
-    ),
-    (
-        "inventario.consultar",
-        "Consultar inventario",
-    ),
-)
-
-ROLES = (
-    (
-        "ADMIN",
-        "Administrador",
-        (
-            "usuarios.gestionar",
-            "roles.gestionar",
-            "sucursales.gestionar",
-            "inventario.consultar",
-        ),
-    ),
-    (
-        "OPERADOR",
-        "Operador",
-        (
-            "inventario.consultar",
-        ),
-    ),
-)
-
 
 def seed(db, password: str) -> int:
     if len(password) < 12:
@@ -116,61 +77,7 @@ def seed(db, password: str) -> int:
 
         sucursales[codigo] = sucursal
 
-    permisos = {}
-
-    for codigo, descripcion in PERMISOS:
-        permiso = db.scalar(
-            select(Permiso).where(
-                Permiso.codigo == codigo
-            )
-        )
-
-        if permiso is None:
-            permiso = Permiso(
-                codigo=codigo,
-                descripcion=descripcion,
-            )
-            db.add(permiso)
-            db.flush()
-
-        permisos[codigo] = permiso
-
-    roles = {}
-
-    for codigo, nombre, codigos_permisos in ROLES:
-        rol = db.scalar(
-            select(Rol).where(
-                Rol.codigo == codigo
-            )
-        )
-
-        permisos_esperados = [
-            permisos[codigo_permiso]
-            for codigo_permiso in codigos_permisos
-        ]
-
-        if rol is None:
-            rol = Rol(
-                codigo=codigo,
-                nombre=nombre,
-                permisos=permisos_esperados,
-            )
-            db.add(rol)
-            db.flush()
-        else:
-            codigos_existentes = {
-                permiso.codigo
-                for permiso in rol.permisos
-            }
-
-            rol.permisos.extend(
-                permiso
-                for permiso in permisos_esperados
-                if permiso.codigo
-                not in codigos_existentes
-            )
-
-        roles[codigo] = rol
+    roles = sync_roles(db)
 
     sucursal_principal = sucursales["LOCAL-01"]
     creados = 0

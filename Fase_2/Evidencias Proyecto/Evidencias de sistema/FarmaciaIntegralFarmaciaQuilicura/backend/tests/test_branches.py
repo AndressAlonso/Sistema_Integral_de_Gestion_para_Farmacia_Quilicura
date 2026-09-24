@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import select
 from test_auth import login
 
-from app.models import Sucursal
+from app.models import Sucursal, UsuarioInterno
 
 
 def branch_payload(setup, **changes):
@@ -360,6 +360,7 @@ def test_invalid_branch_update_is_rejected(
         ("POST", ""),
         ("PATCH", "/target"),
         ("POST", "/target/deactivate"),
+        ("POST", "/target/delete"),
     ],
 )
 def test_anonymous_and_operator_cannot_manage_branches(
@@ -375,6 +376,9 @@ def test_anonymous_and_operator_cannot_manage_branches(
     url = f"/api/branches{target_path}"
 
     body = None
+
+    if path == "/target/delete":
+        body = {"confirmation_id": str(setup.ids["branch"])}
 
     if method == "POST" and path == "":
         body = branch_payload(setup)
@@ -429,6 +433,7 @@ def test_missing_branch_returns_not_found(setup):
         ("POST", ""),
         ("PATCH", "/target"),
         ("POST", "/target/deactivate"),
+        ("POST", "/target/delete"),
     ],
 )
 def test_untrusted_origin_is_rejected(
@@ -446,6 +451,9 @@ def test_untrusted_origin_is_rejected(
     url = f"/api/branches{target_path}"
 
     body = None
+
+    if path == "/target/delete":
+        body = {"confirmation_id": str(setup.ids["branch"])}
 
     if method == "POST" and path == "":
         body = branch_payload(setup)
@@ -465,3 +473,87 @@ def test_untrusted_origin_is_rejected(
     )
 
     assert response.status_code == 403
+
+
+@pytest.mark.parametrize("active", [True, False])
+def test_delete_unassigned_branch_permanently(setup, active):
+    login(setup)
+    created = setup.client.post(
+        "/api/branches", json=branch_payload(setup, is_active=active),
+    )
+    assert created.status_code == 201
+    branch_id = created.json()["id"]
+    response = setup.client.post(
+        f"/api/branches/{branch_id}/delete",
+        json={"confirmation_id": branch_id},
+    )
+    assert response.status_code == 204
+    assert response.content == b""
+    with setup.factory() as db:
+        assert db.get(Sucursal, UUID(branch_id)) is None
+    assert branch_id not in {
+        row["id"] for row in setup.client.get("/api/branches").json()["branches"]
+    }
+    assert setup.client.post(
+        f"/api/branches/{branch_id}/delete", json={"confirmation_id": branch_id},
+    ).status_code == 404
+
+
+@pytest.mark.parametrize("body", [{}, {"confirmation_id": "invalid"},
+                                  {"confirmation_id": str(uuid4())}])
+def test_delete_requires_matching_confirmation(setup, body):
+    login(setup)
+    created = setup.client.post("/api/branches", json=branch_payload(setup))
+    branch_id = created.json()["id"]
+    response = setup.client.post(f"/api/branches/{branch_id}/delete", json=body)
+    assert response.status_code == 422
+    with setup.factory() as db:
+        assert db.get(Sucursal, UUID(branch_id)) is not None
+
+
+@pytest.mark.parametrize("active", [True, False])
+def test_delete_rejects_assigned_users_even_inactive(setup, active):
+    login(setup)
+    created = setup.client.post("/api/branches", json=branch_payload(setup))
+    branch_id = created.json()["id"]
+    with setup.factory.begin() as db:
+        user = db.get(UsuarioInterno, setup.ids["operator"])
+        user.sucursal_id = UUID(branch_id)
+        user.activo = active
+    listed = setup.client.get("/api/branches").json()["branches"]
+    assert next(row for row in listed if row["id"] == branch_id)["can_delete"] is False
+    edited = setup.client.patch(
+        f"/api/branches/{branch_id}", json={"name": "Sucursal asociada"},
+    )
+    assert edited.status_code == 200
+    assert edited.json()["can_delete"] is False
+    response = setup.client.post(
+        f"/api/branches/{branch_id}/delete", json={"confirmation_id": branch_id},
+    )
+    assert response.status_code == 409
+    with setup.factory() as db:
+        assert db.get(Sucursal, UUID(branch_id)) is not None
+        assert db.get(UsuarioInterno, setup.ids["operator"]).sucursal_id == UUID(branch_id)
+
+
+def test_deletion_availability_updates_after_assignment_and_reassignment(setup):
+    login(setup)
+    created = setup.client.post("/api/branches", json=branch_payload(setup))
+    assert created.status_code == 201
+    assert created.json()["can_delete"] is True
+    branch_id = created.json()["id"]
+
+    def listed_availability():
+        rows = setup.client.get("/api/branches").json()["branches"]
+        return next(row for row in rows if row["id"] == branch_id)["can_delete"]
+
+    assert listed_availability() is True
+    with setup.factory.begin() as db:
+        db.get(UsuarioInterno, setup.ids["operator"]).sucursal_id = UUID(branch_id)
+    assert listed_availability() is False
+    with setup.factory.begin() as db:
+        db.get(UsuarioInterno, setup.ids["operator"]).sucursal_id = setup.ids["branch"]
+    assert listed_availability() is True
+    deactivated = setup.client.post(f"/api/branches/{branch_id}/deactivate")
+    assert deactivated.status_code == 200
+    assert deactivated.json()["can_delete"] is True

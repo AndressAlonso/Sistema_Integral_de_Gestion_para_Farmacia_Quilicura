@@ -61,3 +61,30 @@ export const adminNavigation = [
     icon: 'M3 21h18M5 21V5h14v16M9 9h2M13 9h2M9 13h2M13 13h2',
   },
 ] as const
+
+// Las pantallas funcionales conservan sus permisos del backend.
+const pagePermissions: Readonly<Record<string, string>> = {
+  '/admin/users': 'usuarios.gestionar',
+  '/admin/branches': 'sucursales.gestionar',
+  '/admin/inventory': 'inventario.consultar',
+}
+
+// Visibilidad de pantallas en blanco según las responsabilidades acordadas.
+// No concede permisos para operaciones futuras.
+const placeholderRoles: Readonly<Record<string, readonly string[]>> = {
+  '/admin/products': ['ADMINISTRADOR', 'QUIMICO_FARMACEUTICO'],
+  '/admin/transfers': ['ADMINISTRADOR', 'ENCARGADO_INVENTARIO'],
+  '/admin/orders': ['ADMINISTRADOR', 'ENCARGADO_PEDIDOS'],
+  '/admin/pos': ['ADMINISTRADOR', 'VENDEDOR_CAJERO'],
+  '/admin/cash': ['ADMINISTRADOR', 'VENDEDOR_CAJERO'],
+  '/admin/promotions': ['ADMINISTRADOR'],
+  '/admin/audit': ['ADMINISTRADOR', 'SOCIO'],
+  '/admin/reports': ['ADMINISTRADOR', 'SOCIO'],
+}
+
+export function canAccessAdminPage(path: string, permissions: readonly string[], roles: readonly string[]): boolean {
+  if (path === '/session') return true
+  const required = pagePermissions[path]
+  if (required !== undefined) return permissions.includes(required)
+  return placeholderRoles[path]?.some(role => roles.includes(role)) ?? false
+}

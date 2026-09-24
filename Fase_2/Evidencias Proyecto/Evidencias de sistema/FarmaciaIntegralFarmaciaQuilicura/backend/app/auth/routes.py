@@ -29,6 +29,9 @@ class PublicUser(BaseModel):
     email: EmailStr
     name: str
     permissions: list[str]
+    roles: list[str]
+    branch_id: UUID
+    branch_name: str
 
 
 class SessionResponse(BaseModel):
@@ -86,7 +89,8 @@ def login(data: LoginRequest, request: Request, response: Response) -> SessionRe
     )
     return SessionResponse(
         user=PublicUser(
-            id=user.id, email=user.email, name=user.name, permissions=user.permissions
+            id=user.id, email=user.email, name=user.name, permissions=user.permissions, roles=user.roles,
+            branch_id=user.branch_id, branch_name=user.branch_name,
         ),
         expires_at=expires,
     )
@@ -112,7 +116,8 @@ def me(request: Request) -> SessionResponse:
     user, claims = authenticated_user(request)
     return SessionResponse(
         user=PublicUser(
-            id=user.id, email=user.email, name=user.name, permissions=user.permissions
+            id=user.id, email=user.email, name=user.name, permissions=user.permissions, roles=user.roles,
+            branch_id=user.branch_id, branch_name=user.branch_name,
         ),
         expires_at=datetime.fromtimestamp(claims["exp"], timezone.utc),
     )
