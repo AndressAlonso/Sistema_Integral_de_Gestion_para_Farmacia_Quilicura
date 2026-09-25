@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError } from '../../../services/http'
 import UserDialog, { type UserEditor } from './UserDialog'
+import RoleDialog from './RoleDialog'
 import { activateUser, createUser, deactivateUser, deleteUser, listUsers, updateUser, type InternalUser, type NewUserInput, type UserInput, type UserList } from './users.api'
 import './users.css'
 
@@ -16,6 +17,7 @@ export default function UsersPage() {
   const [role, setRole] = useState('')
   const [status, setStatus] = useState('')
   const [editor, setEditor] = useState<UserEditor | null>(null)
+  const [showRoles, setShowRoles] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -130,9 +132,11 @@ export default function UsersPage() {
         <label className="users-search"><span className="sr-only">Buscar por nombre o correo</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 5 5" /></svg><input type="search" placeholder="Buscar por nombre o correo…" value={query} onChange={event => setQuery(event.target.value)} /></label>
         <label><span className="sr-only">Filtrar por rol</span><select value={role} onChange={event => setRole(event.target.value)}><option value="">Todos los roles</option>{data.roles.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
         <label><span className="sr-only">Filtrar por estado</span><select value={status} onChange={event => setStatus(event.target.value)}><option value="">Todos los estados</option><option value="active">Activos</option><option value="inactive">Inactivos</option></select></label>
+        {data.current_user.permissions.includes('roles.gestionar') && <button type="button" className="users-button" onClick={() => setShowRoles(true)}><ActionIcon name="edit" />Gestionar roles</button>}
         <button className="users-button primary" disabled={!data.current_user.permissions.includes('roles.gestionar')} title={!data.current_user.permissions.includes('roles.gestionar') ? 'Se requiere permiso para asignar roles' : undefined} onClick={() => openEditor({ mode: 'create', user: null })}><ActionIcon name="add" />Nuevo usuario</button>
       </div>
       {message && <p className="users-success" role="status">{message}</p>}
+      {showRoles && data.current_user.permissions.includes('roles.gestionar') && <RoleDialog onClose={() => setShowRoles(false)} onSaved={() => setAttempt(value => value + 1)} />}
       <section className="users-panel" aria-labelledby="users-list-title">
         <div className="users-panel-heading"><h2 id="users-list-title">Usuarios internos</h2><p>Pulsa el nombre para gestionar la cuenta.</p><p role="status">{users.length} {users.length === 1 ? 'usuario encontrado' : 'usuarios encontrados'}</p></div>
         <div className="users-table-scroll" tabIndex={0} role="region" aria-label="Listado de usuarios internos">

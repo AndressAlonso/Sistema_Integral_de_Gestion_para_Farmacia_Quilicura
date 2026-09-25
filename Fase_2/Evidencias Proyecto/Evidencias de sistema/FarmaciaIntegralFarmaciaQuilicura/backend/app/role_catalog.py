@@ -49,7 +49,7 @@ ROLE_CATALOG = {
 # Solo permisos existentes. El alcance futuro no habilita módulos por adelantado.
 PERMISSIONS = {
     "usuarios.gestionar": ("Gestionar usuarios internos", True),
-    "roles.gestionar": ("Asignar roles existentes a usuarios", True),
+    "roles.gestionar": ("Crear, configurar y asignar roles", True),
     "sucursales.gestionar": ("Gestionar sucursales", True),
     "inventario.consultar": ("Consultar inventario", False),
 }
@@ -80,11 +80,11 @@ def sync_roles(db: Session) -> dict[str, Rol]:
     for code, definition in ROLE_CATALOG.items():
         role = db.scalar(select(Rol).where(Rol.codigo == code))
         if role is None:
-            role = Rol(codigo=code, nombre=definition.name)
+            role = Rol(
+                codigo=code, nombre=definition.name,
+                permisos=[permissions[key] for key in definition.permissions],
+            )
             db.add(role)
-        role.nombre = definition.name
-        existing = {permission.codigo for permission in role.permisos}
-        role.permisos.extend(permissions[key] for key in definition.permissions if key not in existing)
         roles[code] = role
     db.flush()
     return roles

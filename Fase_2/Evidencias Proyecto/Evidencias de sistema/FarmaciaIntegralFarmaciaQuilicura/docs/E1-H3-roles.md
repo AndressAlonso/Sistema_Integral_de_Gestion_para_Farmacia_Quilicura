@@ -26,7 +26,8 @@ código viejo y el nuevo, aborta la transacción para evitar una fusión no auto
 
 La descripción acordada se mantiene en `app/role_catalog.py`, sin añadir columnas.
 Los permisos que entrega la API se leen de PostgreSQL; no se calculan por nombre
-en React. La carga es idempotente y conserva permisos personalizados existentes.
+en React. La carga es idempotente: configura permisos y nombre iniciales solo
+para roles nuevos; conserva toda configuración de roles existentes.
 
 Desde backend, con el `.env` del entorno correcto:
 
@@ -64,6 +65,12 @@ no concede permisos futuros ni sustituye la autorización del backend.
 
 Decisión confirmada: los permisos del usuario se asignan mediante sus roles.
 No se requiere selección independiente de permisos por usuario para este alcance.
+
+## Gestor administrativo
+
+El alcance se amplió con creación y edición de roles y permisos existentes.
+Ver `E1-H3-gestor-roles.md` para contratos, protección del último gestor,
+coordinación de la carga inicial y pruebas. No se agrega CRUD de permisos.
 
 ## Verificación
 

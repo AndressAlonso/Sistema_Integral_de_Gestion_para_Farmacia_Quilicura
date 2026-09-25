@@ -12,9 +12,20 @@ from app.auth.users import (
     UserDeletionBlocked,
     UserNotFound,
 )
+from app.users.roles_repository import RoleRepository
+from app.users.roles_service import (
+    InvalidPermissions,
+    RoleConflict,
+    RoleNotFound,
+    RoleService,
+)
 from app.users.schemas import (
+    CreateRole,
     CreateUser,
     DeleteUser,
+    ManagedRoleResponse,
+    RoleCatalogResponse,
+    UpdateRole,
     UpdateUser,
     UserListResponse,
     UserResponse,
@@ -59,6 +70,40 @@ def conflict_response(operation):
         ) from None
     except AccessDenied:
         raise HTTPException(403, "No tienes permiso para asignar roles.") from None
+
+
+def role_service(request: Request) -> RoleService:
+    return RoleService(RoleRepository(request.app.state.users.session_factory))
+
+
+def role_response(operation):
+    try:
+        return operation()
+    except AccessDenied:
+        raise HTTPException(403, "No tienes permiso para gestionar roles.") from None
+    except RoleNotFound:
+        raise HTTPException(404, "El rol no existe.") from None
+    except InvalidPermissions:
+        raise HTTPException(422, "Selecciona permisos existentes y válidos.") from None
+    except RoleConflict as exc:
+        raise HTTPException(409, str(exc)) from None
+
+
+@router.get("/roles", response_model=RoleCatalogResponse)
+def list_roles(request: Request, actor: Actor):
+    return role_response(lambda: role_service(request).catalog(actor))
+
+
+@router.post("/roles", response_model=ManagedRoleResponse, status_code=201)
+def create_role(data: CreateRole, request: Request, actor: Actor):
+    check_origin(request)
+    return role_response(lambda: role_service(request).save(actor, data))
+
+
+@router.patch("/roles/{role_id}", response_model=ManagedRoleResponse)
+def update_role(role_id: UUID, data: UpdateRole, request: Request, actor: Actor):
+    check_origin(request)
+    return role_response(lambda: role_service(request).save(actor, data, role_id))
 
 
 @router.get("", response_model=UserListResponse)

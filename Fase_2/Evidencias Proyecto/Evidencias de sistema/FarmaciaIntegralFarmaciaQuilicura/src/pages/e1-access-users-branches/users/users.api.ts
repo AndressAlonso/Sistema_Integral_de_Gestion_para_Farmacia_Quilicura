@@ -109,3 +109,43 @@ export async function deleteUser(id: string, confirmationEmail: string): Promise
     409: 'No se puede eliminar esta cuenta: puede ser tu cuenta, el último administrador activo o tener otros registros asociados. Utiliza Desactivar cuando corresponda.',
   })
 }
+
+export interface ManagedRole {
+  id: string
+  code: string
+  name: string
+  permission_ids: string[]
+  users_count: number
+  revision: string
+}
+
+export interface RoleCatalog {
+  roles: ManagedRole[]
+  permissions: Array<Role['permissions'][number] & { id: string; module: string }>
+}
+
+export interface RoleInput {
+  name: string
+  permission_ids: string[]
+}
+
+export async function listRoles(): Promise<RoleCatalog> {
+  return (await apiRequest('/api/users/roles')).json() as Promise<RoleCatalog>
+}
+
+export async function saveRole(
+  target: ManagedRole | null,
+  data: RoleInput & { code: string },
+): Promise<ManagedRole> {
+  const response = await apiRequest(target ? `/api/users/roles/${target.id}` : '/api/users/roles', {
+    method: target ? 'PATCH' : 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(target
+      ? { name: data.name, permission_ids: data.permission_ids, revision: target.revision }
+      : data),
+  }, {
+    409: 'No se pudo guardar: el código ya existe, el rol cambió o dejarías el sistema sin gestión de accesos. Recarga la lista y revisa los permisos.',
+    422: 'Revisa el nombre, el código y los permisos seleccionados.',
+  })
+  return response.json() as Promise<ManagedRole>
+}

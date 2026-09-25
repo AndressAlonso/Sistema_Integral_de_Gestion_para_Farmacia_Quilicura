@@ -141,3 +141,48 @@ class UserListResponse(BaseModel):
     roles: list[RoleResponse]
     branches: list[BranchResponse]
     current_user: UserResponse
+
+
+class RoleWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    name: str = Field(min_length=1, max_length=100)
+    permission_ids: list[UUID] = Field(max_length=500)
+
+    @field_validator("permission_ids")
+    @classmethod
+    def unique_permissions(cls, value):
+        if len(value) != len(set(value)):
+            raise ValueError("Permisos duplicados")
+        return value
+
+
+class CreateRole(RoleWrite):
+    code: str = Field(min_length=1, max_length=60, pattern=r"^[A-Z][A-Z0-9_]*$")
+
+    @field_validator("code", mode="before")
+    @classmethod
+    def normalize_code(cls, value):
+        return value.strip().upper() if isinstance(value, str) else value
+
+
+class UpdateRole(RoleWrite):
+    revision: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class ManagedRoleResponse(BaseModel):
+    id: UUID
+    code: str
+    name: str
+    permission_ids: list[UUID]
+    users_count: int
+    revision: str
+
+
+class AvailablePermissionResponse(RolePermissionResponse):
+    id: UUID
+    module: str
+
+
+class RoleCatalogResponse(BaseModel):
+    roles: list[ManagedRoleResponse]
+    permissions: list[AvailablePermissionResponse]
