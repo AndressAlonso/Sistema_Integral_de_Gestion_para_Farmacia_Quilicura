@@ -77,6 +77,8 @@ def create_app(settings: Settings | None = None, session_factory=None) -> FastAP
             detail = "Ingresa un nombre de categoría de entre 1 y 150 caracteres."
         elif request.url.path.startswith("/api/products"):
             detail = "Revisa los datos del producto."
+        elif request.url.path.startswith("/api/products"):
+            detail = "Revisa nombre, SKU, categoría, precio y códigos de barras."
         else:
             detail = "Revisa el correo y la contraseña ingresados."
 
