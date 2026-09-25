@@ -91,10 +91,9 @@ export const updateUser = (
   request<InternalUser>(`/${id}`, 'PATCH', data)
 
 export const deactivateUser = (id: string) =>
-  request<InternalUser>(
-    `/${id}/deactivate`,
-    'POST',
-  )
+  apiRequest(`/api/users/${id}/deactivate`, { method: 'POST' }, {
+    409: 'No puedes desactivar tu propia cuenta.',
+  }).then(response => response.json() as Promise<InternalUser>)
 
 export const activateUser = (id: string) =>
   request<InternalUser>(`/${id}/activate`, 'POST')

@@ -151,7 +151,7 @@ export default function UsersPage() {
           </tbody></table>
         </div>
       </section>
-      {editor && <UserDialog key={`${editor.mode}-${editor.user?.id ?? 'new'}`} editor={editor} roles={data.roles} branches={data.branches} canAssignRoles={data.current_user.permissions.includes('roles.gestionar')} busy={busy} error={error} onClose={() => { if (!sending.current) setEditor(null) }} onSave={save} onActivate={activate} onDeactivate={deactivate} onDelete={remove} />}
+      {editor && <UserDialog key={`${editor.mode}-${editor.user?.id ?? 'new'}`} editor={editor} currentUserId={data.current_user.id} roles={data.roles} branches={data.branches} canAssignRoles={data.current_user.permissions.includes('roles.gestionar')} busy={busy} error={error} onClose={() => { if (!sending.current) setEditor(null) }} onSave={save} onActivate={activate} onDeactivate={deactivate} onDelete={remove} />}
     </div>
   )
 }

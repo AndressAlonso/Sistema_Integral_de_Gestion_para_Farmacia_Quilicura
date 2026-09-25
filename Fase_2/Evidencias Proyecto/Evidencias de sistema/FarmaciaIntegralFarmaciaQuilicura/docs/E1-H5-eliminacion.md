@@ -72,6 +72,8 @@ Usar solo registros descartables: el borrado es definitivo.
 # Ficha de sucursal y reactivación
 
 La tabla abre la ficha al pulsar el nombre; las acciones están dentro del modal.
+La eliminación se procesa desde la ficha aunque la página la haya abierto en
+modo edición; la elegibilidad y la confirmación se verifican antes de borrar.
 Editar conserva el formulario y sus validaciones. Activar/desactivar requieren
 confirmación; eliminar conserva la confirmación mediante ID y `can_delete`.
 Confirmar estado/eliminación no guarda los cambios pendientes del formulario.

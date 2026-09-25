@@ -188,7 +188,7 @@ export default function BranchesPage() {
   }
 
   async function remove(confirmationId: string) {
-    if (editor?.mode !== 'delete' || !editor.branch?.can_delete) return
+    if (!editor?.branch?.can_delete) return
     const id = editor.branch.id
     await mutate(() => deleteBranch(id, confirmationId), 'Sucursal eliminada definitivamente.', id)
   }

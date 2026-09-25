@@ -187,6 +187,15 @@ def test_anonymous_and_operator_denied(setup, method, path):
     assert setup.client.request(method, url, json=body).status_code == 403
 
 
+def test_cannot_deactivate_self_and_session_remains_valid(setup):
+    login(setup)
+    response = setup.client.post(f"/api/users/{setup.ids['admin']}/deactivate")
+    assert response.status_code == 409
+    assert response.json()['detail'] == 'No puedes desactivar tu propia cuenta.'
+    assert setup.app.state.users.by_id(setup.ids['admin']).is_active
+    assert setup.client.get('/api/auth/me').status_code == 200
+
+
 def test_deactivation_revokes_sessions_and_blocks_login(setup):
     login(setup, "operator")
     copied = setup.client.cookies.get("sigfq_session")

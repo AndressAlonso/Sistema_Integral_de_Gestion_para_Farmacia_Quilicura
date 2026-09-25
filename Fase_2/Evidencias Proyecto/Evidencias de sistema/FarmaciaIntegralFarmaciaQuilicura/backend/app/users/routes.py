@@ -30,7 +30,7 @@ from app.users.schemas import (
     UserListResponse,
     UserResponse,
 )
-from app.users.service import AccessDenied, UserService
+from app.users.service import AccessDenied, SelfDeactivationBlocked, UserService
 
 
 def administrator(request: Request) -> User:
@@ -58,6 +58,8 @@ def conflict_response(operation):
         return operation()
     except DuplicateEmail:
         raise HTTPException(409, "Ya existe un usuario con ese correo.") from None
+    except SelfDeactivationBlocked:
+        raise HTTPException(409, "No puedes desactivar tu propia cuenta.") from None
     except InvalidDeletionConfirmation:
         raise HTTPException(422, "El correo de confirmación no coincide.") from None
     except UserDeletionBlocked as exc:

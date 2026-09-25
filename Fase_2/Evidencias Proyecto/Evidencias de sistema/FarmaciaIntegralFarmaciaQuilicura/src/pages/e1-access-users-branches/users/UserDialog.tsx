@@ -19,6 +19,7 @@ export type UserEditor = {
 }
 
 interface Props {
+  currentUserId: string
   editor: UserEditor
   roles: Role[]
   branches: Branch[]
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export default function UserDialog({
+  currentUserId,
   editor,
   roles,
   branches,
@@ -110,6 +112,10 @@ export default function UserDialog({
     }
 
     if (deactivating) {
+      if (editor.user?.id === currentUserId) {
+        setValidation('No puedes desactivar tu propia cuenta.')
+        return
+      }
       await onDeactivate()
       return
     }
@@ -222,10 +228,10 @@ export default function UserDialog({
           <section className="users-account-controls" aria-label="Estado y acciones de la cuenta">
             <div><strong>{editor.user.name}</strong><p>Estado: {editor.user.is_active ? 'Activo' : 'Inactivo'}</p></div>
             <div className="users-account-buttons">
-              <button type="button" className="users-button" disabled={busy} onClick={() => { setValidation(''); setMode(editor.user?.is_active ? 'deactivate' : 'activate') }}><ActionIcon name="deactivate" />{editor.user.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}</button>
+              {editor.user.id !== currentUserId && <button type="button" className="users-button" disabled={busy} onClick={() => { setValidation(''); setMode(editor.user?.is_active ? 'deactivate' : 'activate') }}><ActionIcon name="deactivate" />{editor.user.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}</button>}
               {editor.user.can_delete && <button type="button" className="users-button danger" disabled={busy} onClick={() => { setValidation(''); setMode('delete') }}><ActionIcon name="delete" />Eliminar cuenta</button>}
             </div>
-            {editor.user.deletion_block_reason && <p className="users-account-note">{editor.user.deletion_block_reason}</p>}
+            {editor.user.id === currentUserId ? <p className="users-account-note">Esta es tu cuenta. No puedes desactivarla ni eliminarla.</p> : editor.user.deletion_block_reason && <p className="users-account-note">{editor.user.deletion_block_reason}</p>}
           </section>
         )}
         {activating ? <p>¿Activar a <strong>{editor.user?.name || editor.user?.email}</strong>? Podrá iniciar sesión con sus credenciales y permisos asignados. Sus sesiones revocadas no se recuperarán.</p> : deleting ? (

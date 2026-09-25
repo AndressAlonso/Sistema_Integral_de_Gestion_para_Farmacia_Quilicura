@@ -11,6 +11,10 @@ class AccessDenied(Exception):
     pass
 
 
+class SelfDeactivationBlocked(Exception):
+    pass
+
+
 class UserService:
     def __init__(self, repository: PostgresUserRepository):
         self.repository = repository
@@ -59,6 +63,8 @@ class UserService:
 
     def deactivate(self, actor: User, user_id: UUID) -> User:
         self.authorize(actor)
+        if actor.id == user_id:
+            raise SelfDeactivationBlocked
         return self.repository.update(user_id, {"is_active": False})
 
     def activate(self, actor: User, user_id: UUID) -> User:

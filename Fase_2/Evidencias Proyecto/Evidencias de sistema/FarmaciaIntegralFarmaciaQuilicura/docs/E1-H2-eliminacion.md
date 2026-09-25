@@ -20,6 +20,8 @@ No se cambió el contrato de autenticación.
 ## Protecciones
 
 - No eliminar la propia cuenta.
+- No desactivar la propia cuenta: backend responde 409 y conserva la sesión;
+  la ficha oculta esa acción para el usuario autenticado.
 - No eliminar al último usuario activo con rol `ADMINISTRADOR`.
 - Se borran las sesiones activas, vencidas y revocadas del usuario dentro de la misma transacción. Si el borrado falla, todo se revierte.
 - Las claves foráneas permanecen como protección adicional para registros asociados.
