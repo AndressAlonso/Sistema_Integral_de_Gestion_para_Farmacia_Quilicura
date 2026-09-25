@@ -7,7 +7,11 @@ import BranchesPage from '../pages/e1-access-users-branches/branches/BranchesPag
 import UsersPage from '../pages/e1-access-users-branches/users/UsersPage'
 import InventoryPage from '../pages/e3-inventory/InventoryPage'
 
+import CatalogPage from '../pages/e2-catalog/CatalogPage'
+
 function getAdminPage(path: string) {
+  if (path === '/admin/products') return <CatalogPage />
+
   if (path === '/admin/users') {
     return <UsersPage />
   }

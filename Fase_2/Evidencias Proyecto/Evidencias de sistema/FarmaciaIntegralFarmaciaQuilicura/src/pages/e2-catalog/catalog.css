@@ -1,0 +1,24 @@
+.catalog-heading, .catalog-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.catalog-heading-actions { display: flex; flex-wrap: wrap; gap: 10px; flex-shrink: 0; }
+.catalog-heading { flex-wrap: wrap; }
+.catalog-category-count, .catalog-prescription { color: #702582; background: #f4eafa; border-radius: 20px; padding: 5px 10px; font-size: var(--ui-caption); white-space: nowrap; }
+.catalog-product-name { min-width: 170px; max-width: 300px; overflow-wrap: anywhere; }
+.catalog-product-name small { display: block; font-weight: 400; color: #65748e; margin-top: 4px; }
+.catalog-product-name details { margin-top: 7px; font-weight: 400; font-size: var(--ui-caption); }
+.catalog-product-name summary { cursor: pointer; color: #702582; }
+.catalog-product-name details p { white-space: pre-wrap; margin-top: 8px; }
+.catalog-price { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.catalog-table { min-width: 1050px; }
+.catalog-barcodes { display: grid; gap: 5px; max-width: 220px; overflow-wrap: anywhere; }
+.catalog-barcodes code { font-size: var(--ui-caption); }
+.catalog-help { color: #65748e; font-size: var(--ui-caption); }
+.catalog-full { grid-column: 1 / -1; }
+.catalog-dialog textarea { width: 100%; min-height: 90px; resize: vertical; border: 1px solid #e5eaf3; border-radius: 10px; padding: 12px; color: #40516d; background: white; font: inherit; }
+.catalog-dialog textarea:focus-visible { outline: 2px solid #702582; outline-offset: 3px; }
+.catalog-notice { padding: 14px 18px; margin-bottom: 18px; border-radius: 10px; background: #f4eafa; color: #602570; }
+.catalog-dialog .catalog-notice { margin-bottom: 0; }
+.catalog-page .users-button.primary, .catalog-dialog .users-button.primary { background: #54831b; border-color: #54831b; }
+.catalog-page .users-button.primary:hover, .catalog-dialog .users-button.primary:hover { background: #446d15; }
+@media (max-width: 650px) { .catalog-heading-actions { width: 100%; } .catalog-heading-actions button { flex: 1; } .catalog-panel-heading { align-items: flex-start; } }
+
+.catalog-dialog .users-fields > label { align-content: start; }
