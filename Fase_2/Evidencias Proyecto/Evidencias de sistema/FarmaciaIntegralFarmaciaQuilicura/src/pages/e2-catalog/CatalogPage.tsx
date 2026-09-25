@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import type { AuthSession } from '../e1-access-users-branches/auth/login.api'
 import { ApiError } from '../../services/http'
+import ProductPhoto from './ProductPhoto'
 import CatalogDialog from './CatalogDialog'
-import { createCategory, createProduct, listCategories, listProducts, type Category, type Product, type ProductInput } from './catalog.api'
+import { createCategory, createProduct, updateProduct, uploadProductImage, removeProductImage, listCategories, listProducts, type Category, type Product, type ProductInput } from './catalog.api'
 import '../e1-access-users-branches/users/users.css'
 import './catalog.css'
 
@@ -23,7 +24,7 @@ export default function CatalogPage() {
   const [query, setQuery] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState('')
-  const [editor, setEditor] = useState<'product' | 'category' | null>(null)
+  const [editor, setEditor] = useState<{ mode: 'product' | 'category'; product?: Product } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -58,11 +59,25 @@ export default function CatalogPage() {
       setError(cause instanceof ApiError && cause.status !== 0 ? cause.message : 'No pudimos confirmar el guardado. Cierra el formulario y recarga el listado antes de reintentar.')
     } finally { sending.current = false; setBusy(false) }
   }
-  function addProduct(input: ProductInput) {
+  function replaceProduct(product: Product) {
+    setProducts(current => [...current.filter(item => item.id !== product.id), product].sort((a, b) => a.name.localeCompare(b.name, 'es')))
+  }
+  function addProduct(input: ProductInput, file: File | null, remove: boolean) {
+    const existing = editor?.product
     void save(async () => {
-      const product = await createProduct(input)
-      setProducts(current => [...current, product].sort((a, b) => a.name.localeCompare(b.name, 'es')))
-    }, 'Producto creado correctamente.')
+      const product = existing ? await updateProduct(existing.id, input) : await createProduct(input)
+      replaceProduct(product)
+      // Si la imagen falla, el formulario pasa a edicion: reintentar no crea otro producto.
+      setEditor({ mode: 'product', product })
+      try {
+        if (file) replaceProduct(await uploadProductImage(product.id, file))
+        else if (remove && product.image_url) replaceProduct(await removeProductImage(product.id))
+      } catch (cause) {
+        if (cause instanceof ApiError && [401, 403].includes(cause.status)) throw cause
+        throw new ApiError('Los datos del producto sí se guardaron, pero no pudimos confirmar el cambio de imagen. ' +
+          (cause instanceof ApiError ? cause.message : 'Revisa el archivo e intenta nuevamente.'), cause instanceof ApiError ? cause.status || 502 : 502)
+      }
+    }, existing ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.')
   }
   function addCategory(name: string) {
     void save(async () => {
@@ -70,7 +85,7 @@ export default function CatalogPage() {
       setCategories(current => [...current, category].sort((a, b) => a.name.localeCompare(b.name, 'es')))
     }, 'Categoría creada. Ya puedes seleccionarla al registrar un producto.')
   }
-  function open(mode: 'product' | 'category') { setError(''); setMessage(''); setEditor(mode) }
+  function open(mode: 'product' | 'category') { setError(''); setMessage(''); setEditor({ mode }) }
 
   if (!allowed) return <p className="users-error" role="alert">No tienes permiso para gestionar el catálogo.</p>
   if (loading) return <p role="status">Cargando catálogo…</p>
@@ -110,9 +125,10 @@ export default function CatalogPage() {
       <div className="users-panel-heading catalog-panel-heading"><div><h2 id="catalog-list-title">Productos registrados</h2><p role="status">{visible.length} de {products.length} {products.length === 1 ? 'producto' : 'productos'}</p></div><span className="catalog-category-count">{categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}</span></div>
       <div className="users-table-scroll" role="region" aria-label="Listado de productos" tabIndex={0}>
         <table className="users-table catalog-table"><thead><tr>
-          <th scope="col">Producto / SKU</th><th scope="col">Categoría</th><th scope="col">Precio</th><th scope="col">Códigos de barras</th><th scope="col">Condición</th><th scope="col">Estado</th><th scope="col">Publicación online</th>
+          <th scope="col">Imagen</th><th scope="col">Producto / SKU</th><th scope="col">Categoría</th><th scope="col">Precio</th><th scope="col">Códigos de barras</th><th scope="col">Condición</th><th scope="col">Estado</th><th scope="col">Publicación online</th><th scope="col">Acciones</th>
         </tr></thead><tbody>
           {visible.map(product => <tr key={product.id}>
+            <td><ProductPhoto src={product.image_url} name={product.name} /></td>
             <th scope="row"><div className="catalog-product-name"><strong>{product.name}</strong><small>{product.sku}</small>
               {product.description && <details><summary>Descripción</summary><p>{product.description}</p></details>}
             </div></th>
@@ -122,11 +138,12 @@ export default function CatalogPage() {
             <td><span className={product.requires_prescription ? 'catalog-prescription' : ''}>{product.requires_prescription ? 'Con receta' : 'Sin receta'}</span></td>
             <td><span className={`users-status${product.is_active ? '' : ' inactive'}`}>{product.is_active ? 'Activo' : 'Inactivo'}</span></td>
             <td>{product.published_online ? 'Publicado' : 'No publicado'}</td>
+            <td><button className="users-button" aria-label={`Editar ${product.name}`} onClick={() => { setError(''); setMessage(''); setEditor({ mode: 'product', product }) }}>Editar</button></td>
           </tr>)}
-          {!visible.length && <tr><td colSpan={7} className="users-empty">{products.length ? 'No hay productos que coincidan con los filtros.' : 'Aún no hay productos. Registra el primero con «Nuevo producto».'}</td></tr>}
+          {!visible.length && <tr><td colSpan={9} className="users-empty">{products.length ? 'No hay productos que coincidan con los filtros.' : 'Aún no hay productos. Registra el primero con «Nuevo producto».'}</td></tr>}
         </tbody></table>
       </div>
     </section>
-    {editor && <CatalogDialog mode={editor} categories={categories} busy={busy} error={error} onClose={() => { if (!sending.current) setEditor(null) }} onProduct={addProduct} onCategory={addCategory} />}
+    {editor && <CatalogDialog mode={editor.mode} product={editor.product} categories={categories} busy={busy} error={error} onClose={() => { if (!sending.current) setEditor(null) }} onProduct={addProduct} onCategory={addCategory} />}
   </div>
 }

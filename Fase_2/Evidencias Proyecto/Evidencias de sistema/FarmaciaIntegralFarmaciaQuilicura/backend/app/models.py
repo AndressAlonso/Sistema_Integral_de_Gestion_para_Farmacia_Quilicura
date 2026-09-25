@@ -132,6 +132,7 @@ class Producto(Base):
     nombre: Mapped[str] = mapped_column(String(150))
     descripcion: Mapped[str] = mapped_column(Text)
     activo: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    image_key: Mapped[str | None] = mapped_column(String(40), nullable=True)
     publicado_online: Mapped[bool] = mapped_column(
         Boolean, server_default=false()
     )

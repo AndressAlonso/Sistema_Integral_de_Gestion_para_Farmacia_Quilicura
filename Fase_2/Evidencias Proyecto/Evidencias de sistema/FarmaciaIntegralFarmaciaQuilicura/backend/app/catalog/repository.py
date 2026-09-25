@@ -1,4 +1,7 @@
-"""Persistencia de categorias y productos en PostgreSQL."""
+"""E2-H1: altas y edicion atomica de productos y codigos."""
+
+from contextlib import contextmanager
+from uuid import UUID
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -9,6 +12,7 @@ from app.catalog.schemas import (
     CategoryResponse,
     CreateProduct,
     ProductResponse,
+    UpdateProduct,
 )
 from app.models import Categoria, CodigoBarra, Producto
 
@@ -17,141 +21,149 @@ class PostgresCatalogRepository:
     def __init__(self, factory: sessionmaker[Session]):
         self.factory = factory
 
-    def list_categories(self) -> list[CategoryResponse]:
-        with self.factory() as session:
-            categories = session.scalars(
-                select(Categoria).order_by(Categoria.nombre, Categoria.id)
-            ).all()
+    @contextmanager
+    def transaction(self):
+        try:
+            with self.factory.begin() as db:
+                yield db
+        except IntegrityError as exc:
+            constraint = getattr(
+                getattr(exc.orig, "diag", None), "constraint_name", None
+            )
+            if constraint in {"uq_producto_sku", "uq_codigo_barra_valor"}:
+                raise HTTPException(
+                    409, "El SKU o un codigo de barras ya esta registrado."
+                ) from exc
+            if getattr(exc.orig, "sqlstate", None) == "23503":
+                raise HTTPException(
+                    409,
+                    "El registro esta relacionado con otros datos. Actualiza el listado.",
+                ) from exc
+            raise
 
+    def list_categories(self):
+        with self.factory() as db:
             return [
-                CategoryResponse(id=category.id, name=category.nombre)
-                for category in categories
+                CategoryResponse(id=c.id, name=c.nombre)
+                for c in db.scalars(
+                    select(Categoria).order_by(Categoria.nombre, Categoria.id)
+                )
             ]
 
-    def create_category(self, name: str) -> CategoryResponse:
-        with self.factory() as session:
-            with session.begin():
-                category = Categoria(nombre=name)
-                session.add(category)
-                session.flush()
-
-                result = CategoryResponse(
-                    id=category.id,
-                    name=category.nombre,
-                )
-
-            return result
+    def create_category(self, name: str):
+        with self.transaction() as db:
+            row = Categoria(nombre=name)
+            db.add(row)
+            db.flush()
+            result = CategoryResponse(id=row.id, name=row.nombre)
+        return result
 
     @staticmethod
-    def _product_response(product: Producto) -> ProductResponse:
+    def response(row: Producto):
         return ProductResponse(
-            id=product.id,
-            sku=product.sku,
-            name=product.nombre,
-            description=product.descripcion,
-            category_id=product.categoria_id,
-            price=product.precio_actual,
-            requires_prescription=product.requiere_receta,
-            is_active=product.activo,
-            published_online=product.publicado_online,
-            barcodes=sorted(
-                barcode.valor for barcode in product.codigos_barra
-            ),
+            id=row.id,
+            sku=row.sku,
+            name=row.nombre,
+            description=row.descripcion,
+            category_id=row.categoria_id,
+            price=row.precio_actual,
+            requires_prescription=row.requiere_receta,
+            is_active=row.activo,
+            published_online=row.publicado_online,
+            barcodes=sorted(code.valor for code in row.codigos_barra),
+            image_url=f"/api/products/{row.id}/image?v={row.image_key}"
+            if row.image_key
+            else None,
         )
 
-    def list_products(self) -> list[ProductResponse]:
-        with self.factory() as session:
-            products = session.scalars(
-                select(Producto)
-                .options(selectinload(Producto.codigos_barra))
-                .order_by(Producto.nombre, Producto.id)
-            ).all()
-
+    def list_products(self):
+        with self.factory() as db:
             return [
-                self._product_response(product)
-                for product in products
+                self.response(row)
+                for row in db.scalars(
+                    select(Producto)
+                    .options(selectinload(Producto.codigos_barra))
+                    .order_by(Producto.nombre, Producto.id)
+                )
             ]
 
-    def create_product(self, data: CreateProduct) -> ProductResponse:
-        with self.factory() as session:
-            try:
-                with session.begin():
-                    category = session.get(Categoria, data.category_id)
-                    if category is None:
-                        raise HTTPException(
-                            status_code=422,
-                            detail="La categoria seleccionada no existe.",
-                        )
+    def get_product(self, product_id: UUID):
+        with self.factory() as db:
+            return self.response(self.find(db, product_id))
 
-                    existing_sku = session.scalar(
-                        select(Producto.id).where(
-                            Producto.sku == data.sku
-                        )
-                    )
-                    if existing_sku is not None:
-                        raise HTTPException(
-                            status_code=409,
-                            detail="Ya existe un producto con ese SKU.",
-                        )
+    @staticmethod
+    def find(db, product_id: UUID, lock: bool = False):
+        query = select(Producto).where(Producto.id == product_id)
+        if lock:
+            query = query.with_for_update()
+        row = db.scalar(query)
+        if row is None:
+            raise HTTPException(404, "El producto no existe.")
+        return row
 
-                    if data.barcodes:
-                        existing_barcode = session.scalar(
-                            select(CodigoBarra.valor)
-                            .where(CodigoBarra.valor.in_(data.barcodes))
-                            .limit(1)
-                        )
-                        if existing_barcode is not None:
-                            raise HTTPException(
-                                status_code=409,
-                                detail=(
-                                    "Uno de los codigos de barras "
-                                    "ya esta registrado."
-                                ),
-                            )
+    @staticmethod
+    def apply_fields(db, row, data: UpdateProduct):
+        if db.get(Categoria, data.category_id) is None:
+            raise HTTPException(422, "La categoria seleccionada no existe.")
+        row.sku = data.sku
+        row.nombre = data.name
+        row.descripcion = data.description
+        row.categoria_id = data.category_id
+        row.requiere_receta = data.requires_prescription
+        row.activo = data.is_active
+        row.publicado_online = data.published_online
 
-                    product = Producto(
-                        sku=data.sku,
-                        nombre=data.name,
-                        descripcion=data.description,
-                        categoria_id=data.category_id,
-                        precio_actual=data.price,
-                        requiere_receta=data.requires_prescription,
-                        activo=data.is_active,
-                        publicado_online=data.published_online,
-                        codigos_barra=[
-                            CodigoBarra(valor=value)
-                            for value in data.barcodes
-                        ],
-                    )
+    @staticmethod
+    def validate_codes(db, data, product_id=None):
+        sku_query = select(Producto.id).where(Producto.sku == data.sku)
+        codes_query = select(CodigoBarra.id).where(CodigoBarra.valor.in_(data.barcodes))
+        if product_id is not None:
+            sku_query = sku_query.where(Producto.id != product_id)
+            codes_query = codes_query.where(CodigoBarra.producto_id != product_id)
+        if db.scalar(sku_query.limit(1)) is not None:
+            raise HTTPException(409, "Ya existe un producto con ese SKU.")
+        if data.barcodes and db.scalar(codes_query.limit(1)) is not None:
+            raise HTTPException(409, "Un codigo de barras ya esta registrado.")
 
-                    session.add(product)
-                    session.flush()
-                    result = self._product_response(product)
+    def create_product(self, data: CreateProduct):
+        with self.transaction() as db:
+            self.validate_codes(db, data)
+            row = Producto(
+                precio_actual=data.price,
+                codigos_barra=[CodigoBarra(valor=code) for code in data.barcodes],
+            )
+            self.apply_fields(db, row, data)
+            db.add(row)
+            db.flush()
+            result = self.response(row)
+        return result
 
-                return result
+    def update_product(self, product_id: UUID, data: UpdateProduct):
+        with self.transaction() as db:
+            row = self.find(db, product_id, lock=True)
+            self.validate_codes(db, data, product_id)
+            self.apply_fields(db, row, data)
+            existing = {code.valor: code for code in row.codigos_barra}
+            desired = set(data.barcodes)
+            for value, code in existing.items():
+                if value not in desired:
+                    db.delete(code)
+            for value in desired - existing.keys():
+                db.add(CodigoBarra(valor=value, producto_id=row.id))
+            db.flush()
+            db.expire(row, ["codigos_barra"])
+            result = self.response(row)
+        return result
 
-            except IntegrityError as exc:
-                # El contexto de la transaccion ya hizo rollback.
-                # Estas restricciones tambien protegen ante solicitudes
-                # simultaneas que superen las comprobaciones anteriores.
-                diagnostic = getattr(exc.orig, "diag", None)
-                constraint = getattr(
-                    diagnostic, "constraint_name", None
-                )
+    def set_image(self, product_id: UUID, key: str | None):
+        with self.transaction() as db:
+            row = self.find(db, product_id, lock=True)
+            previous = row.image_key
+            row.image_key = key
+            db.flush()
+            result = self.response(row)
+        return result, previous
 
-                if constraint == "uq_producto_sku":
-                    raise HTTPException(
-                        status_code=409,
-                        detail="Ya existe un producto con ese SKU.",
-                    ) from exc
-
-                if constraint == "uq_codigo_barra_valor":
-                    raise HTTPException(
-                        status_code=409,
-                        detail=(
-                            "Uno de los codigos de barras "
-                            "ya esta registrado."
-                        ),
-                    ) from exc
-
-                raise
+    def image_key(self, product_id: UUID):
+        with self.factory() as db:
+            return self.find(db, product_id).image_key
