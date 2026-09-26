@@ -60,6 +60,7 @@ class RoleRepository:
         modules = {
             "usuarios": "Usuarios", "roles": "Roles y permisos",
             "sucursales": "Sucursales", "inventario": "Inventario",
+            "catalogo": "Catálogo",
         }
         permissions = []
         for row in db.scalars(select(Permiso).order_by(Permiso.codigo)):

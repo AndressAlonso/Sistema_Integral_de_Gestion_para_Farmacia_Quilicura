@@ -22,7 +22,13 @@ ROLE_CATALOG = {
         "Administrador",
         "Administración general del sistema: usuarios, roles, permisos, sucursales, "
         "catálogo, precios, promociones, configuraciones, autorizaciones, auditoría e indicadores.",
-        ("usuarios.gestionar", "roles.gestionar", "sucursales.gestionar", "inventario.consultar"),
+        (
+            "usuarios.gestionar",
+            "roles.gestionar",
+            "sucursales.gestionar",
+            "inventario.consultar",
+            "catalogo.gestionar",
+        ),
     ),
     "VENDEDOR_CAJERO": RoleDefinition(
         "Vendedor / Cajero",
@@ -51,7 +57,8 @@ PERMISSIONS = {
     "usuarios.gestionar": ("Gestionar usuarios internos", True),
     "roles.gestionar": ("Crear, configurar y asignar roles", True),
     "sucursales.gestionar": ("Gestionar sucursales", True),
-    "inventario.consultar": ("Consultar inventario", False),
+    "inventario.consultar": ("Consultar inventario", True),
+    "catalogo.gestionar": ("Gestionar productos y categorías", True),
 }
 
 

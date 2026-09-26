@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import Sucursal, UsuarioInterno
+from app.models import InventarioSucursal, Sucursal, UsuarioInterno
 
 
 class Branch(BaseModel):
@@ -42,14 +42,16 @@ class PostgresBranchRepository:
         self.session_factory = session_factory
 
     @staticmethod
-    def _to_branch(row: Sucursal, assigned_users_count: int) -> Branch:
+    def _to_branch(
+        row: Sucursal, assigned_users_count: int, has_inventory: bool,
+    ) -> Branch:
         return Branch(
             id=row.id,
             code=row.codigo,
             name=row.nombre,
             address=row.direccion_local,
             is_active=row.activa,
-            can_delete=assigned_users_count == 0,
+            can_delete=assigned_users_count == 0 and not has_inventory,
             assigned_users_count=assigned_users_count,
         )
 
@@ -59,8 +61,22 @@ class PostgresBranchRepository:
             UsuarioInterno.sucursal_id == branch_id
         ).exists()
 
+    @staticmethod
+    def _has_inventory(branch_id):
+        return select(InventarioSucursal.id).where(
+            InventarioSucursal.sucursal_id == branch_id
+        ).exists()
+
     def _can_delete(self, db: Session, branch_id: UUID) -> bool:
-        return not db.scalar(select(self._has_users(branch_id)))
+        return not db.scalar(select(
+            self._has_users(branch_id) | self._has_inventory(branch_id)
+        ))
+
+    def _branch(self, db: Session, row: Sucursal) -> Branch:
+        return self._to_branch(
+            row, self._user_count(db, row.id),
+            bool(db.scalar(select(self._has_inventory(row.id)))),
+        )
 
     @staticmethod
     def _user_count(db: Session, branch_id: UUID) -> int:
@@ -85,13 +101,19 @@ class PostgresBranchRepository:
     def list_branches(self):
         with self.session_factory() as db:
             rows = db.execute(
-                select(Sucursal, select(func.count()).select_from(UsuarioInterno).where(UsuarioInterno.sucursal_id == Sucursal.id).correlate(Sucursal).scalar_subquery()).order_by(
+                select(
+                    Sucursal,
+                    select(func.count()).select_from(UsuarioInterno)
+                    .where(UsuarioInterno.sucursal_id == Sucursal.id)
+                    .correlate(Sucursal).scalar_subquery(),
+                    self._has_inventory(Sucursal.id),
+                ).order_by(
                     Sucursal.nombre,
                     Sucursal.id,
                 )
             )
 
-            return [self._to_branch(row, count) for row, count in rows]
+            return [self._to_branch(row, count, inventory) for row, count, inventory in rows]
 
     def assigned_users(self, branch_id: UUID) -> list[dict]:
         with self.session_factory() as db:
@@ -110,7 +132,7 @@ class PostgresBranchRepository:
         with self.session_factory() as db:
             row = db.get(Sucursal, branch_id)
 
-            return self._to_branch(row, self._user_count(db, row.id)) if row else None
+            return self._branch(db, row) if row else None
 
     def by_code(self, code: str) -> Branch | None:
         normalized_code = code.strip().upper()
@@ -122,7 +144,7 @@ class PostgresBranchRepository:
                 )
             )
 
-            return self._to_branch(row, self._user_count(db, row.id)) if row else None
+            return self._branch(db, row) if row else None
 
     def create(
         self,
@@ -144,7 +166,7 @@ class PostgresBranchRepository:
                 db.add(row)
                 db.flush()
 
-                return self._to_branch(row, self._user_count(db, row.id))
+                return self._branch(db, row)
 
         except IntegrityError as exc:
             self._integrity_error(exc)
@@ -176,7 +198,7 @@ class PostgresBranchRepository:
 
                 db.flush()
 
-                return self._to_branch(row, self._user_count(db, row.id))
+                return self._branch(db, row)
 
         except IntegrityError as exc:
             self._integrity_error(exc)
@@ -190,7 +212,7 @@ class PostgresBranchRepository:
                 raise BranchNotFound
             row.activa = True
             db.flush()
-            return self._to_branch(row, self._user_count(db, row.id))
+            return self._branch(db, row)
 
     def deactivate(self, branch_id: UUID) -> Branch:
         with self.session_factory.begin() as db:
@@ -204,7 +226,7 @@ class PostgresBranchRepository:
                 raise BranchNotFound
 
             if not row.activa:
-                return self._to_branch(row, self._user_count(db, row.id))
+                return self._branch(db, row)
 
             active_users = db.scalar(
                 select(func.count())
@@ -221,7 +243,7 @@ class PostgresBranchRepository:
             row.activa = False
             db.flush()
 
-            return self._to_branch(row, self._user_count(db, row.id))
+            return self._branch(db, row)
 
     def delete(self, branch_id: UUID) -> None:
         try:

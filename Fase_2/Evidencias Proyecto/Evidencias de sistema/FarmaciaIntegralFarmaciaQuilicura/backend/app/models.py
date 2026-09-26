@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -7,10 +8,21 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Integer,
+    Numeric,
     String,
     Table,
+    Text,
+    UniqueConstraint,
+    false,
+    true,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    relationship,
+)
 
 
 class Base(DeclarativeBase):
@@ -20,79 +32,434 @@ class Base(DeclarativeBase):
 usuario_rol = Table(
     "usuario_rol",
     Base.metadata,
-    Column("usuario_id", ForeignKey("usuario_interno.id", ondelete="RESTRICT"), primary_key=True),
-    Column("rol_id", ForeignKey("rol.id", ondelete="RESTRICT"), primary_key=True),
+    Column(
+        "usuario_id",
+        ForeignKey(
+            "usuario_interno.id",
+            ondelete="RESTRICT",
+        ),
+        primary_key=True,
+    ),
+    Column(
+        "rol_id",
+        ForeignKey(
+            "rol.id",
+            ondelete="RESTRICT",
+        ),
+        primary_key=True,
+    ),
 )
+
+
 rol_permiso = Table(
     "rol_permiso",
     Base.metadata,
-    Column("rol_id", ForeignKey("rol.id", ondelete="RESTRICT"), primary_key=True),
-    Column("permiso_id", ForeignKey("permiso.id", ondelete="RESTRICT"), primary_key=True),
+    Column(
+        "rol_id",
+        ForeignKey(
+            "rol.id",
+            ondelete="RESTRICT",
+        ),
+        primary_key=True,
+    ),
+    Column(
+        "permiso_id",
+        ForeignKey(
+            "permiso.id",
+            ondelete="RESTRICT",
+        ),
+        primary_key=True,
+    ),
 )
 
 
 class Sucursal(Base):
     __tablename__ = "sucursal"
     __table_args__ = (
-        CheckConstraint("btrim(codigo) <> ''", name="ck_sucursal_codigo"),
-        CheckConstraint("btrim(nombre) <> ''", name="ck_sucursal_nombre"),
+        CheckConstraint(
+            "btrim(codigo) <> ''",
+            name="ck_sucursal_codigo",
+        ),
+        CheckConstraint(
+            "btrim(nombre) <> ''",
+            name="ck_sucursal_nombre",
+        ),
     )
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    codigo: Mapped[str] = mapped_column(String(30), unique=True)
-    nombre: Mapped[str] = mapped_column(String(150))
-    direccion_local: Mapped[str] = mapped_column(String(250))
-    activa: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    codigo: Mapped[str] = mapped_column(
+        String(30),
+        unique=True,
+    )
+
+    nombre: Mapped[str] = mapped_column(
+        String(150),
+    )
+
+    direccion_local: Mapped[str] = mapped_column(
+        String(250),
+    )
+
+    activa: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+    )
 
 
 class UsuarioInterno(Base):
     __tablename__ = "usuario_interno"
     __table_args__ = (
-        CheckConstraint("btrim(nombre) <> ''", name="ck_usuario_nombre"),
-        CheckConstraint("correo = lower(btrim(correo))", name="ck_usuario_correo_normalizado"),
+        CheckConstraint(
+            "btrim(nombre) <> ''",
+            name="ck_usuario_nombre",
+        ),
+        CheckConstraint(
+            "correo = lower(btrim(correo))",
+            name="ck_usuario_correo_normalizado",
+        ),
     )
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    nombre: Mapped[str] = mapped_column(String(150))
-    correo: Mapped[str] = mapped_column(String(254), unique=True)
-    password_hash: Mapped[str] = mapped_column(String(255))
-    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    nombre: Mapped[str] = mapped_column(
+        String(150),
+    )
+
+    correo: Mapped[str] = mapped_column(
+        String(254),
+        unique=True,
+    )
+
+    password_hash: Mapped[str] = mapped_column(
+        String(255),
+    )
+
+    activo: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+    )
+
     sucursal_id: Mapped[UUID] = mapped_column(
-        ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True
+        ForeignKey(
+            "sucursal.id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
     )
-    sucursal: Mapped[Sucursal] = relationship(lazy="joined")
-    roles: Mapped[list["Rol"]] = relationship(secondary=usuario_rol, lazy="selectin")
+
+    sucursal: Mapped["Sucursal"] = relationship(
+        lazy="joined",
+    )
+
+    roles: Mapped[list["Rol"]] = relationship(
+        secondary=usuario_rol,
+        lazy="selectin",
+    )
 
     def permisos_efectivos(self) -> set[str]:
-        return {permiso.codigo for rol in self.roles for permiso in rol.permisos}
+        permisos = {
+            permiso.codigo
+            for rol in self.roles
+            for permiso in rol.permisos
+        }
+        return permisos
 
 
 class Rol(Base):
     __tablename__ = "rol"
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    codigo: Mapped[str] = mapped_column(String(60), unique=True)
-    nombre: Mapped[str] = mapped_column(String(100))
-    permisos: Mapped[list["Permiso"]] = relationship(secondary=rol_permiso, lazy="selectin")
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    codigo: Mapped[str] = mapped_column(
+        String(60),
+        unique=True,
+    )
+
+    nombre: Mapped[str] = mapped_column(
+        String(100),
+    )
+
+    permisos: Mapped[list["Permiso"]] = relationship(
+        secondary=rol_permiso,
+        lazy="selectin",
+    )
 
 
 class Permiso(Base):
     __tablename__ = "permiso"
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    codigo: Mapped[str] = mapped_column(String(100), unique=True)
-    descripcion: Mapped[str] = mapped_column(String(250))
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    codigo: Mapped[str] = mapped_column(
+        String(100),
+        unique=True,
+    )
+
+    descripcion: Mapped[str] = mapped_column(
+        String(250),
+    )
 
 
 class SesionInterna(Base):
     __tablename__ = "sesion_interna"
     __table_args__ = (
-        CheckConstraint("expira_en > creada_en", name="ck_sesion_expiracion"),
         CheckConstraint(
-            "revocada_en IS NULL OR revocada_en >= creada_en", name="ck_sesion_revocacion"
+            "expira_en > creada_en",
+            name="ck_sesion_expiracion",
+        ),
+        CheckConstraint(
+            "revocada_en IS NULL OR revocada_en >= creada_en",
+            name="ck_sesion_revocacion",
         ),
     )
-    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    usuario_id: Mapped[UUID] = mapped_column(
-        ForeignKey("usuario_interno.id", ondelete="RESTRICT"), index=True
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
     )
-    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
-    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    expira_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    usuario_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "usuario_interno.id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+
+    token_hash: Mapped[str] = mapped_column(
+        String(64),
+        unique=True,
+    )
+
+    creada_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+    )
+
+    expira_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+    )
+
+    revocada_en: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
+class Categoria(Base):
+    __tablename__ = "categoria"
+    __table_args__ = (
+        CheckConstraint(
+            "btrim(nombre) <> ''",
+            name="ck_categoria_nombre",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    nombre: Mapped[str] = mapped_column(
+        String(150),
+    )
+
+    productos: Mapped[list["Producto"]] = relationship(
+        back_populates="categoria",
+        passive_deletes="all",
+    )
+
+
+class Producto(Base):
+    __tablename__ = "producto"
+    __table_args__ = (
+        UniqueConstraint(
+            "sku",
+            name="uq_producto_sku",
+        ),
+        CheckConstraint(
+            "btrim(sku) <> '' AND sku = btrim(sku)",
+            name="ck_producto_sku",
+        ),
+        CheckConstraint(
+            "btrim(nombre) <> ''",
+            name="ck_producto_nombre",
+        ),
+        CheckConstraint(
+            "precio_actual >= 0 "
+            "AND precio_actual < 1000000000000",
+            name="ck_producto_precio_actual",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    sku: Mapped[str] = mapped_column(
+        String(64),
+    )
+
+    nombre: Mapped[str] = mapped_column(
+        String(150),
+    )
+
+    descripcion: Mapped[str] = mapped_column(
+        Text,
+    )
+
+    activo: Mapped[bool] = mapped_column(
+        Boolean,
+        server_default=true(),
+    )
+
+    image_key: Mapped[str | None] = mapped_column(
+        String(40),
+        nullable=True,
+    )
+
+    publicado_online: Mapped[bool] = mapped_column(
+        Boolean,
+        server_default=false(),
+    )
+
+    requiere_receta: Mapped[bool] = mapped_column(
+        Boolean,
+    )
+
+    precio_actual: Mapped[Decimal] = mapped_column(
+        Numeric(14, 2),
+    )
+
+    categoria_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "categoria.id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+
+    categoria: Mapped["Categoria"] = relationship(
+        back_populates="productos",
+    )
+
+    codigos_barra: Mapped[list["CodigoBarra"]] = relationship(
+        back_populates="producto",
+        passive_deletes="all",
+    )
+
+
+class CodigoBarra(Base):
+    __tablename__ = "codigo_barra"
+    __table_args__ = (
+        UniqueConstraint(
+            "valor",
+            name="uq_codigo_barra_valor",
+        ),
+        CheckConstraint(
+            "btrim(valor) <> '' AND valor = btrim(valor)",
+            name="ck_codigo_barra_valor",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    valor: Mapped[str] = mapped_column(
+        String(128),
+    )
+
+    producto_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "producto.id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+
+    producto: Mapped["Producto"] = relationship(
+        back_populates="codigos_barra",
+    )
+
+
+class InventarioSucursal(Base):
+    __tablename__ = "inventario_sucursal"
+    __table_args__ = (
+        UniqueConstraint(
+            "producto_id",
+            "sucursal_id",
+            name="uq_inventario_producto_sucursal",
+        ),
+        CheckConstraint(
+            "stock_fisico >= 0",
+            name="ck_inventario_stock_fisico",
+        ),
+        CheckConstraint(
+            "stock_reservado >= 0",
+            name="ck_inventario_stock_reservado",
+        ),
+        CheckConstraint(
+            "stock_reservado <= stock_fisico",
+            name="ck_inventario_stock_reservado_fisico",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    producto_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "producto.id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+
+    sucursal_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "sucursal.id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+
+    stock_fisico: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+    )
+
+    stock_reservado: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+    )
+
+    producto: Mapped["Producto"] = relationship(
+        lazy="joined",
+    )
+
+    sucursal: Mapped["Sucursal"] = relationship(
+        lazy="joined",
+    )
+
+    @property
+    def stock_disponible(self) -> int:
+        return self.stock_fisico - self.stock_reservado
