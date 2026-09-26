@@ -1,16 +1,27 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from 'react-router-dom'
+
 import AdminLayout from '../layouts/AdminLayout'
 import { adminNavigation } from '../layouts/adminNavigation'
 import LoginPage from '../pages/e1-access-users-branches/auth/LoginPage'
 import RequireAuth from '../pages/e1-access-users-branches/auth/RequireAuth'
 import BranchesPage from '../pages/e1-access-users-branches/branches/BranchesPage'
 import UsersPage from '../pages/e1-access-users-branches/users/UsersPage'
+import CatalogPage from '../pages/e2-catalog/CatalogPage'
 import InventoryPage from '../pages/e3-inventory/InventoryPage'
 
-import CatalogPage from '../pages/e2-catalog/CatalogPage'
-
 function getAdminPage(path: string) {
-  if (path === '/admin/products') return <CatalogPage />
+  if (path === '/admin/inventory') {
+    return <InventoryPage />
+  }
+
+  if (path === '/admin/products') {
+    return <CatalogPage />
+  }
 
   if (path === '/admin/users') {
     return <UsersPage />
@@ -27,7 +38,10 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/login"
+          element={<LoginPage />}
+        />
 
         <Route element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
@@ -46,7 +60,10 @@ export default function AppRouter() {
           />
         </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route
+          path="*"
+          element={<Navigate to="/login" replace />}
+        />
       </Routes>
     </BrowserRouter>
   )
