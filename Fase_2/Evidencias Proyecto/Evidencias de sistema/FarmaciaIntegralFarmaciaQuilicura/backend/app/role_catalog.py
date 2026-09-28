@@ -27,6 +27,8 @@ ROLE_CATALOG = {
             "roles.gestionar",
             "sucursales.gestionar",
             "inventario.consultar",
+            "inventario.gestionar_lotes",
+            "inventario.configurar_minimo",
             "catalogo.gestionar",
         ),
     ),
@@ -37,7 +39,7 @@ ROLE_CATALOG = {
     "ENCARGADO_INVENTARIO": RoleDefinition(
         "Encargado de inventario",
         "Stock, lotes, recepciones, transferencias, movimientos y ajustes de inventario.",
-        ("inventario.consultar",),
+        ("inventario.consultar", "inventario.gestionar_lotes", "inventario.configurar_minimo"),
     ),
     "ENCARGADO_PEDIDOS": RoleDefinition(
         "Encargado de pedidos",
@@ -58,6 +60,8 @@ PERMISSIONS = {
     "roles.gestionar": ("Crear, configurar y asignar roles", True),
     "sucursales.gestionar": ("Gestionar sucursales", True),
     "inventario.consultar": ("Consultar inventario", True),
+    "inventario.gestionar_lotes": ("Gestionar lotes y fechas de vencimiento", True),
+    "inventario.configurar_minimo": ("Configurar stock mínimo por producto y sucursal", True),
     "catalogo.gestionar": ("Gestionar productos y categorías", True),
 }
 

@@ -1,13 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { ApiError } from '../../services/http'
+import ExpirationAlertsPanel from './ExpirationAlertsPanel'
+import InventoryMovementHistory from './InventoryMovementHistory'
 import {
   listInventory,
   type InventoryRecord,
 } from './inventory.api'
 import InventoryTable from './InventoryTable'
+import LotPanel from './LotPanel'
 import './InventoryPage.css'
+
+type InventoryTab =
+  | 'availability'
+  | 'lots'
+  | 'expiration'
+  | 'history'
 
 function normalize(value: string): string {
   return value
@@ -19,9 +32,13 @@ function normalize(value: string): string {
 export default function InventoryPage() {
   const navigate = useNavigate()
 
-  const [inventoryRecords, setInventoryRecords] = useState<
-    InventoryRecord[]
-  >([])
+  const [activeTab, setActiveTab] = useState<
+    InventoryTab
+  >('availability')
+
+  const [inventoryRecords, setInventoryRecords] =
+    useState<InventoryRecord[]>([])
+
   const [branchId, setBranchId] = useState('')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -44,12 +61,20 @@ export default function InventoryPage() {
           return
         }
 
-        if (cause instanceof ApiError && cause.status === 401) {
-          navigate('/login', { replace: true })
+        if (
+          cause instanceof ApiError
+          && cause.status === 401
+        ) {
+          navigate('/login', {
+            replace: true,
+          })
           return
         }
 
-        if (cause instanceof ApiError && cause.status === 403) {
+        if (
+          cause instanceof ApiError
+          && cause.status === 403
+        ) {
           setError(
             'No tienes permiso para consultar el inventario.',
           )
@@ -62,6 +87,7 @@ export default function InventoryPage() {
             ? cause.message
             : 'No pudimos cargar el inventario.',
         )
+
         setLoading(false)
       })
 
@@ -71,7 +97,7 @@ export default function InventoryPage() {
   }, [navigate])
 
   const branches = useMemo(() => {
-    const unique = new Map<
+    const uniqueBranches = new Map<
       string,
       {
         id: string
@@ -81,15 +107,19 @@ export default function InventoryPage() {
     >()
 
     inventoryRecords.forEach((record) => {
-      unique.set(record.branch_id, {
+      uniqueBranches.set(record.branch_id, {
         id: record.branch_id,
         name: record.branch_name,
         code: record.branch_code,
       })
     })
 
-    return [...unique.values()].sort((first, second) =>
-      first.name.localeCompare(second.name, 'es'),
+    return [...uniqueBranches.values()].sort(
+      (first, second) =>
+        first.name.localeCompare(
+          second.name,
+          'es',
+        ),
     )
   }, [inventoryRecords])
 
@@ -98,7 +128,8 @@ export default function InventoryPage() {
 
     return inventoryRecords.filter((record) => {
       const matchesBranch = (
-        !branchId || record.branch_id === branchId
+        !branchId
+        || record.branch_id === branchId
       )
 
       const searchable = normalize(
@@ -107,16 +138,40 @@ export default function InventoryPage() {
           record.product_sku,
           record.branch_name,
           record.branch_code,
+          record.stock_status,
         ].join(' '),
       )
 
       const matchesSearch = (
-        !search || searchable.includes(search)
+        !search
+        || searchable.includes(search)
       )
 
       return matchesBranch && matchesSearch
     })
-  }, [branchId, inventoryRecords, query])
+  }, [
+    branchId,
+    inventoryRecords,
+    query,
+  ])
+
+  function handleRecordUpdated(
+    updatedRecord: InventoryRecord,
+  ): void {
+    setInventoryRecords((currentRecords) =>
+      currentRecords.map((record) =>
+        record.id === updatedRecord.id
+          ? updatedRecord
+          : record,
+      ),
+    )
+  }
+
+  function tabClass(tab: InventoryTab): string {
+    return activeTab === tab
+      ? 'inventory-tab inventory-tab-active'
+      : 'inventory-tab'
+  }
 
   if (loading) {
     return (
@@ -131,14 +186,19 @@ export default function InventoryPage() {
   if (error) {
     return (
       <main className="inventory-main inventory-error">
-        <p className="users-error" role="alert">
+        <p
+          className="users-error"
+          role="alert"
+        >
           {error}
         </p>
 
         <button
           type="button"
           className="clear-button"
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            window.location.reload()
+          }}
         >
           Reintentar
         </button>
@@ -152,20 +212,23 @@ export default function InventoryPage() {
         <div className="inventory-title-row">
           <div>
             <p className="eyebrow">
-              INVENTARIO / CONSULTA DE STOCK
+              INVENTARIO
             </p>
 
-            <h1>Stock por sucursal</h1>
+            <h1>
+              Control de productos por sucursal
+            </h1>
 
             <p className="inventory-description">
-              Consulta las existencias y su disponibilidad en cada
-              sucursal.
+              Consulta las unidades disponibles, administra
+              los lotes y revisa próximos vencimientos e
+              historial de stock.
             </p>
           </div>
 
           <div className="inventory-statuses">
             <span className="read-only">
-              Solo consulta
+              Consulta y trazabilidad
             </span>
 
             <span className="inventory-updated">
@@ -175,149 +238,298 @@ export default function InventoryPage() {
         </div>
 
         <div className="inventory-notice">
-          <span aria-hidden="true">ⓘ</span>
+          <span aria-hidden="true">
+            ⓘ
+          </span>
 
           <p>
-            Las cantidades mostradas corresponden al inventario
-            registrado en el sistema.
+            Selecciona una sección para revisar la
+            disponibilidad, administrar lotes, consultar
+            vencimientos o ver el historial del inventario.
           </p>
         </div>
 
-        <section
-          className="stock-guide"
-          aria-label="Cómo se interpreta el stock"
+        <nav
+          className="inventory-tabs"
+          aria-label="Secciones del inventario"
+          role="tablist"
         >
-          <div>
-            <span className="guide-number">01</span>
-            <h2>Stock físico</h2>
+          <button
+            id="inventory-tab-availability"
+            type="button"
+            role="tab"
+            className={tabClass('availability')}
+            aria-selected={
+              activeTab === 'availability'
+            }
+            aria-controls="inventory-panel-availability"
+            onClick={() => {
+              setActiveTab('availability')
+            }}
+          >
+            Disponibilidad
+          </button>
 
-            <p>
-              Unidades presentes en la sucursal.
-            </p>
-          </div>
+          <button
+            id="inventory-tab-lots"
+            type="button"
+            role="tab"
+            className={tabClass('lots')}
+            aria-selected={activeTab === 'lots'}
+            aria-controls="inventory-panel-lots"
+            onClick={() => {
+              setActiveTab('lots')
+            }}
+          >
+            Lotes
+          </button>
 
-          <div>
-            <span className="guide-number">02</span>
-            <h2>Stock reservado</h2>
+          <button
+            id="inventory-tab-expiration"
+            type="button"
+            role="tab"
+            className={tabClass('expiration')}
+            aria-selected={
+              activeTab === 'expiration'
+            }
+            aria-controls="inventory-panel-expiration"
+            onClick={() => {
+              setActiveTab('expiration')
+            }}
+          >
+            Vencimientos
+          </button>
 
-            <p>
-              Unidades comprometidas que aún no han salido.
-            </p>
-          </div>
+          <button
+            id="inventory-tab-history"
+            type="button"
+            role="tab"
+            className={tabClass('history')}
+            aria-selected={activeTab === 'history'}
+            aria-controls="inventory-panel-history"
+            onClick={() => {
+              setActiveTab('history')
+            }}
+          >
+            Historial
+          </button>
+        </nav>
 
-          <div className="available-guide">
-            <span className="guide-number">03</span>
-            <h2>Stock disponible</h2>
-
-            <p>
-              Stock físico menos stock reservado.
-            </p>
-          </div>
-        </section>
-
-        <section
-          className="inventory-panel"
-          aria-labelledby="results-title"
-        >
-          <div className="panel-heading">
-            <div>
-              <h2 id="results-title">
-                Existencias por producto
-              </h2>
-
-              <p>
-                Las cantidades se expresan en unidades.
-              </p>
-            </div>
-
-            <span className="inventory-result-count">
-              {inventoryRecords.length}{' '}
-              {inventoryRecords.length === 1
-                ? 'registro'
-                : 'registros'}
-            </span>
-          </div>
-
-          <div className="inventory-filters">
-            <div className="search-field">
-              <label htmlFor="product-search">
-                Buscar producto
-              </label>
-
-              <input
-                id="product-search"
-                type="search"
-                placeholder="Nombre, SKU, sucursal o código"
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value)
-                }}
-              />
-            </div>
-
-            <div className="branch-field">
-              <label htmlFor="branch">
-                Sucursal
-              </label>
-
-              <select
-                id="branch"
-                value={branchId}
-                onChange={(event) => {
-                  setBranchId(event.target.value)
-                }}
-              >
-                <option value="">
-                  Todas las sucursales
-                </option>
-
-                {branches.map((branch) => (
-                  <option
-                    key={branch.id}
-                    value={branch.id}
-                  >
-                    {branch.name} ({branch.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="button"
-              className="clear-button"
-              disabled={!branchId && !query}
-              onClick={() => {
-                setBranchId('')
-                setQuery('')
-              }}
+        {activeTab === 'availability' && (
+          <div
+            id="inventory-panel-availability"
+            className="inventory-tab-content"
+            role="tabpanel"
+            aria-labelledby="inventory-tab-availability"
+          >
+            <section
+              className="stock-guide"
+              aria-label="Cómo se interpreta el stock"
             >
-              Limpiar filtros
-            </button>
+              <div>
+                <span className="guide-number">
+                  01
+                </span>
+
+                <h2>
+                  Stock físico
+                </h2>
+
+                <p>
+                  Unidades que se encuentran físicamente
+                  en la sucursal, incluidas las que ya
+                  están reservadas.
+                </p>
+              </div>
+
+              <div>
+                <span className="guide-number">
+                  02
+                </span>
+
+                <h2>
+                  Stock reservado
+                </h2>
+
+                <p>
+                  Unidades que aún están en la sucursal,
+                  pero ya fueron apartadas para otras
+                  operaciones.
+                </p>
+              </div>
+
+              <div className="available-guide">
+                <span className="guide-number">
+                  03
+                </span>
+
+                <h2>
+                  Stock disponible
+                </h2>
+
+                <p>
+                  Unidades que pueden utilizarse en nuevas
+                  operaciones. Se calcula restando las
+                  unidades reservadas.
+                </p>
+              </div>
+            </section>
+
+            <section
+              className="inventory-panel"
+              aria-labelledby="results-title"
+            >
+              <div className="panel-heading">
+                <div>
+                  <h2 id="results-title">
+                    Disponibilidad de productos
+                  </h2>
+
+                  <p>
+                    Revisa las unidades físicas, reservadas
+                    y disponibles de cada producto.
+                  </p>
+                </div>
+
+                <span className="inventory-result-count">
+                  {inventoryRecords.length}{' '}
+                  {inventoryRecords.length === 1
+                    ? 'registro'
+                    : 'registros'}
+                </span>
+              </div>
+
+              <div className="inventory-filters">
+                <div className="search-field">
+                  <label htmlFor="product-search">
+                    Buscar en el inventario
+                  </label>
+
+                  <input
+                    id="product-search"
+                    type="search"
+                    placeholder={
+                      'Nombre, SKU, sucursal, '
+                      + 'código o estado'
+                    }
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value)
+                    }}
+                  />
+                </div>
+
+                <div className="branch-field">
+                  <label htmlFor="branch">
+                    Sucursal
+                  </label>
+
+                  <select
+                    id="branch"
+                    value={branchId}
+                    onChange={(event) => {
+                      setBranchId(event.target.value)
+                    }}
+                  >
+                    <option value="">
+                      Todas las sucursales
+                    </option>
+
+                    {branches.map((branch) => (
+                      <option
+                        key={branch.id}
+                        value={branch.id}
+                      >
+                        {branch.name} ({branch.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  className="clear-button"
+                  disabled={!branchId && !query}
+                  onClick={() => {
+                    setBranchId('')
+                    setQuery('')
+                  }}
+                >
+                  Limpiar filtros
+                </button>
+              </div>
+
+              <InventoryTable
+                records={records}
+                onRecordUpdated={
+                  handleRecordUpdated
+                }
+              />
+
+              <div className="table-footer">
+                <span role="status">
+                  {records.length} de{' '}
+                  {inventoryRecords.length}{' '}
+                  {inventoryRecords.length === 1
+                    ? 'registro'
+                    : 'registros'}
+                </span>
+
+                <span>
+                  Disponible = físico − reservado
+                </span>
+              </div>
+            </section>
           </div>
+        )}
 
-          <InventoryTable records={records} />
-
-          <div className="table-footer">
-            <span role="status">
-              {records.length} de {inventoryRecords.length}{' '}
-              {inventoryRecords.length === 1
-                ? 'registro'
-                : 'registros'}
-            </span>
-
-            <span>
-              Disponible = físico − reservado
-            </span>
+        {activeTab === 'lots' && (
+          <div
+            id="inventory-panel-lots"
+            className="inventory-tab-content"
+            role="tabpanel"
+            aria-labelledby="inventory-tab-lots"
+          >
+            <LotPanel
+              inventoryRecords={inventoryRecords}
+            />
           </div>
-        </section>
+        )}
+
+        {activeTab === 'expiration' && (
+          <div
+            id="inventory-panel-expiration"
+            className="inventory-tab-content"
+            role="tabpanel"
+            aria-labelledby="inventory-tab-expiration"
+          >
+            <ExpirationAlertsPanel
+              inventoryRecords={inventoryRecords}
+            />
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div
+            id="inventory-panel-history"
+            className="inventory-tab-content"
+            role="tabpanel"
+            aria-labelledby="inventory-tab-history"
+          >
+            <InventoryMovementHistory
+              inventoryRecords={inventoryRecords}
+            />
+          </div>
+        )}
 
         <footer className="inventory-footer">
           <span>
-            Sistema Integral de Gestión para Farmacia Quilicura
+            Sistema Integral de Gestión para Farmacia
+            Quilicura
           </span>
 
           <span>
-            Consulta de inventario multisucursal
+            Inventario multisucursal y trazabilidad
           </span>
         </footer>
       </main>

@@ -1,6 +1,28 @@
+from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+)
+
+
+StockStatus = Literal[
+    "SIN_STOCK",
+    "BAJO",
+    "DISPONIBLE",
+]
+
+
+AlertLevel = Literal[
+    "VENCIDO",
+    "CRITICO",
+    "PROXIMO",
+    "SEGUIMIENTO",
+]
 
 
 class InventoryRecordResponse(BaseModel):
@@ -23,6 +45,9 @@ class InventoryRecordResponse(BaseModel):
     reserved: int = Field(ge=0)
     available: int = Field(ge=0)
 
+    minimum: int = Field(ge=0)
+    stock_status: StockStatus
+
 
 class InventoryListResponse(BaseModel):
     model_config = ConfigDict(
@@ -30,3 +55,166 @@ class InventoryListResponse(BaseModel):
     )
 
     records: list[InventoryRecordResponse]
+
+
+class UpdateInventoryMinimum(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    minimum: int = Field(
+        ge=0,
+        le=1_000_000,
+    )
+
+
+class CreateInventoryLot(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
+    inventory_id: UUID
+
+    lot_number: str = Field(
+        min_length=1,
+        max_length=80,
+    )
+
+    expiration_date: date
+
+    quantity: int = Field(
+        gt=0,
+    )
+
+    @field_validator("expiration_date")
+    @classmethod
+    def validate_expiration_date(
+        cls,
+        value: date,
+    ) -> date:
+        if value <= date.today():
+            raise ValueError(
+                "La fecha de vencimiento debe ser futura."
+            )
+
+        return value
+
+
+class InventoryLotResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    id: UUID
+    inventory_id: UUID
+
+    product_id: UUID
+    product_name: str
+    product_sku: str
+
+    branch_id: UUID
+    branch_name: str
+    branch_code: str
+
+    lot_number: str
+    expiration_date: date
+    quantity: int = Field(ge=0)
+    is_active: bool
+    created_at: datetime
+
+
+class InventoryLotListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    lots: list[InventoryLotResponse]
+
+
+class InventoryMovementResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    id: UUID
+    inventory_id: UUID
+
+    product_id: UUID
+    product_name: str
+    product_sku: str
+
+    branch_id: UUID
+    branch_name: str
+    branch_code: str
+
+    user_id: UUID | None
+    user_name: str | None
+
+    movement_type: str
+
+    physical_change: int
+    reserved_change: int
+
+    physical_before: int = Field(ge=0)
+    physical_after: int = Field(ge=0)
+
+    reserved_before: int = Field(ge=0)
+    reserved_after: int = Field(ge=0)
+
+    available_before: int = Field(ge=0)
+    available_after: int = Field(ge=0)
+
+    reason: str
+
+    reference_type: str | None
+    reference_id: UUID | None
+
+    created_at: datetime
+
+
+class InventoryMovementListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    movements: list[InventoryMovementResponse]
+
+
+class ExpirationAlertResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    lot_id: UUID
+    inventory_id: UUID
+
+    product_id: UUID
+    product_name: str
+    product_sku: str
+
+    branch_id: UUID
+    branch_name: str
+    branch_code: str
+
+    lot_number: str
+    expiration_date: date
+    quantity: int = Field(ge=0)
+
+    days_remaining: int
+    alert_level: AlertLevel
+
+
+class ExpirationAlertListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    days: int = Field(
+        ge=1,
+        le=730,
+    )
+
+    include_expired: bool
+
+    alerts: list[ExpirationAlertResponse]
