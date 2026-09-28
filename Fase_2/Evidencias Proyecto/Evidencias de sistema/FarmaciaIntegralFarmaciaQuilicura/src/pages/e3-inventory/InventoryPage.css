@@ -96,6 +96,80 @@
   margin: 0;
 }
 
+/* Navegación por pestañas */
+
+.inventory-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 24px;
+  padding: 5px;
+  border: 1px solid #e5dfe8;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(27 72 50 / 3%);
+}
+
+.inventory-tab {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  appearance: none;
+  background: transparent;
+  color: #5d6f65;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.inventory-tab:hover {
+  background: #f7f9f8;
+  color: var(--brand-purple, #702582);
+}
+
+.inventory-tab:focus-visible {
+  outline: 2px solid var(--brand-purple, #702582);
+  outline-offset: 2px;
+}
+
+.inventory-tab-active {
+  border-color: #d3e6b0;
+  background: var(--brand-green-soft, #eef7df);
+  color: var(--brand-green-dark, #446d15);
+}
+
+.inventory-tab-active:hover {
+  border-color: #d3e6b0;
+  background: var(--brand-green-soft, #eef7df);
+  color: var(--brand-green-dark, #446d15);
+}
+
+.inventory-tab-content {
+  min-width: 0;
+  animation: inventory-tab-enter 160ms ease-out;
+}
+
+@keyframes inventory-tab-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Guía de interpretación */
 
 .stock-guide {
@@ -175,9 +249,11 @@
   margin: 7px 0 0;
   color: #718078;
   font-size: 12px;
+  line-height: 1.6;
 }
 
 .inventory-result-count {
+  flex-shrink: 0;
   padding: 5px 10px;
   border-radius: 20px;
   background: var(--brand-purple-soft, #f4eafa);
@@ -264,6 +340,7 @@
 .table-scroll {
   width: 100%;
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .inventory-app table {
@@ -366,9 +443,26 @@
 }
 
 .empty-state {
-  padding: 45px 20px;
+  padding: 38px 24px;
   color: #617469;
   text-align: center;
+  line-height: 1.65;
+}
+
+.empty-state strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #344765;
+  font-weight: 650;
+}
+
+.empty-state-detail {
+  display: block;
+  max-width: 620px;
+  margin: 0 auto;
+  color: #718078;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .inventory-footer {
@@ -503,7 +597,7 @@
 /* Panel de lotes */
 
 .lot-panel {
-  margin-top: 30px;
+  margin-top: 0;
   overflow: hidden;
   border: 1px solid #e5dfe8;
   border-radius: 12px;
@@ -680,34 +774,7 @@
   font-weight: 650;
 }
 
-/* Panel de seguimiento E3-H4 */
-
-.monitoring-section {
-  margin-top: 30px;
-}
-
-.monitoring-heading {
-  margin-bottom: 18px;
-}
-
-.monitoring-heading h2 {
-  margin: 0;
-  color: #253a5d;
-  font-size: 22px;
-  font-weight: 650;
-}
-
-.monitoring-heading p:not(.eyebrow) {
-  margin: 7px 0 0;
-  color: #64766e;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.monitoring-grid {
-  display: grid;
-  gap: 24px;
-}
+/* Paneles de vencimientos e historial */
 
 .expiration-panel,
 .movement-panel {
@@ -726,6 +793,7 @@
   padding: 25px 26px 0;
 }
 
+.monitoring-panel-heading h2,
 .monitoring-panel-heading h3 {
   margin: 0;
   color: #253a5d;
@@ -733,16 +801,16 @@
   font-weight: 600;
 }
 
-.monitoring-panel-heading p {
+.monitoring-panel-heading p:not(.eyebrow) {
   margin: 7px 0 0;
   color: #718078;
   font-size: 12px;
   line-height: 1.6;
 }
 
-/* Filtros del seguimiento */
+/* Filtros de vencimientos e historial */
 
-.monitoring-filters,
+.expiration-filters,
 .movement-filters {
   display: grid;
   align-items: end;
@@ -750,11 +818,12 @@
   padding: 24px 26px;
 }
 
-.monitoring-filters {
+.expiration-filters {
   grid-template-columns:
-    minmax(220px, 1.4fr)
+    minmax(170px, 1fr)
+    minmax(170px, 1fr)
     minmax(190px, 1fr)
-    minmax(130px, 0.6fr)
+    minmax(170px, 0.9fr)
     auto
     auto;
 }
@@ -762,7 +831,7 @@
 .movement-filters {
   grid-template-columns:
     minmax(230px, 1.4fr)
-    minmax(140px, 0.7fr)
+    minmax(180px, 0.9fr)
     minmax(145px, 0.7fr)
     minmax(145px, 0.7fr)
     auto
@@ -800,32 +869,9 @@
   outline-offset: 2px;
 }
 
-.monitoring-field input::placeholder {
-  color: #75867d;
-}
-
-.expired-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 42px;
-  color: #52695c;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.expired-checkbox input {
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  accent-color: var(--brand-purple, #702582);
-}
-
 .monitoring-submit-button {
   min-height: 42px;
-  padding: 10px 16px;
+  padding: 10px 14px;
   border: 1px solid var(--brand-green-dark, #446d15);
   border-radius: 7px;
   background: var(--brand-green-dark, #446d15);
@@ -854,7 +900,7 @@
   font-size: 13px;
 }
 
-/* Tablas del seguimiento */
+/* Tablas de vencimientos e historial */
 
 .monitoring-table {
   border-top: 1px solid #e7ece9;
@@ -867,21 +913,19 @@
 
 .movement-type {
   display: inline-block;
+  max-width: 180px;
   padding: 5px 9px;
-  border-radius: 5px;
+  border-radius: 20px;
   background: var(--brand-purple-soft, #f4eafa);
   color: var(--brand-purple, #702582);
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Consolas,
-    monospace;
   font-size: 11px;
   font-weight: 650;
-  white-space: nowrap;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
 }
 
-/* Niveles de vencimiento */
+/* Estados de vencimiento */
 
 .expiration-status {
   display: inline-block;
@@ -910,6 +954,22 @@
 .expiration-status-seguimiento {
   background: var(--brand-purple-soft, #f4eafa);
   color: var(--brand-purple, #702582);
+}
+
+/* Anchos medianos */
+
+@media (max-width: 1100px) {
+  .expiration-filters,
+  .movement-filters {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .monitoring-submit-button,
+  .expiration-filters .clear-button,
+  .movement-filters .clear-button {
+    width: 100%;
+  }
 }
 
 /* Pantallas medianas */
@@ -977,11 +1037,14 @@
     grid-column: 1 / -1;
   }
 
-  .lot-panel-heading {
+  .lot-panel-heading,
+  .monitoring-panel-heading {
     padding: 22px 20px 0;
   }
 
-  .lot-form {
+  .lot-form,
+  .expiration-filters,
+  .movement-filters {
     grid-template-columns: 1fr 1fr;
     padding: 20px;
   }
@@ -990,31 +1053,16 @@
     grid-column: 1 / -1;
   }
 
-  .lot-submit-button {
+  .lot-submit-button,
+  .monitoring-submit-button,
+  .expiration-filters .clear-button,
+  .movement-filters .clear-button {
     width: 100%;
   }
 
   .lot-consistency {
     margin-right: 20px;
     margin-left: 20px;
-  }
-
-  .monitoring-heading h2 {
-    font-size: 20px;
-  }
-
-  .monitoring-panel-heading {
-    padding: 22px 20px 0;
-  }
-
-  .monitoring-filters,
-  .movement-filters {
-    grid-template-columns: 1fr 1fr;
-    padding: 20px;
-  }
-
-  .monitoring-submit-button {
-    width: 100%;
   }
 
   .monitoring-table {
@@ -1032,6 +1080,20 @@
   .inventory-statuses {
     flex-direction: row;
     justify-content: flex-start;
+  }
+
+  .inventory-tabs {
+    display: flex;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .inventory-tab {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 130px;
+    scroll-snap-align: start;
   }
 
   .stock-guide {
@@ -1074,11 +1136,19 @@
     width: 100%;
   }
 
-  .lot-panel-heading {
+  .lot-panel-heading,
+  .monitoring-panel-heading {
     flex-direction: column;
+    gap: 10px;
   }
 
-  .lot-form {
+  .monitoring-panel-heading .inventory-result-count {
+    align-self: flex-start;
+  }
+
+  .lot-form,
+  .expiration-filters,
+  .movement-filters {
     grid-template-columns: 1fr;
   }
 
@@ -1095,28 +1165,10 @@
     flex-direction: column;
   }
 
-  .monitoring-heading {
-    margin-bottom: 14px;
-  }
-
-  .monitoring-heading h2 {
-    font-size: 19px;
-  }
-
-  .monitoring-panel-heading {
-    flex-direction: column;
-  }
-
-  .monitoring-filters,
-  .movement-filters {
-    grid-template-columns: 1fr;
-  }
-
-  .expired-checkbox {
-    min-height: 34px;
-  }
-
-  .monitoring-submit-button {
+  .lot-submit-button,
+  .monitoring-submit-button,
+  .expiration-filters .clear-button,
+  .movement-filters .clear-button {
     width: 100%;
   }
 }
