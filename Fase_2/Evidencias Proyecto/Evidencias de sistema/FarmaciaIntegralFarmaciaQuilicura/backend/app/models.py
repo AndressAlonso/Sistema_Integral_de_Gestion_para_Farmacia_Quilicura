@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Set
 from uuid import UUID, uuid4
@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     Column,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     false,
+    func,
     true,
 )
 from sqlalchemy.orm import (
@@ -170,6 +172,7 @@ class UsuarioInterno(Base):
             for rol in self.roles
             for permiso in rol.permisos
         }
+
         return permisos
 
 
@@ -461,6 +464,75 @@ class InventarioSucursal(Base):
         lazy="joined",
     )
 
+    lotes: Mapped[list["LoteInventario"]] = relationship(
+        back_populates="inventario",
+        passive_deletes="all",
+        order_by="LoteInventario.fecha_vencimiento",
+    )
+
     @property
     def stock_disponible(self) -> int:
         return self.stock_fisico - self.stock_reservado
+
+
+class LoteInventario(Base):
+    __tablename__ = "lote_inventario"
+    __table_args__ = (
+        UniqueConstraint(
+            "inventario_sucursal_id",
+            "numero_lote",
+            name="uq_lote_inventario_numero",
+        ),
+        CheckConstraint(
+            "btrim(numero_lote) <> '' "
+            "AND numero_lote = btrim(numero_lote)",
+            name="ck_lote_inventario_numero",
+        ),
+        CheckConstraint(
+            "cantidad >= 0",
+            name="ck_lote_inventario_cantidad",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    inventario_sucursal_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "inventario_sucursal.id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+
+    numero_lote: Mapped[str] = mapped_column(
+        String(80),
+    )
+
+    fecha_vencimiento: Mapped[date] = mapped_column(
+        Date,
+        index=True,
+    )
+
+    cantidad: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+    )
+
+    activo: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        server_default=true(),
+    )
+
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+    inventario: Mapped["InventarioSucursal"] = relationship(
+        back_populates="lotes",
+    )

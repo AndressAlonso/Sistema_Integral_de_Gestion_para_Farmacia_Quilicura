@@ -371,6 +371,188 @@
   font-size: 10px;
 }
 
+/* Panel de lotes */
+
+.lot-panel {
+  margin-top: 30px;
+  overflow: hidden;
+  border: 1px solid #e5dfe8;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 15px rgb(27 72 50 / 3%);
+}
+
+.lot-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 25px 26px 0;
+}
+
+.lot-panel-heading h2 {
+  margin: 0;
+  color: #253a5d;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.lot-panel-heading p:not(.eyebrow) {
+  margin: 7px 0 0;
+  color: #718078;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.lot-form {
+  display: grid;
+  grid-template-columns:
+    minmax(230px, 1.5fr)
+    minmax(160px, 1fr)
+    minmax(160px, 1fr)
+    minmax(100px, 0.5fr)
+    auto;
+  align-items: end;
+  gap: 14px;
+  padding: 24px 26px;
+}
+
+.lot-field {
+  min-width: 0;
+}
+
+.lot-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #344765;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lot-field input,
+.lot-field select {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #dbd2df;
+  border-radius: 7px;
+  background: #fff;
+  color: #352b3b;
+  font: inherit;
+  font-size: 13px;
+}
+
+.lot-field input:focus-visible,
+.lot-field select:focus-visible {
+  outline: 2px solid var(--brand-purple, #702582);
+  outline-offset: 2px;
+}
+
+.lot-submit-button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid var(--brand-green-dark, #446d15);
+  border-radius: 7px;
+  background: var(--brand-green-dark, #446d15);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.lot-submit-button:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.lot-submit-button:disabled {
+  border-color: #aeb8b1;
+  background: #aeb8b1;
+  cursor: not-allowed;
+}
+
+.lot-message {
+  margin: 0 26px 20px;
+  padding: 11px 14px;
+  border-radius: 7px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.lot-error {
+  border: 1px solid #efc2c2;
+  background: #fff2f2;
+  color: #922f2f;
+}
+
+.lot-success {
+  border: 1px solid #cfe2b0;
+  background: var(--brand-green-soft, #eef7df);
+  color: var(--brand-green-dark, #446d15);
+}
+
+.lot-consistency {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  margin: 0 26px 22px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f7f9f8;
+  color: #5d7065;
+  font-size: 12px;
+}
+
+.lot-consistent {
+  color: var(--brand-green-dark, #446d15);
+  font-weight: 650;
+}
+
+.lot-warning {
+  color: #9a5b12;
+  font-weight: 650;
+}
+
+.lot-loading {
+  margin: 0;
+  padding: 30px 26px;
+  color: #65748e;
+  font-size: 13px;
+}
+
+.lot-table {
+  border-top: 1px solid #e7ece9;
+}
+
+.lot-number {
+  color: #3d4d68;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lot-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #f0f3f1;
+  color: #68766e;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.lot-fefo {
+  background: var(--brand-purple-soft, #f4eafa);
+  color: var(--brand-purple, #702582);
+  font-weight: 650;
+}
+
+/* Pantallas medianas */
+
 @media (max-width: 760px) {
   .inventory-main {
     padding: 28px 18px 22px;
@@ -420,7 +602,31 @@
     flex-direction: column;
     gap: 6px;
   }
+
+  .lot-panel-heading {
+    padding: 22px 20px 0;
+  }
+
+  .lot-form {
+    grid-template-columns: 1fr 1fr;
+    padding: 20px;
+  }
+
+  .lot-inventory-field {
+    grid-column: 1 / -1;
+  }
+
+  .lot-submit-button {
+    width: 100%;
+  }
+
+  .lot-consistency {
+    margin-right: 20px;
+    margin-left: 20px;
+  }
 }
+
+/* Pantallas pequeñas */
 
 @media (max-width: 560px) {
   .inventory-title-row {
@@ -459,5 +665,26 @@
   .table-footer {
     flex-direction: column;
     padding: 16px 20px;
+  }
+
+  .lot-panel-heading {
+    flex-direction: column;
+  }
+
+  .lot-form {
+    grid-template-columns: 1fr;
+  }
+
+  .lot-inventory-field {
+    grid-column: auto;
+  }
+
+  .lot-message {
+    margin-right: 20px;
+    margin-left: 20px;
+  }
+
+  .lot-consistency {
+    flex-direction: column;
   }
 }

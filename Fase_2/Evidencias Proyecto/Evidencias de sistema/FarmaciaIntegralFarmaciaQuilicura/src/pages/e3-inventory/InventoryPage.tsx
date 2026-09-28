@@ -7,6 +7,7 @@ import {
   type InventoryRecord,
 } from './inventory.api'
 import InventoryTable from './InventoryTable'
+import LotPanel from './LotPanel'
 import './InventoryPage.css'
 
 function normalize(value: string): string {
@@ -165,7 +166,7 @@ export default function InventoryPage() {
 
           <div className="inventory-statuses">
             <span className="read-only">
-              Solo consulta
+              Consulta y trazabilidad
             </span>
 
             <span className="inventory-updated">
@@ -310,7 +311,7 @@ export default function InventoryPage() {
             </span>
           </div>
         </section>
-
+        <LotPanel inventoryRecords={inventoryRecords} />
         <footer className="inventory-footer">
           <span>
             Sistema Integral de Gestión para Farmacia Quilicura
