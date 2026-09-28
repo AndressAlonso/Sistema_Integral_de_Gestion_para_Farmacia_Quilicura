@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Annotated
 from uuid import UUID
 
@@ -5,6 +6,7 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Query,
     Request,
 )
 
@@ -15,14 +17,18 @@ from app.auth.routes import (
 from app.auth.users import User
 from app.inventory.schemas import (
     CreateInventoryLot,
+    ExpirationAlertListResponse,
     InventoryListResponse,
     InventoryLotListResponse,
     InventoryLotResponse,
+    InventoryMovementListResponse,
     InventoryRecordResponse,
     UpdateInventoryMinimum,
 )
 from app.inventory.service import (
     AccessDenied,
+    InvalidExpirationAlertDays,
+    InvalidMovementDateRange,
     InventoryLotAlreadyExists,
     InventoryNotFound,
     InventoryService,
@@ -137,6 +143,108 @@ def list_inventory(
 
     return {
         "records": records,
+    }
+
+
+@router.get(
+    "/movements",
+    response_model=InventoryMovementListResponse,
+)
+def list_inventory_movements(
+    request: Request,
+    actor: Reader,
+    inventory_id: UUID | None = None,
+    product_id: UUID | None = None,
+    branch_id: UUID | None = None,
+    movement_type: Annotated[
+        str | None,
+        Query(
+            min_length=1,
+            max_length=50,
+        ),
+    ] = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
+):
+    try:
+        movements = service(request).list_movements(
+            actor=actor,
+            inventory_id=inventory_id,
+            product_id=product_id,
+            branch_id=branch_id,
+            movement_type=movement_type,
+            start_date=start_date,
+            end_date=end_date,
+        )
+    except AccessDenied:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "No tienes permiso para consultar "
+                "los movimientos de inventario."
+            ),
+        ) from None
+    except InvalidMovementDateRange:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "La fecha inicial no puede ser posterior "
+                "a la fecha final."
+            ),
+        ) from None
+
+    return {
+        "movements": movements,
+    }
+
+
+@router.get(
+    "/expiration-alerts",
+    response_model=ExpirationAlertListResponse,
+)
+def list_expiration_alerts(
+    request: Request,
+    actor: Reader,
+    days: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=730,
+        ),
+    ] = 90,
+    include_expired: bool = True,
+    product_id: UUID | None = None,
+    branch_id: UUID | None = None,
+):
+    try:
+        alerts = service(request).list_expiration_alerts(
+            actor=actor,
+            days=days,
+            include_expired=include_expired,
+            product_id=product_id,
+            branch_id=branch_id,
+        )
+    except AccessDenied:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "No tienes permiso para consultar "
+                "las alertas de vencimiento."
+            ),
+        ) from None
+    except InvalidExpirationAlertDays:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "El horizonte de vencimiento debe estar "
+                "entre 1 y 730 días."
+            ),
+        ) from None
+
+    return {
+        "days": days,
+        "include_expired": include_expired,
+        "alerts": alerts,
     }
 
 

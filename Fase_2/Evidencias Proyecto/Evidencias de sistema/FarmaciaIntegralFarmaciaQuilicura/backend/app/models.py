@@ -480,6 +480,14 @@ class InventarioSucursal(Base):
         order_by="LoteInventario.fecha_vencimiento",
     )
 
+    movimientos: Mapped[
+        list["MovimientoInventario"]
+    ] = relationship(
+        back_populates="inventario",
+        passive_deletes="all",
+        order_by="MovimientoInventario.creado_en",
+    )
+
     @property
     def stock_disponible(self) -> int:
         return self.stock_fisico - self.stock_reservado
@@ -563,3 +571,156 @@ class LoteInventario(Base):
     inventario: Mapped["InventarioSucursal"] = relationship(
         back_populates="lotes",
     )
+
+
+class MovimientoInventario(Base):
+    __tablename__ = "movimiento_inventario"
+    __table_args__ = (
+        CheckConstraint(
+            "btrim(tipo) <> '' "
+            "AND tipo = btrim(tipo)",
+            name="ck_movimiento_inventario_tipo",
+        ),
+        CheckConstraint(
+            "cantidad_fisica <> 0 "
+            "OR cantidad_reservada <> 0",
+            name="ck_movimiento_inventario_cambio",
+        ),
+        CheckConstraint(
+            "stock_fisico_anterior >= 0",
+            name="ck_movimiento_stock_fisico_anterior",
+        ),
+        CheckConstraint(
+            "stock_fisico_resultante >= 0",
+            name="ck_movimiento_stock_fisico_resultante",
+        ),
+        CheckConstraint(
+            "stock_reservado_anterior >= 0",
+            name="ck_movimiento_stock_reservado_anterior",
+        ),
+        CheckConstraint(
+            "stock_reservado_resultante >= 0",
+            name="ck_movimiento_stock_reservado_resultante",
+        ),
+        CheckConstraint(
+            "stock_reservado_anterior "
+            "<= stock_fisico_anterior",
+            name="ck_movimiento_stock_anterior_consistente",
+        ),
+        CheckConstraint(
+            "stock_reservado_resultante "
+            "<= stock_fisico_resultante",
+            name="ck_movimiento_stock_resultante_consistente",
+        ),
+        CheckConstraint(
+            "stock_fisico_resultante = "
+            "stock_fisico_anterior + cantidad_fisica",
+            name="ck_movimiento_cambio_fisico",
+        ),
+        CheckConstraint(
+            "stock_reservado_resultante = "
+            "stock_reservado_anterior + cantidad_reservada",
+            name="ck_movimiento_cambio_reservado",
+        ),
+        CheckConstraint(
+            "btrim(motivo) <> ''",
+            name="ck_movimiento_inventario_motivo",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    inventario_sucursal_id: Mapped[UUID] = mapped_column(
+        ForeignKey(
+            "inventario_sucursal.id",
+            ondelete="RESTRICT",
+        ),
+        index=True,
+    )
+
+    usuario_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey(
+            "usuario_interno.id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+        index=True,
+    )
+
+    tipo: Mapped[str] = mapped_column(
+        String(50),
+        index=True,
+    )
+
+    cantidad_fisica: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+    )
+
+    cantidad_reservada: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+    )
+
+    stock_fisico_anterior: Mapped[int] = mapped_column(
+        Integer,
+    )
+
+    stock_fisico_resultante: Mapped[int] = mapped_column(
+        Integer,
+    )
+
+    stock_reservado_anterior: Mapped[int] = mapped_column(
+        Integer,
+    )
+
+    stock_reservado_resultante: Mapped[int] = mapped_column(
+        Integer,
+    )
+
+    motivo: Mapped[str] = mapped_column(
+        String(250),
+    )
+
+    referencia_tipo: Mapped[str | None] = mapped_column(
+        String(60),
+        nullable=True,
+    )
+
+    referencia_id: Mapped[UUID | None] = mapped_column(
+        nullable=True,
+    )
+
+    creado_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        index=True,
+    )
+
+    inventario: Mapped["InventarioSucursal"] = relationship(
+        back_populates="movimientos",
+        lazy="joined",
+    )
+
+    usuario: Mapped[UsuarioInterno | None] = relationship(
+        lazy="joined",
+    )
+
+    @property
+    def stock_disponible_anterior(self) -> int:
+        return (
+            self.stock_fisico_anterior
+            - self.stock_reservado_anterior
+        )
+
+    @property
+    def stock_disponible_resultante(self) -> int:
+        return (
+            self.stock_fisico_resultante
+            - self.stock_reservado_resultante
+        )

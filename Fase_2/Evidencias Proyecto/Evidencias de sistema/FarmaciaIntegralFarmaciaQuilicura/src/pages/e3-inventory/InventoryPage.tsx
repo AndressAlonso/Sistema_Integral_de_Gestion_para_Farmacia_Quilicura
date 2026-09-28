@@ -6,6 +6,7 @@ import {
   listInventory,
   type InventoryRecord,
 } from './inventory.api'
+import InventoryMonitoringPanel from './InventoryMonitoringPanel'
 import InventoryTable from './InventoryTable'
 import LotPanel from './LotPanel'
 import './InventoryPage.css'
@@ -199,8 +200,9 @@ export default function InventoryPage() {
             </h1>
 
             <p className="inventory-description">
-              Consulta las existencias, configura mínimos
-              y revisa la trazabilidad por lote.
+              Consulta las existencias, configura mínimos,
+              administra lotes y revisa la trazabilidad del
+              inventario.
             </p>
           </div>
 
@@ -241,7 +243,7 @@ export default function InventoryPage() {
             </h2>
 
             <p>
-              Unidades presentes en la sucursal.
+              Unidades presentes físicamente en la sucursal.
             </p>
           </div>
 
@@ -276,7 +278,7 @@ export default function InventoryPage() {
           </div>
         </section>
 
-                <section
+        <section
           className="inventory-panel"
           aria-labelledby="results-title"
         >
@@ -380,9 +382,14 @@ export default function InventoryPage() {
           inventoryRecords={inventoryRecords}
         />
 
+        <InventoryMonitoringPanel
+          inventoryRecords={inventoryRecords}
+        />
+
         <footer className="inventory-footer">
           <span>
-            Sistema Integral de Gestión para Farmacia Quilicura
+            Sistema Integral de Gestión para Farmacia
+            Quilicura
           </span>
 
           <span>

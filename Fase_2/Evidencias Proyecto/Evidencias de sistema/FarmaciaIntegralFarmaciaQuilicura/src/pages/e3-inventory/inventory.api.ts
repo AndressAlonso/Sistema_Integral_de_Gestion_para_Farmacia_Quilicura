@@ -5,6 +5,12 @@ export type StockStatus =
   | 'BAJO'
   | 'DISPONIBLE'
 
+export type AlertLevel =
+  | 'VENCIDO'
+  | 'CRITICO'
+  | 'PROXIMO'
+  | 'SEGUIMIENTO'
+
 export interface InventoryRecord {
   id: string
   product_id: string
@@ -51,9 +57,126 @@ export interface CreateInventoryLot {
   quantity: number
 }
 
-export async function listInventory(): Promise<InventoryRecord[]> {
+export interface InventoryMovement {
+  id: string
+  inventory_id: string
+
+  product_id: string
+  product_name: string
+  product_sku: string
+
+  branch_id: string
+  branch_name: string
+  branch_code: string
+
+  user_id: string | null
+  user_name: string | null
+
+  movement_type: string
+
+  physical_change: number
+  reserved_change: number
+
+  physical_before: number
+  physical_after: number
+
+  reserved_before: number
+  reserved_after: number
+
+  available_before: number
+  available_after: number
+
+  reason: string
+
+  reference_type: string | null
+  reference_id: string | null
+
+  created_at: string
+}
+
+interface InventoryMovementListResponse {
+  movements: InventoryMovement[]
+}
+
+export interface InventoryMovementFilters {
+  inventoryId?: string
+  productId?: string
+  branchId?: string
+  movementType?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface ExpirationAlert {
+  lot_id: string
+  inventory_id: string
+
+  product_id: string
+  product_name: string
+  product_sku: string
+
+  branch_id: string
+  branch_name: string
+  branch_code: string
+
+  lot_number: string
+  expiration_date: string
+  quantity: number
+
+  days_remaining: number
+  alert_level: AlertLevel
+}
+
+interface ExpirationAlertListResponse {
+  days: number
+  include_expired: boolean
+  alerts: ExpirationAlert[]
+}
+
+export interface ExpirationAlertFilters {
+  days?: number
+  includeExpired?: boolean
+  productId?: string
+  branchId?: string
+}
+
+function pathWithQuery(
+  path: string,
+  parameters: Record<
+    string,
+    string | number | boolean | undefined
+  >,
+): string {
+  const search = new URLSearchParams()
+
+  Object.entries(parameters).forEach(([key, value]) => {
+    if (
+      value === undefined
+      || value === ''
+    ) {
+      return
+    }
+
+    search.set(
+      key,
+      String(value),
+    )
+  })
+
+  const query = search.toString()
+
+  return query
+    ? `${path}?${query}`
+    : path
+}
+
+export async function listInventory(): Promise<
+  InventoryRecord[]
+> {
   const response = await apiRequest('/api/inventory')
-  const data: InventoryListResponse = await response.json()
+
+  const data: InventoryListResponse =
+    await response.json()
 
   return data.records
 }
@@ -75,7 +198,8 @@ export async function updateInventoryMinimum(
     },
   )
 
-  const data: InventoryRecord = await response.json()
+  const data: InventoryRecord =
+    await response.json()
 
   return data
 }
@@ -88,7 +212,9 @@ export async function listInventoryLots(
     : '/api/inventory/lots'
 
   const response = await apiRequest(path)
-  const data: InventoryLotListResponse = await response.json()
+
+  const data: InventoryLotListResponse =
+    await response.json()
 
   return data.lots
 }
@@ -107,7 +233,53 @@ export async function createInventoryLot(
     },
   )
 
-  const data: InventoryLot = await response.json()
+  const data: InventoryLot =
+    await response.json()
+
+  return data
+}
+
+export async function listInventoryMovements(
+  filters: InventoryMovementFilters = {},
+): Promise<InventoryMovement[]> {
+  const path = pathWithQuery(
+    '/api/inventory/movements',
+    {
+      inventory_id: filters.inventoryId,
+      product_id: filters.productId,
+      branch_id: filters.branchId,
+      movement_type: filters.movementType,
+      start_date: filters.startDate,
+      end_date: filters.endDate,
+    },
+  )
+
+  const response = await apiRequest(path)
+
+  const data: InventoryMovementListResponse =
+    await response.json()
+
+  return data.movements
+}
+
+export async function listExpirationAlerts(
+  filters: ExpirationAlertFilters = {},
+): Promise<ExpirationAlertListResponse> {
+  const path = pathWithQuery(
+    '/api/inventory/expiration-alerts',
+    {
+      days: filters.days ?? 90,
+      include_expired:
+        filters.includeExpired ?? true,
+      product_id: filters.productId,
+      branch_id: filters.branchId,
+    },
+  )
+
+  const response = await apiRequest(path)
+
+  const data: ExpirationAlertListResponse =
+    await response.json()
 
   return data
 }

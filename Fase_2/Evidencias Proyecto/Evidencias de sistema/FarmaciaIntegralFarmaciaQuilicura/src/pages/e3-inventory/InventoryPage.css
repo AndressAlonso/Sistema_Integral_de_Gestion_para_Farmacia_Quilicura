@@ -186,7 +186,7 @@
   white-space: nowrap;
 }
 
-/* Filtros */
+/* Filtros principales */
 
 .inventory-filters {
   display: flex;
@@ -242,6 +242,7 @@
   border-radius: 7px;
   background: #fff;
   color: var(--brand-purple, #702582);
+  font: inherit;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -679,6 +680,238 @@
   font-weight: 650;
 }
 
+/* Panel de seguimiento E3-H4 */
+
+.monitoring-section {
+  margin-top: 30px;
+}
+
+.monitoring-heading {
+  margin-bottom: 18px;
+}
+
+.monitoring-heading h2 {
+  margin: 0;
+  color: #253a5d;
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.monitoring-heading p:not(.eyebrow) {
+  margin: 7px 0 0;
+  color: #64766e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.monitoring-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.expiration-panel,
+.movement-panel {
+  overflow: hidden;
+  border: 1px solid #e5dfe8;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 15px rgb(27 72 50 / 3%);
+}
+
+.monitoring-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 25px 26px 0;
+}
+
+.monitoring-panel-heading h3 {
+  margin: 0;
+  color: #253a5d;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.monitoring-panel-heading p {
+  margin: 7px 0 0;
+  color: #718078;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Filtros del seguimiento */
+
+.monitoring-filters,
+.movement-filters {
+  display: grid;
+  align-items: end;
+  gap: 14px;
+  padding: 24px 26px;
+}
+
+.monitoring-filters {
+  grid-template-columns:
+    minmax(220px, 1.4fr)
+    minmax(190px, 1fr)
+    minmax(130px, 0.6fr)
+    auto
+    auto;
+}
+
+.movement-filters {
+  grid-template-columns:
+    minmax(230px, 1.4fr)
+    minmax(140px, 0.7fr)
+    minmax(145px, 0.7fr)
+    minmax(145px, 0.7fr)
+    auto
+    auto;
+}
+
+.monitoring-field {
+  min-width: 0;
+}
+
+.monitoring-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #344765;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.monitoring-field input,
+.monitoring-field select {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #dbd2df;
+  border-radius: 7px;
+  background: #fff;
+  color: #352b3b;
+  font: inherit;
+  font-size: 13px;
+}
+
+.monitoring-field input:focus-visible,
+.monitoring-field select:focus-visible {
+  outline: 2px solid var(--brand-purple, #702582);
+  outline-offset: 2px;
+}
+
+.monitoring-field input::placeholder {
+  color: #75867d;
+}
+
+.expired-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  color: #52695c;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.expired-checkbox input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--brand-purple, #702582);
+}
+
+.monitoring-submit-button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid var(--brand-green-dark, #446d15);
+  border-radius: 7px;
+  background: var(--brand-green-dark, #446d15);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.monitoring-submit-button:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+.monitoring-submit-button:disabled {
+  border-color: #aeb8b1;
+  background: #aeb8b1;
+  cursor: wait;
+}
+
+.monitoring-loading {
+  margin: 0;
+  padding: 30px 26px;
+  color: #65748e;
+  font-size: 13px;
+}
+
+/* Tablas del seguimiento */
+
+.monitoring-table {
+  border-top: 1px solid #e7ece9;
+}
+
+.monitoring-table td,
+.monitoring-table th {
+  vertical-align: middle;
+}
+
+.movement-type {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 5px;
+  background: var(--brand-purple-soft, #f4eafa);
+  color: var(--brand-purple, #702582);
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+/* Niveles de vencimiento */
+
+.expiration-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.expiration-status-vencido {
+  background: #fde8e8;
+  color: #9c2d2d;
+}
+
+.expiration-status-critico {
+  background: #fff0d6;
+  color: #99530c;
+}
+
+.expiration-status-proximo {
+  background: #fff8d8;
+  color: #806510;
+}
+
+.expiration-status-seguimiento {
+  background: var(--brand-purple-soft, #f4eafa);
+  color: var(--brand-purple, #702582);
+}
+
 /* Pantallas medianas */
 
 @media (max-width: 760px) {
@@ -765,6 +998,28 @@
     margin-right: 20px;
     margin-left: 20px;
   }
+
+  .monitoring-heading h2 {
+    font-size: 20px;
+  }
+
+  .monitoring-panel-heading {
+    padding: 22px 20px 0;
+  }
+
+  .monitoring-filters,
+  .movement-filters {
+    grid-template-columns: 1fr 1fr;
+    padding: 20px;
+  }
+
+  .monitoring-submit-button {
+    width: 100%;
+  }
+
+  .monitoring-table {
+    min-width: 900px;
+  }
 }
 
 /* Pantallas pequeñas */
@@ -838,5 +1093,30 @@
 
   .lot-consistency {
     flex-direction: column;
+  }
+
+  .monitoring-heading {
+    margin-bottom: 14px;
+  }
+
+  .monitoring-heading h2 {
+    font-size: 19px;
+  }
+
+  .monitoring-panel-heading {
+    flex-direction: column;
+  }
+
+  .monitoring-filters,
+  .movement-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .expired-checkbox {
+    min-height: 34px;
+  }
+
+  .monitoring-submit-button {
+    width: 100%;
   }
 }
