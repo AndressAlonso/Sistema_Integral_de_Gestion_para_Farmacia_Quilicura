@@ -1,0 +1,663 @@
+NOTAS TECNICAS - EPICA 3: GESTION DE INVENTARIO
+Sistema Integral de Gestion para Farmacia Quilicura
+Rama: feat/e3-inventario-jesus
+
+======================================================================
+1. RESUMEN GENERAL
+======================================================================
+
+La Epica 3 implementa la gestion de inventario por producto y sucursal.
+El modulo permite consultar existencias, registrar lotes, controlar fechas
+de vencimiento, configurar niveles minimos de stock y consultar el historial
+de movimientos del inventario.
+
+La interfaz fue organizada en cuatro secciones mediante pestanas:
+
+1. Disponibilidad.
+2. Lotes.
+3. Vencimientos.
+4. Historial o movimientos de stock.
+
+Esta organizacion evita una pagina demasiado extensa y permite que la
+persona usuaria se concentre en una tarea a la vez.
+
+Ruta principal del frontend:
+
+/admin/inventory
+
+Prefijo principal de la API:
+
+/api/inventory
+
+======================================================================
+2. TECNOLOGIAS Y ARQUITECTURA
+======================================================================
+
+Backend:
+
+- Python.
+- FastAPI.
+- SQLAlchemy 2.
+- Pydantic 2.
+- PostgreSQL.
+- Alembic.
+
+Frontend:
+
+- React.
+- TypeScript.
+- Vite.
+- CSS.
+
+El proyecto utiliza una arquitectura de monolito modular. El modulo de
+inventario sigue esta estructura:
+
+Rutas HTTP
+    -> Servicio de aplicacion
+    -> Repositorio PostgreSQL
+    -> Modelos SQLAlchemy
+    -> Base de datos PostgreSQL
+
+Archivos principales del backend:
+
+- backend/app/models.py
+- backend/app/inventory/repository.py
+- backend/app/inventory/routes.py
+- backend/app/inventory/schemas.py
+- backend/app/inventory/service.py
+
+Archivos principales del frontend:
+
+- src/pages/e3-inventory/InventoryPage.tsx
+- src/pages/e3-inventory/InventoryPage.css
+- src/pages/e3-inventory/InventoryTable.tsx
+- src/pages/e3-inventory/LotPanel.tsx
+- src/pages/e3-inventory/ExpirationAlertsPanel.tsx
+- src/pages/e3-inventory/InventoryMovementHistory.tsx
+- src/pages/e3-inventory/inventory.api.ts
+
+======================================================================
+3. E3-H1: INVENTARIO POR PRODUCTO Y SUCURSAL
+======================================================================
+
+Cada registro de inventario representa una combinacion unica de:
+
+Producto + Sucursal
+
+Esto permite que un mismo producto tenga cantidades diferentes en cada
+sucursal.
+
+Informacion disponible por registro:
+
+- Identificador del inventario.
+- Identificador del producto.
+- Nombre del producto.
+- SKU del producto.
+- Identificador de la sucursal.
+- Nombre de la sucursal.
+- Codigo de la sucursal.
+- Stock fisico.
+- Stock reservado.
+- Stock disponible.
+- Stock minimo.
+- Estado del stock.
+
+El stock disponible se calcula automaticamente:
+
+stock_disponible = stock_fisico - stock_reservado
+
+Ejemplo usado durante las pruebas:
+
+Stock fisico: 120
+Stock reservado: 18
+Stock disponible: 102
+
+Reglas de integridad:
+
+- El stock fisico no puede ser negativo.
+- El stock reservado no puede ser negativo.
+- El stock reservado no puede superar al stock fisico.
+- El stock minimo no puede ser negativo.
+
+Endpoint:
+
+GET /api/inventory
+
+En el frontend, la pestana Disponibilidad permite:
+
+- Buscar por nombre del producto.
+- Buscar por SKU.
+- Buscar por sucursal.
+- Buscar por codigo de sucursal.
+- Buscar por estado de stock.
+- Filtrar por sucursal.
+- Consultar stock fisico, reservado y disponible.
+- Configurar el minimo de reposicion.
+
+======================================================================
+4. E3-H2: LOTES Y FECHAS DE VENCIMIENTO
+======================================================================
+
+Se implemento el registro y consulta de lotes asociados a un inventario
+especifico de producto y sucursal.
+
+Cada lote contiene:
+
+- Identificador.
+- Inventario asociado.
+- Producto.
+- Sucursal.
+- Numero de lote.
+- Fecha de vencimiento.
+- Cantidad.
+- Estado activo o inactivo.
+- Fecha de creacion.
+
+Reglas aplicadas:
+
+- El numero de lote no puede estar vacio.
+- El numero de lote se normaliza eliminando espacios al inicio y al final.
+- No puede repetirse un numero de lote dentro del mismo inventario.
+- La cantidad no puede ser negativa en la base de datos.
+- Al registrar un lote desde la API, la cantidad debe ser mayor que cero.
+- Los lotes se ordenan por fecha de vencimiento.
+
+Endpoints:
+
+GET /api/inventory/lots
+GET /api/inventory/{inventory_id}/lots
+POST /api/inventory/lots
+
+Se implemento la regla FEFO:
+
+First Expired, First Out.
+Primero en vencer, primero en salir.
+
+El lote activo con unidades y con la fecha de vencimiento mas cercana se
+identifica como el lote que debe utilizarse primero.
+
+La interfaz compara tambien:
+
+- Unidades fisicas registradas.
+- Unidades distribuidas en lotes.
+- Unidades sin asociar a un lote.
+
+Formula:
+
+diferencia = stock_fisico - suma_de_cantidades_de_lotes
+
+Durante las pruebas se obtuvo:
+
+Stock fisico: 120
+Cantidad registrada en lotes: 120
+Diferencia: 0
+
+Esto confirma que todas las unidades fisicas estaban asociadas a lotes.
+
+======================================================================
+5. E3-H3: CONFIGURACION DE STOCK MINIMO
+======================================================================
+
+Se implemento la configuracion del stock minimo por producto y sucursal.
+
+El stock minimo no modifica el inventario. El valor solamente determina
+cuando debe mostrarse una alerta de reposicion.
+
+Estados disponibles:
+
+- DISPONIBLE.
+- BAJO.
+- SIN_STOCK.
+
+Reglas:
+
+Si stock_disponible es igual a 0:
+    Estado = SIN_STOCK
+
+Si stock_minimo es mayor que 0 y stock_disponible es menor o igual al
+stock_minimo:
+    Estado = BAJO
+
+En cualquier otro caso:
+    Estado = DISPONIBLE
+
+Endpoint:
+
+PATCH /api/inventory/{inventory_id}/minimum
+
+Ejemplo de solicitud:
+
+{
+  "minimum": 20
+}
+
+Permiso requerido:
+
+inventario.configurar_minimo
+
+Se agrego la migracion:
+
+0006_stock_minimo.py
+
+Commit principal relacionado:
+
+869b691 feat: configurar stock minimo por sucursal
+
+======================================================================
+6. E3-H4: MOVIMIENTOS DE STOCK
+======================================================================
+
+Se implemento el modelo MovimientoInventario y la tabla:
+
+movimiento_inventario
+
+El objetivo es conservar la trazabilidad de cada cambio que afecte el
+stock de un producto en una sucursal.
+
+Cada movimiento puede registrar:
+
+- Identificador del movimiento.
+- Inventario afectado.
+- Usuario responsable.
+- Tipo de movimiento.
+- Cambio en stock fisico.
+- Cambio en stock reservado.
+- Stock fisico anterior.
+- Stock fisico resultante.
+- Stock reservado anterior.
+- Stock reservado resultante.
+- Motivo.
+- Tipo de referencia.
+- Identificador de referencia.
+- Fecha y hora de creacion.
+
+Valores calculados:
+
+stock_disponible_anterior =
+    stock_fisico_anterior - stock_reservado_anterior
+
+stock_disponible_resultante =
+    stock_fisico_resultante - stock_reservado_resultante
+
+Restricciones de consistencia:
+
+- El movimiento debe cambiar el stock fisico o el reservado.
+- Los valores anteriores no pueden ser negativos.
+- Los valores resultantes no pueden ser negativos.
+- El reservado anterior no puede superar al fisico anterior.
+- El reservado resultante no puede superar al fisico resultante.
+- El resultado fisico debe coincidir con el valor anterior mas el cambio.
+- El resultado reservado debe coincidir con el valor anterior mas el cambio.
+- El tipo no puede estar vacio.
+- El motivo no puede estar vacio.
+
+Tipos previstos en la interfaz:
+
+- SALDO_INICIAL.
+- ENTRADA.
+- SALIDA.
+- RESERVA.
+- LIBERACION_RESERVA.
+- AJUSTE.
+- TRANSFERENCIA_SALIDA.
+- TRANSFERENCIA_ENTRADA.
+- VENTA.
+- RECEPCION.
+
+Nombres mostrados al usuario:
+
+- Registro inicial.
+- Entrada de unidades.
+- Salida de unidades.
+- Reserva de unidades.
+- Liberacion de reserva.
+- Ajuste de inventario.
+- Transferencia enviada.
+- Transferencia recibida.
+- Venta.
+- Recepcion de productos.
+
+Endpoint:
+
+GET /api/inventory/movements
+
+Filtros disponibles:
+
+- inventory_id.
+- product_id.
+- branch_id.
+- movement_type.
+- start_date.
+- end_date.
+
+La fecha final incluye todo el dia consultado. Se utiliza un limite
+exclusivo correspondiente al inicio del dia siguiente.
+
+Validacion del periodo:
+
+start_date no puede ser posterior a end_date.
+
+Si el rango esta invertido, el servicio responde con estado HTTP 422.
+
+Estado actual del historial:
+
+El historial puede aparecer con 0 movimientos. Esto es correcto porque
+todavia no existen operaciones reales de ventas, recepciones, reservas,
+transferencias o ajustes que creen movimientos.
+
+No se generaron movimientos ficticios para justificar las existencias
+actuales.
+
+Se agrego la migracion:
+
+0007_movimientos_inventario.py
+
+Commit principal relacionado:
+
+c50989a feat: consultar movimientos y alertas de vencimiento
+
+======================================================================
+7. CONTROL DE VENCIMIENTOS
+======================================================================
+
+La pestana Vencimientos muestra inicialmente todos los lotes activos con
+cantidad mayor que cero. La persona usuaria puede aplicar filtros despues
+de revisar la informacion general.
+
+Filtros disponibles:
+
+- Producto.
+- Sucursal.
+- Periodo de vencimiento.
+- Estado del vencimiento.
+
+Periodos disponibles:
+
+- Todos los vencimientos.
+- Proximos 3 meses.
+- Proximos 6 meses.
+- Proximo ano.
+- Proximos 2 anos.
+- Solo lotes vencidos.
+
+Clasificacion utilizada:
+
+- Vencido: menos de 0 dias restantes.
+- Vence muy pronto: entre 0 y 30 dias.
+- Proximo a vencer: entre 31 y 60 dias.
+- Vencimiento lejano: mas de 60 dias.
+
+Los rangos se muestran en el selector para evitar que la persona usuaria
+tenga que memorizar las reglas.
+
+Cuando se filtran lotes vencidos y no existen resultados, la interfaz
+muestra un mensaje positivo:
+
+No hay lotes vencidos.
+Actualmente no existen lotes que requieran revision por vencimiento.
+
+La vista general de vencimientos utiliza todos los lotes obtenidos desde:
+
+GET /api/inventory/lots
+
+Tambien permanece disponible el endpoint de alertas:
+
+GET /api/inventory/expiration-alerts
+
+Filtros aceptados por el endpoint de alertas:
+
+- days.
+- include_expired.
+- product_id.
+- branch_id.
+
+El horizonte valido del endpoint esta entre 1 y 730 dias.
+
+======================================================================
+8. NAVEGACION Y EXPERIENCIA DE USUARIO
+======================================================================
+
+La pantalla originalmente mostraba todos los paneles uno debajo del otro.
+La pagina fue reorganizada mediante cuatro pestanas:
+
+- Disponibilidad.
+- Lotes.
+- Vencimientos.
+- Historial de movimientos de stock.
+
+Esto permite mostrar una sola tarea a la vez y evita una pantalla demasiado
+larga.
+
+Se separo el componente combinado de seguimiento en dos componentes:
+
+- ExpirationAlertsPanel.tsx.
+- InventoryMovementHistory.tsx.
+
+Se elimino:
+
+- InventoryMonitoringPanel.tsx.
+
+Mejoras de lenguaje aplicadas:
+
+- Se reemplazo Horizonte por Periodo de vencimiento.
+- Se reemplazo Kardex por Historial de movimientos de stock.
+- Se agregaron descripciones comprensibles para cada estado.
+- Se agregaron rangos de dias en el filtro de vencimientos.
+- Se mejoraron los mensajes cuando no existen resultados.
+- Se presento la ausencia de lotes vencidos como una situacion favorable.
+
+Commit principal relacionado:
+
+f7e5079 refactor: simplificar navegacion del modulo de inventario
+
+======================================================================
+9. PERMISOS
+======================================================================
+
+Permisos utilizados:
+
+inventario.consultar
+
+Permite consultar:
+
+- Disponibilidad.
+- Lotes.
+- Vencimientos.
+- Movimientos de stock.
+
+inventario.gestionar_lotes
+
+Permite registrar lotes.
+
+inventario.configurar_minimo
+
+Permite configurar el stock minimo.
+
+Ademas del permiso correspondiente, el usuario debe estar activo.
+
+======================================================================
+10. MIGRACIONES DE LA EPICA 3
+======================================================================
+
+Migraciones relacionadas:
+
+- 0004_inventario.
+- 0005_lotes.
+- 0006_stock_minimo.
+- 0007_movimientos_inventario.
+
+Secuencia:
+
+0003_producto_imagen
+-> 0004_inventario
+-> 0005_lotes
+-> 0006_stock_minimo
+-> 0007_movimientos_inventario
+
+Estado esperado de Alembic:
+
+0007_movimientos_inventario (head)
+
+Comandos de validacion:
+
+cd backend
+python -m alembic current
+python -m alembic heads
+
+======================================================================
+11. ENDPOINTS DEL MODULO
+======================================================================
+
+GET /api/inventory
+
+Consulta el inventario por producto y sucursal.
+
+PATCH /api/inventory/{inventory_id}/minimum
+
+Actualiza el stock minimo.
+
+GET /api/inventory/lots
+
+Consulta todos los lotes.
+
+GET /api/inventory/{inventory_id}/lots
+
+Consulta los lotes de un inventario especifico.
+
+POST /api/inventory/lots
+
+Registra un nuevo lote.
+
+GET /api/inventory/movements
+
+Consulta movimientos de stock con filtros.
+
+GET /api/inventory/expiration-alerts
+
+Consulta alertas de vencimiento dentro de un horizonte de dias.
+
+======================================================================
+12. PRUEBAS Y VALIDACIONES REALIZADAS
+======================================================================
+
+Backend:
+
+python -m compileall app
+python -m py_compile app/models.py
+python -m py_compile app/inventory/repository.py
+python -m py_compile app/inventory/service.py
+python -m py_compile app/inventory/routes.py
+
+Alembic:
+
+python -m alembic current
+python -m alembic heads
+python -m alembic history
+python -m alembic upgrade head
+
+Frontend:
+
+npm.cmd run build
+
+Git:
+
+git --no-pager diff --check
+
+Pruebas funcionales realizadas:
+
+- Consulta de inventario.
+- Registro de lotes.
+- Consulta de todos los lotes.
+- Consulta de lotes por inventario.
+- Configuracion de stock minimo.
+- Consulta de movimientos vacios.
+- Consulta de alertas de vencimiento.
+- Filtro por producto.
+- Filtro por sucursal.
+- Filtro por periodo.
+- Filtro por estado del vencimiento.
+- Validacion de fechas invertidas.
+- Rechazo de horizontes invalidos.
+- Navegacion entre pestanas.
+- Mensajes sin resultados.
+- Vista adaptable para distintos anchos de pantalla.
+
+Resultados relevantes de prueba:
+
+- Movimientos registrados: 0.
+- Con periodo de 90 dias: 0 alertas.
+- Con horizonte de 730 dias: se encontro el lote PAR-2027-001.
+- Con fecha de referencia 01-10-2027, el lote PAR-2027-001 fue clasificado
+  como critico al quedar 30 dias.
+- El lote con vencimiento 30-09-2028 fue clasificado como vencimiento
+  lejano.
+
+======================================================================
+13. COMMITS PRINCIPALES
+======================================================================
+
+869b691 feat: configurar stock minimo por sucursal
+
+c50989a feat: consultar movimientos y alertas de vencimiento
+
+f7e5079 refactor: simplificar navegacion del modulo de inventario
+
+======================================================================
+14. CONSIDERACIONES PARA DESARROLLOS FUTUROS
+======================================================================
+
+Las funcionalidades futuras que modifiquen el inventario deben registrar
+un MovimientoInventario dentro de la misma transaccion que actualice el
+stock.
+
+Operaciones que deberan generar movimientos:
+
+- Ventas.
+- Recepciones de productos.
+- Reservas.
+- Liberaciones de reserva.
+- Transferencias entre sucursales.
+- Ajustes de inventario.
+
+Flujo recomendado:
+
+1. Obtener el registro de inventario afectado.
+2. Guardar los valores anteriores.
+3. Calcular y validar los valores resultantes.
+4. Actualizar el inventario.
+5. Crear el movimiento con usuario, motivo y referencia.
+6. Confirmar todo dentro de una misma transaccion.
+
+No se recomienda modificar directamente stock_fisico o stock_reservado sin
+crear el movimiento correspondiente, porque se perderia la trazabilidad.
+
+Tambien quedo identificada como posible mejora futura la incorporacion de
+la categoria del producto dentro de la vista y los filtros de inventario.
+
+======================================================================
+15. RESUMEN RAPIDO PARA OTRO DESARROLLADOR O IA
+======================================================================
+
+La Epica 3 implementa inventario por producto y sucursal.
+
+InventarioSucursal almacena stock fisico, reservado y minimo. El disponible
+se calcula restando el reservado al fisico.
+
+LoteInventario almacena numeros de lote, cantidades y fechas de
+vencimiento. Los lotes se ordenan por FEFO.
+
+MovimientoInventario almacena cambios de stock con valores anteriores,
+resultantes, usuario, motivo y referencia.
+
+El frontend se organiza en cuatro pestanas: Disponibilidad, Lotes,
+Vencimientos e Historial de movimientos de stock.
+
+Vencimientos muestra inicialmente todos los lotes activos con cantidad
+positiva y permite filtrar por producto, sucursal, periodo y estado.
+
+El historial permanece vacio hasta que ventas, recepciones, reservas,
+transferencias o ajustes creen movimientos reales.
+
+La migracion actual esperada es 0007_movimientos_inventario (head).
+
+La rama de trabajo utilizada fue feat/e3-inventario-jesus.
