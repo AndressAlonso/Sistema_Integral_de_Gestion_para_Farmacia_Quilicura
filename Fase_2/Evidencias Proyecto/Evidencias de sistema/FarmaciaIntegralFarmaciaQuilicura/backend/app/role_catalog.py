@@ -32,6 +32,7 @@ ROLE_CATALOG = {
             "sucursales.gestionar",
             "inventario.consultar",
             "inventario.gestionar_lotes",
+            "inventario.configurar_minimo",
             "catalogo.gestionar",
         ),
     ),
@@ -51,6 +52,7 @@ ROLE_CATALOG = {
         (
             "inventario.consultar",
             "inventario.gestionar_lotes",
+            "inventario.configurar_minimo",
         ),
     ),
     "ENCARGADO_PEDIDOS": RoleDefinition(
@@ -100,6 +102,10 @@ PERMISSIONS = {
         "Gestionar lotes y fechas de vencimiento",
         True,
     ),
+    "inventario.configurar_minimo": (
+        "Configurar stock mínimo por producto y sucursal",
+        True,
+    ),
     "catalogo.gestionar": (
         "Gestionar productos y categorías",
         True,
@@ -122,10 +128,14 @@ def sync_roles(db: Session) -> dict[str, Rol]:
         ("OPERADOR", "ENCARGADO_INVENTARIO"),
     ):
         legacy = db.scalar(
-            select(Rol).where(Rol.codigo == old)
+            select(Rol).where(
+                Rol.codigo == old
+            )
         )
         current = db.scalar(
-            select(Rol).where(Rol.codigo == new)
+            select(Rol).where(
+                Rol.codigo == new
+            )
         )
 
         if legacy is not None and current is not None:
@@ -165,7 +175,9 @@ def sync_roles(db: Session) -> dict[str, Rol]:
 
     for code, definition in ROLE_CATALOG.items():
         role = db.scalar(
-            select(Rol).where(Rol.codigo == code)
+            select(Rol).where(
+                Rol.codigo == code
+            )
         )
 
         if role is None:

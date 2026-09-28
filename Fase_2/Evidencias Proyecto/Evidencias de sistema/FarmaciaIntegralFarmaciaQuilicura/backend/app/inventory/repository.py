@@ -38,6 +38,8 @@ class PostgresInventoryRepository:
             "physical": record.stock_fisico,
             "reserved": record.stock_reservado,
             "available": record.stock_disponible,
+            "minimum": record.stock_minimo,
+            "stock_status": record.estado_stock,
         }
 
     @staticmethod
@@ -75,6 +77,27 @@ class PostgresInventoryRepository:
                 self._inventory_record(record)
                 for record in records
             ]
+
+    def update_minimum(
+        self,
+        inventory_id: UUID,
+        minimum: int,
+    ) -> dict[str, Any]:
+        with self.session_factory() as db:
+            inventory = db.get(
+                InventarioSucursal,
+                inventory_id,
+            )
+
+            if inventory is None:
+                raise InventoryNotFound
+
+            inventory.stock_minimo = minimum
+
+            db.commit()
+            db.refresh(inventory)
+
+            return self._inventory_record(inventory)
 
     def list_lots(
         self,

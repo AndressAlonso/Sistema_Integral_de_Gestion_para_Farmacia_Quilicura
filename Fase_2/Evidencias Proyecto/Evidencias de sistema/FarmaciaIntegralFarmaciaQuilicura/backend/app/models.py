@@ -421,6 +421,10 @@ class InventarioSucursal(Base):
             "stock_reservado <= stock_fisico",
             name="ck_inventario_stock_reservado_fisico",
         ),
+        CheckConstraint(
+            "stock_minimo >= 0",
+            name="ck_inventario_stock_minimo",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -456,6 +460,12 @@ class InventarioSucursal(Base):
         server_default="0",
     )
 
+    stock_minimo: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+    )
+
     producto: Mapped["Producto"] = relationship(
         lazy="joined",
     )
@@ -473,6 +483,23 @@ class InventarioSucursal(Base):
     @property
     def stock_disponible(self) -> int:
         return self.stock_fisico - self.stock_reservado
+
+    @property
+    def bajo_stock_minimo(self) -> bool:
+        return (
+            self.stock_minimo > 0
+            and self.stock_disponible <= self.stock_minimo
+        )
+
+    @property
+    def estado_stock(self) -> str:
+        if self.stock_disponible == 0:
+            return "SIN_STOCK"
+
+        if self.bajo_stock_minimo:
+            return "BAJO"
+
+        return "DISPONIBLE"
 
 
 class LoteInventario(Base):

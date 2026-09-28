@@ -7,7 +7,10 @@ from app.inventory.repository import (
     InventoryNotFound,
     PostgresInventoryRepository,
 )
-from app.inventory.schemas import CreateInventoryLot
+from app.inventory.schemas import (
+    CreateInventoryLot,
+    UpdateInventoryMinimum,
+)
 
 
 class AccessDenied(Exception):
@@ -40,6 +43,17 @@ class InventoryService:
         ):
             raise AccessDenied
 
+    @staticmethod
+    def authorize_minimum_configuration(
+        actor: User,
+    ) -> None:
+        if (
+            not actor.is_active
+            or "inventario.configurar_minimo"
+            not in actor.permissions
+        ):
+            raise AccessDenied
+
     def list_inventory(
         self,
         actor: User,
@@ -47,6 +61,19 @@ class InventoryService:
         self.authorize(actor)
 
         return self.repository.list_inventory()
+
+    def update_minimum(
+        self,
+        actor: User,
+        inventory_id: UUID,
+        data: UpdateInventoryMinimum,
+    ) -> dict[str, Any]:
+        self.authorize_minimum_configuration(actor)
+
+        return self.repository.update_minimum(
+            inventory_id=inventory_id,
+            minimum=data.minimum,
+        )
 
     def list_lots(
         self,

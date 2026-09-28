@@ -18,6 +18,8 @@ from app.inventory.schemas import (
     InventoryListResponse,
     InventoryLotListResponse,
     InventoryLotResponse,
+    InventoryRecordResponse,
+    UpdateInventoryMinimum,
 )
 from app.inventory.service import (
     AccessDenied,
@@ -48,7 +50,9 @@ def lot_manager(request: Request) -> User:
     actor, _ = authenticated_user(request)
 
     try:
-        InventoryService.authorize_lot_management(actor)
+        InventoryService.authorize_lot_management(
+            actor
+        )
     except AccessDenied:
         raise HTTPException(
             status_code=403,
@@ -61,19 +65,46 @@ def lot_manager(request: Request) -> User:
     return actor
 
 
+def minimum_manager(request: Request) -> User:
+    actor, _ = authenticated_user(request)
+
+    try:
+        InventoryService.authorize_minimum_configuration(
+            actor
+        )
+    except AccessDenied:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "No tienes permiso para configurar "
+                "el stock mínimo."
+            ),
+        ) from None
+
+    return actor
+
+
 router = APIRouter(
     prefix="/api/inventory",
     tags=["inventory"],
 )
+
 
 Reader = Annotated[
     User,
     Depends(inventory_reader),
 ]
 
+
 LotManager = Annotated[
     User,
     Depends(lot_manager),
+]
+
+
+MinimumManager = Annotated[
+    User,
+    Depends(minimum_manager),
 ]
 
 
@@ -92,7 +123,9 @@ def list_inventory(
     actor: Reader,
 ):
     try:
-        records = service(request).list_inventory(actor)
+        records = service(request).list_inventory(
+            actor
+        )
     except AccessDenied:
         raise HTTPException(
             status_code=403,
@@ -107,6 +140,42 @@ def list_inventory(
     }
 
 
+@router.patch(
+    "/{inventory_id}/minimum",
+    response_model=InventoryRecordResponse,
+)
+def update_inventory_minimum(
+    inventory_id: UUID,
+    data: UpdateInventoryMinimum,
+    request: Request,
+    actor: MinimumManager,
+):
+    check_origin(request)
+
+    try:
+        return service(request).update_minimum(
+            actor=actor,
+            inventory_id=inventory_id,
+            data=data,
+        )
+    except AccessDenied:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "No tienes permiso para configurar "
+                "el stock mínimo."
+            ),
+        ) from None
+    except InventoryNotFound:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No existe el registro de inventario "
+                "seleccionado."
+            ),
+        ) from None
+
+
 @router.get(
     "/lots",
     response_model=InventoryLotListResponse,
@@ -116,7 +185,9 @@ def list_all_lots(
     actor: Reader,
 ):
     try:
-        lots = service(request).list_lots(actor)
+        lots = service(request).list_lots(
+            actor
+        )
     except AccessDenied:
         raise HTTPException(
             status_code=403,

@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import (
@@ -7,6 +8,13 @@ from pydantic import (
     Field,
     field_validator,
 )
+
+
+StockStatus = Literal[
+    "SIN_STOCK",
+    "BAJO",
+    "DISPONIBLE",
+]
 
 
 class InventoryRecordResponse(BaseModel):
@@ -29,6 +37,9 @@ class InventoryRecordResponse(BaseModel):
     reserved: int = Field(ge=0)
     available: int = Field(ge=0)
 
+    minimum: int = Field(ge=0)
+    stock_status: StockStatus
+
 
 class InventoryListResponse(BaseModel):
     model_config = ConfigDict(
@@ -36,6 +47,17 @@ class InventoryListResponse(BaseModel):
     )
 
     records: list[InventoryRecordResponse]
+
+
+class UpdateInventoryMinimum(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+    )
+
+    minimum: int = Field(
+        ge=0,
+        le=1_000_000,
+    )
 
 
 class CreateInventoryLot(BaseModel):

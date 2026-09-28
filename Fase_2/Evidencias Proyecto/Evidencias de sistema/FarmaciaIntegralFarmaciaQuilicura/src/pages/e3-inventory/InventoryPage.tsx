@@ -23,6 +23,7 @@ export default function InventoryPage() {
   const [inventoryRecords, setInventoryRecords] = useState<
     InventoryRecord[]
   >([])
+
   const [branchId, setBranchId] = useState('')
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -45,12 +46,20 @@ export default function InventoryPage() {
           return
         }
 
-        if (cause instanceof ApiError && cause.status === 401) {
-          navigate('/login', { replace: true })
+        if (
+          cause instanceof ApiError
+          && cause.status === 401
+        ) {
+          navigate('/login', {
+            replace: true,
+          })
           return
         }
 
-        if (cause instanceof ApiError && cause.status === 403) {
+        if (
+          cause instanceof ApiError
+          && cause.status === 403
+        ) {
           setError(
             'No tienes permiso para consultar el inventario.',
           )
@@ -63,6 +72,7 @@ export default function InventoryPage() {
             ? cause.message
             : 'No pudimos cargar el inventario.',
         )
+
         setLoading(false)
       })
 
@@ -72,7 +82,7 @@ export default function InventoryPage() {
   }, [navigate])
 
   const branches = useMemo(() => {
-    const unique = new Map<
+    const uniqueBranches = new Map<
       string,
       {
         id: string
@@ -82,15 +92,19 @@ export default function InventoryPage() {
     >()
 
     inventoryRecords.forEach((record) => {
-      unique.set(record.branch_id, {
+      uniqueBranches.set(record.branch_id, {
         id: record.branch_id,
         name: record.branch_name,
         code: record.branch_code,
       })
     })
 
-    return [...unique.values()].sort((first, second) =>
-      first.name.localeCompare(second.name, 'es'),
+    return [...uniqueBranches.values()].sort(
+      (first, second) =>
+        first.name.localeCompare(
+          second.name,
+          'es',
+        ),
     )
   }, [inventoryRecords])
 
@@ -99,7 +113,8 @@ export default function InventoryPage() {
 
     return inventoryRecords.filter((record) => {
       const matchesBranch = (
-        !branchId || record.branch_id === branchId
+        !branchId
+        || record.branch_id === branchId
       )
 
       const searchable = normalize(
@@ -108,16 +123,34 @@ export default function InventoryPage() {
           record.product_sku,
           record.branch_name,
           record.branch_code,
+          record.stock_status,
         ].join(' '),
       )
 
       const matchesSearch = (
-        !search || searchable.includes(search)
+        !search
+        || searchable.includes(search)
       )
 
       return matchesBranch && matchesSearch
     })
-  }, [branchId, inventoryRecords, query])
+  }, [
+    branchId,
+    inventoryRecords,
+    query,
+  ])
+
+  function handleRecordUpdated(
+    updatedRecord: InventoryRecord,
+  ): void {
+    setInventoryRecords((currentRecords) =>
+      currentRecords.map((record) =>
+        record.id === updatedRecord.id
+          ? updatedRecord
+          : record,
+      ),
+    )
+  }
 
   if (loading) {
     return (
@@ -132,14 +165,19 @@ export default function InventoryPage() {
   if (error) {
     return (
       <main className="inventory-main inventory-error">
-        <p className="users-error" role="alert">
+        <p
+          className="users-error"
+          role="alert"
+        >
           {error}
         </p>
 
         <button
           type="button"
           className="clear-button"
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            window.location.reload()
+          }}
         >
           Reintentar
         </button>
@@ -153,14 +191,16 @@ export default function InventoryPage() {
         <div className="inventory-title-row">
           <div>
             <p className="eyebrow">
-              INVENTARIO / CONSULTA DE STOCK
+              INVENTARIO / CONTROL DE STOCK
             </p>
 
-            <h1>Stock por sucursal</h1>
+            <h1>
+              Stock por sucursal
+            </h1>
 
             <p className="inventory-description">
-              Consulta las existencias y su disponibilidad en cada
-              sucursal.
+              Consulta las existencias, configura mínimos
+              y revisa la trazabilidad por lote.
             </p>
           </div>
 
@@ -176,11 +216,14 @@ export default function InventoryPage() {
         </div>
 
         <div className="inventory-notice">
-          <span aria-hidden="true">ⓘ</span>
+          <span aria-hidden="true">
+            ⓘ
+          </span>
 
           <p>
-            Las cantidades mostradas corresponden al inventario
-            registrado en el sistema.
+            Las cantidades corresponden al inventario
+            registrado. El estado se calcula comparando el
+            stock disponible con el mínimo configurado.
           </p>
         </div>
 
@@ -189,8 +232,13 @@ export default function InventoryPage() {
           aria-label="Cómo se interpreta el stock"
         >
           <div>
-            <span className="guide-number">01</span>
-            <h2>Stock físico</h2>
+            <span className="guide-number">
+              01
+            </span>
+
+            <h2>
+              Stock físico
+            </h2>
 
             <p>
               Unidades presentes en la sucursal.
@@ -198,25 +246,37 @@ export default function InventoryPage() {
           </div>
 
           <div>
-            <span className="guide-number">02</span>
-            <h2>Stock reservado</h2>
+            <span className="guide-number">
+              02
+            </span>
+
+            <h2>
+              Stock reservado
+            </h2>
 
             <p>
-              Unidades comprometidas que aún no han salido.
+              Unidades comprometidas que todavía no han
+              salido de la sucursal.
             </p>
           </div>
 
           <div className="available-guide">
-            <span className="guide-number">03</span>
-            <h2>Stock disponible</h2>
+            <span className="guide-number">
+              03
+            </span>
+
+            <h2>
+              Stock disponible
+            </h2>
 
             <p>
-              Stock físico menos stock reservado.
+              Stock físico menos stock reservado. Este valor
+              se compara con el mínimo configurado.
             </p>
           </div>
         </section>
 
-        <section
+                <section
           className="inventory-panel"
           aria-labelledby="results-title"
         >
@@ -248,7 +308,7 @@ export default function InventoryPage() {
               <input
                 id="product-search"
                 type="search"
-                placeholder="Nombre, SKU, sucursal o código"
+                placeholder="Nombre, SKU, sucursal, código o estado"
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value)
@@ -296,11 +356,15 @@ export default function InventoryPage() {
             </button>
           </div>
 
-          <InventoryTable records={records} />
+          <InventoryTable
+            records={records}
+            onRecordUpdated={handleRecordUpdated}
+          />
 
           <div className="table-footer">
             <span role="status">
-              {records.length} de {inventoryRecords.length}{' '}
+              {records.length} de{' '}
+              {inventoryRecords.length}{' '}
               {inventoryRecords.length === 1
                 ? 'registro'
                 : 'registros'}
@@ -311,14 +375,18 @@ export default function InventoryPage() {
             </span>
           </div>
         </section>
-        <LotPanel inventoryRecords={inventoryRecords} />
+
+        <LotPanel
+          inventoryRecords={inventoryRecords}
+        />
+
         <footer className="inventory-footer">
           <span>
             Sistema Integral de Gestión para Farmacia Quilicura
           </span>
 
           <span>
-            Consulta de inventario multisucursal
+            Inventario multisucursal y trazabilidad
           </span>
         </footer>
       </main>

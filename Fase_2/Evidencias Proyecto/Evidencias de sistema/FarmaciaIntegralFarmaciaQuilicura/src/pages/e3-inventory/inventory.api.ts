@@ -1,5 +1,10 @@
 import { apiRequest } from '../../services/http'
 
+export type StockStatus =
+  | 'SIN_STOCK'
+  | 'BAJO'
+  | 'DISPONIBLE'
+
 export interface InventoryRecord {
   id: string
   product_id: string
@@ -11,6 +16,8 @@ export interface InventoryRecord {
   physical: number
   reserved: number
   available: number
+  minimum: number
+  stock_status: StockStatus
 }
 
 interface InventoryListResponse {
@@ -49,6 +56,28 @@ export async function listInventory(): Promise<InventoryRecord[]> {
   const data: InventoryListResponse = await response.json()
 
   return data.records
+}
+
+export async function updateInventoryMinimum(
+  inventoryId: string,
+  minimum: number,
+): Promise<InventoryRecord> {
+  const response = await apiRequest(
+    `/api/inventory/${inventoryId}/minimum`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        minimum,
+      }),
+    },
+  )
+
+  const data: InventoryRecord = await response.json()
+
+  return data
 }
 
 export async function listInventoryLots(
