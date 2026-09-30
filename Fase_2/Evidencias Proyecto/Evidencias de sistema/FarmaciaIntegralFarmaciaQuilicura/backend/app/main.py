@@ -16,8 +16,14 @@ from app.catalog.repository import PostgresCatalogRepository
 from app.catalog.routes import router as catalog_router
 from app.config import Settings
 from app.db import create_database_engine, create_session_factory
+from app.goods_receipts.repository import ReceiptRepository
+from app.goods_receipts.routes import router as receipts_router
 from app.inventory.repository import PostgresInventoryRepository
 from app.inventory.routes import router as inventory_router
+from app.inventory_adjustments.repository import AdjustmentRepository
+from app.inventory_adjustments.routes import router as adjustments_router
+from app.transfers.repository import TransferRepository
+from app.transfers.routes import router as transfers_router
 from app.users.routes import router as users_router
 
 
@@ -46,6 +52,9 @@ def create_app(
             app.state.branches = PostgresBranchRepository(factory)
             app.state.catalog = PostgresCatalogRepository(factory)
             app.state.inventory = PostgresInventoryRepository(factory)
+            app.state.goods_receipts = ReceiptRepository(factory)
+            app.state.transfers = TransferRepository(factory)
+            app.state.adjustments = AdjustmentRepository(factory)
             app.state.sessions = SessionRepository(factory)
             app.state.auth = AuthState()
 
@@ -110,6 +119,12 @@ def create_app(
                 "Revisa el nombre, SKU, categoría, precio "
                 "y códigos de barras."
             )
+        elif request.url.path.startswith("/api/transfers"):
+            detail = "Revisa las sucursales, productos, cantidades enteras positivas y datos de confirmación."
+        elif request.url.path.startswith("/api/goods-receipts"):
+            detail = "Revisa proveedor, documento, sucursal, productos, lotes y cantidades positivas."
+        elif request.url.path.startswith("/api/inventory-adjustments"):
+            detail = "Revisa la sucursal, el motivo y las cantidades enteras no negativas de los lotes modificados."
         elif request.url.path.startswith("/api/inventory"):
             detail = (
                 "Revisa los datos de la consulta de inventario."
@@ -174,5 +189,8 @@ def create_app(
     app.include_router(branches_router)
     app.include_router(catalog_router)
     app.include_router(inventory_router)
+    app.include_router(receipts_router)
+    app.include_router(transfers_router)
+    app.include_router(adjustments_router)
 
     return app

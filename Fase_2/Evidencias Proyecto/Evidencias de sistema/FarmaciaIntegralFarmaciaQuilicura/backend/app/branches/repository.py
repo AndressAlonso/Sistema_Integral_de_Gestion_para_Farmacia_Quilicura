@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import InventarioSucursal, Sucursal, UsuarioInterno
+from app.models import InventarioSucursal, Sucursal, Transferencia, UsuarioInterno
 
 
 class Branch(BaseModel):
@@ -30,6 +30,10 @@ class BranchNotFound(Exception):
 
 
 class BranchInUse(Exception):
+    pass
+
+
+class BranchPendingTransfers(Exception):
     pass
 
 
@@ -63,9 +67,13 @@ class PostgresBranchRepository:
 
     @staticmethod
     def _has_inventory(branch_id):
-        return select(InventarioSucursal.id).where(
+        inventory = select(InventarioSucursal.id).where(
             InventarioSucursal.sucursal_id == branch_id
         ).exists()
+        transfers = select(Transferencia.id).where(
+            (Transferencia.origen_id == branch_id) | (Transferencia.destino_id == branch_id)
+        ).exists()
+        return inventory | transfers
 
     def _can_delete(self, db: Session, branch_id: UUID) -> bool:
         return not db.scalar(select(
@@ -227,6 +235,13 @@ class PostgresBranchRepository:
 
             if not row.activa:
                 return self._branch(db, row)
+
+            pending = db.scalar(select(Transferencia.id).where(
+                ((Transferencia.origen_id == branch_id) | (Transferencia.destino_id == branch_id)),
+                Transferencia.estado.in_(("SOLICITADA", "AUTORIZADA", "EN_TRANSITO")),
+            ).limit(1))
+            if pending is not None:
+                raise BranchPendingTransfers
 
             active_users = db.scalar(
                 select(func.count())

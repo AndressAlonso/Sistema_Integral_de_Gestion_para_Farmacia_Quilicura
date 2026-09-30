@@ -68,12 +68,12 @@ const pagePermissions: Readonly<Record<string, string>> = {
   '/admin/users': 'usuarios.gestionar',
   '/admin/branches': 'sucursales.gestionar',
   '/admin/inventory': 'inventario.consultar',
+  '/admin/transfers': 'transferencias.consultar',
 }
 
 // Visibilidad de pantallas en blanco según las responsabilidades acordadas.
 // No concede permisos para operaciones futuras.
 const placeholderRoles: Readonly<Record<string, readonly string[]>> = {
-  '/admin/transfers': ['ADMINISTRADOR', 'ENCARGADO_INVENTARIO'],
   '/admin/orders': ['ADMINISTRADOR', 'ENCARGADO_PEDIDOS'],
   '/admin/pos': ['ADMINISTRADOR', 'VENDEDOR_CAJERO'],
   '/admin/cash': ['ADMINISTRADOR', 'VENDEDOR_CAJERO'],

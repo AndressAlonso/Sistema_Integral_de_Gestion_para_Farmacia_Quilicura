@@ -13,8 +13,10 @@ import BranchesPage from '../pages/e1-access-users-branches/branches/BranchesPag
 import UsersPage from '../pages/e1-access-users-branches/users/UsersPage'
 import CatalogPage from '../pages/e2-catalog/CatalogPage'
 import InventoryPage from '../pages/e3-inventory/InventoryPage'
+import TransfersPage from '../pages/e4-transfers/TransfersPage'
 
 function getAdminPage(path: string) {
+  if (path === '/admin/transfers') return <TransfersPage />
   if (path === '/admin/inventory') {
     return <InventoryPage />
   }

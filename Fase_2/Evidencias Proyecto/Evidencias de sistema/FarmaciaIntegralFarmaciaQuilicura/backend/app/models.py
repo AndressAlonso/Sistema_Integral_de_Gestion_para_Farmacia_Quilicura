@@ -723,3 +723,127 @@ class MovimientoInventario(Base):
             self.stock_fisico_resultante
             - self.stock_reservado_resultante
         )
+
+
+class RecepcionMercaderia(Base):
+    __tablename__ = "recepcion_mercaderia"
+    __table_args__ = (
+        CheckConstraint("btrim(proveedor) <> ''", name="ck_recepcion_proveedor"),
+        CheckConstraint("tipo_documento IN ('GUIA', 'FACTURA')", name="ck_recepcion_tipo_documento"),
+        CheckConstraint("btrim(numero_documento) <> ''", name="ck_recepcion_documento"),
+    )
+
+    # El cliente conserva este UUID al reintentar una misma entrada.
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    solicitud_hash: Mapped[str] = mapped_column(String(64))
+    sucursal_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True)
+    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"), index=True)
+    proveedor: Mapped[str] = mapped_column(String(150))
+    tipo_documento: Mapped[str] = mapped_column(String(20))
+    numero_documento: Mapped[str] = mapped_column(String(80))
+    fecha_documento: Mapped[date] = mapped_column(Date)
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    detalles: Mapped[list["RecepcionMercaderiaDetalle"]] = relationship(
+        passive_deletes="all", order_by="RecepcionMercaderiaDetalle.id",
+    )
+
+
+class RecepcionMercaderiaDetalle(Base):
+    __tablename__ = "recepcion_mercaderia_detalle"
+    __table_args__ = (
+        CheckConstraint("cantidad > 0", name="ck_recepcion_detalle_cantidad"),
+        UniqueConstraint("recepcion_id", "lote_id", name="uq_recepcion_detalle_lote"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    recepcion_id: Mapped[UUID] = mapped_column(ForeignKey("recepcion_mercaderia.id", ondelete="RESTRICT"), index=True)
+    lote_id: Mapped[UUID] = mapped_column(ForeignKey("lote_inventario.id", ondelete="RESTRICT"), index=True)
+    cantidad: Mapped[int] = mapped_column(Integer)
+    lote: Mapped["LoteInventario"] = relationship()
+
+
+class AjusteInventario(Base):
+    __tablename__ = "ajuste_inventario"
+    __table_args__ = (CheckConstraint("btrim(motivo) <> ''", name="ck_ajuste_motivo"),)
+
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    solicitud_hash: Mapped[str] = mapped_column(String(64))
+    sucursal_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True)
+    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"), index=True)
+    motivo: Mapped[str] = mapped_column(String(250))
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    detalles: Mapped[list["AjusteInventarioDetalle"]] = relationship(
+        passive_deletes="all", order_by="AjusteInventarioDetalle.lote_id",
+    )
+
+
+class AjusteInventarioDetalle(Base):
+    __tablename__ = "ajuste_inventario_detalle"
+    __table_args__ = (
+        UniqueConstraint("ajuste_id", "lote_id", name="uq_ajuste_lote"),
+        CheckConstraint("cantidad_anterior >= 0 AND cantidad_nueva >= 0", name="ck_ajuste_cantidades"),
+        CheckConstraint("cantidad_anterior <> cantidad_nueva", name="ck_ajuste_cambio"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    ajuste_id: Mapped[UUID] = mapped_column(ForeignKey("ajuste_inventario.id", ondelete="RESTRICT"), index=True)
+    lote_id: Mapped[UUID] = mapped_column(ForeignKey("lote_inventario.id", ondelete="RESTRICT"), index=True)
+    cantidad_anterior: Mapped[int] = mapped_column(Integer)
+    cantidad_nueva: Mapped[int] = mapped_column(Integer)
+    lote: Mapped["LoteInventario"] = relationship()
+
+
+class Transferencia(Base):
+    __tablename__ = "transferencia"
+    __table_args__ = (
+        CheckConstraint("origen_id <> destino_id", name="ck_transferencia_sucursales"),
+        CheckConstraint("estado IN ('SOLICITADA','AUTORIZADA','EN_TRANSITO','RECIBIDA','RECHAZADA')", name="ck_transferencia_estado"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    solicitud_hash: Mapped[str] = mapped_column(String(64))
+    origen_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True)
+    destino_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True)
+    estado: Mapped[str] = mapped_column(String(20), index=True)
+    solicitante_id: Mapped[UUID] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    autorizador_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    despachador_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    receptor_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    rechazada_por_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    solicitada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    autorizada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    despachada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    recibida_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    rechazada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    motivo_rechazo: Mapped[str | None] = mapped_column(String(250))
+    origen: Mapped["Sucursal"] = relationship(foreign_keys=[origen_id])
+    destino: Mapped["Sucursal"] = relationship(foreign_keys=[destino_id])
+    solicitante: Mapped["UsuarioInterno"] = relationship(foreign_keys=[solicitante_id])
+    detalles: Mapped[list["TransferenciaDetalle"]] = relationship(passive_deletes="all", order_by="TransferenciaDetalle.producto_id")
+
+
+class TransferenciaDetalle(Base):
+    __tablename__ = "transferencia_detalle"
+    __table_args__ = (
+        UniqueConstraint("transferencia_id", "producto_id", name="uq_transferencia_producto"),
+        CheckConstraint("cantidad > 0", name="ck_transferencia_detalle_cantidad"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    transferencia_id: Mapped[UUID] = mapped_column(ForeignKey("transferencia.id", ondelete="RESTRICT"), index=True)
+    producto_id: Mapped[UUID] = mapped_column(ForeignKey("producto.id", ondelete="RESTRICT"), index=True)
+    cantidad: Mapped[int] = mapped_column(Integer)
+    producto: Mapped["Producto"] = relationship()
+    lotes: Mapped[list["TransferenciaLote"]] = relationship(passive_deletes="all", order_by="TransferenciaLote.id")
+
+
+class TransferenciaLote(Base):
+    __tablename__ = "transferencia_lote"
+    __table_args__ = (
+        UniqueConstraint("detalle_id", "lote_origen_id", name="uq_transferencia_detalle_lote"),
+        CheckConstraint("cantidad > 0", name="ck_transferencia_lote_cantidad"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    detalle_id: Mapped[UUID] = mapped_column(ForeignKey("transferencia_detalle.id", ondelete="RESTRICT"), index=True)
+    lote_origen_id: Mapped[UUID] = mapped_column(ForeignKey("lote_inventario.id", ondelete="RESTRICT"), index=True)
+    lote_destino_id: Mapped[UUID | None] = mapped_column(ForeignKey("lote_inventario.id", ondelete="RESTRICT"), index=True)
+    cantidad: Mapped[int] = mapped_column(Integer)
+    lote_origen: Mapped["LoteInventario"] = relationship(foreign_keys=[lote_origen_id])

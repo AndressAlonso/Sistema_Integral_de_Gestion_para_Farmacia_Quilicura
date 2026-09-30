@@ -28,8 +28,12 @@ ROLE_CATALOG = {
             "sucursales.gestionar",
             "inventario.consultar",
             "inventario.gestionar_lotes",
+            "inventario.registrar_entrada",
+            "inventario.ajustar",
             "inventario.configurar_minimo",
             "catalogo.gestionar",
+            "transferencias.consultar", "transferencias.solicitar", "transferencias.autorizar",
+            "transferencias.despachar", "transferencias.recibir",
         ),
     ),
     "VENDEDOR_CAJERO": RoleDefinition(
@@ -39,7 +43,8 @@ ROLE_CATALOG = {
     "ENCARGADO_INVENTARIO": RoleDefinition(
         "Encargado de inventario",
         "Stock, lotes, recepciones, transferencias, movimientos y ajustes de inventario.",
-        ("inventario.consultar", "inventario.gestionar_lotes", "inventario.configurar_minimo"),
+        ("inventario.consultar", "inventario.gestionar_lotes", "inventario.configurar_minimo", "inventario.registrar_entrada", "inventario.ajustar",
+         "transferencias.consultar", "transferencias.solicitar", "transferencias.despachar", "transferencias.recibir"),
     ),
     "ENCARGADO_PEDIDOS": RoleDefinition(
         "Encargado de pedidos",
@@ -56,11 +61,18 @@ ROLE_CATALOG = {
 
 # Solo permisos existentes. El alcance futuro no habilita módulos por adelantado.
 PERMISSIONS = {
+    "transferencias.consultar": ("Consultar transferencias de las sucursales autorizadas", True),
+    "transferencias.solicitar": ("Solicitar transferencias con reserva de stock", True),
+    "transferencias.autorizar": ("Aprobar o rechazar transferencias como administrador", True),
+    "transferencias.despachar": ("Confirmar despacho desde la sucursal asignada", True),
+    "transferencias.recibir": ("Confirmar recepción en la sucursal asignada", True),
     "usuarios.gestionar": ("Gestionar usuarios internos", True),
     "roles.gestionar": ("Crear, configurar y asignar roles", True),
     "sucursales.gestionar": ("Gestionar sucursales", True),
     "inventario.consultar": ("Consultar inventario", True),
     "inventario.gestionar_lotes": ("Gestionar lotes y fechas de vencimiento", True),
+    "inventario.registrar_entrada": ("Registrar entradas de mercadería con respaldo", True),
+    "inventario.ajustar": ("Ajustar cantidades por lote con motivo y trazabilidad", True),
     "inventario.configurar_minimo": ("Configurar stock mínimo por producto y sucursal", True),
     "catalogo.gestionar": ("Gestionar productos y categorías", True),
 }

@@ -9,6 +9,7 @@ from app.branches.repository import (
     BranchDeletionBlocked,
     BranchInUse,
     BranchNotFound,
+    BranchPendingTransfers,
     DuplicateBranchCode,
 )
 from app.branches.schemas import (
@@ -53,6 +54,8 @@ def service(request: Request) -> BranchService:
 def handle_conflict(operation):
     try:
         return operation()
+    except BranchPendingTransfers:
+        raise HTTPException(409, "No se puede desactivar la sucursal porque tiene transferencias pendientes.") from None
     except InvalidConfirmation:
         raise HTTPException(
             status_code=422,
