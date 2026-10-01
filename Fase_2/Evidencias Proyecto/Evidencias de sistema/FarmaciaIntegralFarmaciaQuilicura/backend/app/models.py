@@ -9,6 +9,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -575,6 +576,11 @@ class LoteInventario(Base):
 class MovimientoInventario(Base):
     __tablename__ = "movimiento_inventario"
     __table_args__ = (
+        Index(
+            "ix_movimiento_inventario_consulta",
+            "inventario_sucursal_id",
+            "creado_en",
+        ),
         CheckConstraint(
             "btrim(tipo) <> '' "
             "AND tipo = btrim(tipo)",
