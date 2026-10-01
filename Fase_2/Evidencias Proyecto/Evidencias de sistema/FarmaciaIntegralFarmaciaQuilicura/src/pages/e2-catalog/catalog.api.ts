@@ -62,3 +62,47 @@ export async function uploadProductImage(id: string, file: File): Promise<Produc
 export async function removeProductImage(id: string): Promise<Product> {
   return (await apiRequest(`/api/products/${id}/image/remove`, { method: 'POST' })).json()
 }
+export interface ProductPriceInput {
+  price: string
+  expected_price: string
+}
+
+export interface ProductPriceHistoryEntry {
+  id: string
+  product_id: string
+  previous_price: string
+  new_price: string
+  changed_at: string
+  user_id: string
+  user_name: string
+}
+
+export async function updateProductPrice(
+  id: string,
+  input: ProductPriceInput,
+): Promise<Product> {
+  const response = await apiRequest(
+    `/api/products/${encodeURIComponent(id)}/price`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+    {
+      409: 'El precio cambió mientras lo editabas. Recarga el producto y revisa el precio actual antes de guardar.',
+      422: 'Ingresa un precio diferente al actual, igual o mayor que cero, menor que un billón y con hasta dos decimales.',
+    },
+  )
+
+  return response.json()
+}
+
+export async function listProductPriceHistory(
+  id: string,
+): Promise<ProductPriceHistoryEntry[]> {
+  const response = await apiRequest(
+    `/api/products/${encodeURIComponent(id)}/price-history`,
+  )
+
+  return response.json()
+}

@@ -32,3 +32,146 @@
 .catalog-dialog input[readonly] { background: #f6f7fb !important; color: #65748e; }
 .catalog-table { min-width: 1220px; }
 @media (max-width: 650px) { .catalog-image-controls { flex-basis: 100%; } }
+/* E2-H2: historial de precios */
+dialog.app-modal.catalog-history-dialog {
+  width: min(960px, calc(100vw - 32px));
+  height: auto;
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  background: #fff;
+  border: 1px solid #e4e9f3;
+  border-radius: 18px;
+  overflow-y: auto;
+  color: #233451;
+}
+
+.catalog-history-dialog .users-dialog-heading {
+  align-items: flex-start;
+  gap: 20px;
+  margin: 0;
+  padding: 26px 28px 22px;
+  border-bottom: 1px solid #e8ecf2;
+  background: #fafbfe;
+}
+
+.catalog-history-dialog .users-dialog-heading > div {
+  min-width: 0;
+}
+
+.catalog-history-dialog h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  line-height: 1.3;
+  letter-spacing: -0.4px;
+}
+
+.catalog-history-dialog .users-dialog-heading p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.catalog-history-dialog .users-close {
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #e4e9f3;
+  cursor: pointer;
+}
+
+.catalog-history-dialog > section {
+  padding: 24px 28px;
+}
+
+.catalog-history-dialog > section > .catalog-help {
+  margin: 0 0 18px;
+}
+
+.catalog-history-dialog .users-table-scroll {
+  border: 1px solid #e4e9f3;
+  border-radius: 12px;
+}
+
+.catalog-history-dialog .users-table {
+  min-width: 660px;
+}
+
+.catalog-history-dialog .users-table th,
+.catalog-history-dialog .users-table td {
+  padding: 15px 18px;
+}
+
+.catalog-history-dialog .users-table th:nth-child(2),
+.catalog-history-dialog .users-table th:nth-child(3),
+.catalog-history-dialog .users-table td:nth-child(2),
+.catalog-history-dialog .users-table td:nth-child(3) {
+  text-align: right;
+}
+
+.catalog-history-dialog .users-table td:nth-child(3) {
+  color: #446d15;
+  font-weight: 700;
+}
+
+.catalog-history-dialog .users-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.catalog-history-dialog .catalog-notice {
+  margin: 0;
+  padding: 28px 24px;
+  border: 1px solid #eadcf0;
+  text-align: center;
+}
+
+.catalog-history-dialog .users-dialog-actions {
+  margin: 0;
+  padding: 18px 28px;
+  border-top: 1px solid #e8ecf2;
+  background: #fafbfe;
+}
+
+/* Acciones compactas, solo dentro del listado de productos */
+.catalog-table .catalog-heading-actions {
+  width: auto;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.catalog-table .catalog-heading-actions .users-button {
+  flex: none;
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.catalog-table .catalog-heading-actions .users-button:last-child {
+  color: #702582;
+  background: #f8f2fb;
+  border-color: #eadcf0;
+}
+
+.catalog-table .catalog-heading-actions .users-button:hover {
+  border-color: #bca8c5;
+  background: #f4edf7;
+}
+
+@media (max-width: 650px) {
+  dialog.app-modal.catalog-history-dialog {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 24px);
+    border-radius: 14px;
+  }
+
+  .catalog-history-dialog .users-dialog-heading,
+  .catalog-history-dialog > section {
+    padding: 20px 16px;
+  }
+
+  .catalog-history-dialog .users-dialog-actions {
+    padding: 16px;
+  }
+
+  .catalog-history-dialog h2 {
+    font-size: 21px;
+  }
+}
