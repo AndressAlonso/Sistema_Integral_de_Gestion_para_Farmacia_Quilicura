@@ -3,12 +3,14 @@ from decimal import Decimal
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
     Date,
     DateTime,
     ForeignKey,
+    Identity,
     Index,
     Integer,
     Numeric,
@@ -20,6 +22,7 @@ from sqlalchemy import (
     func,
     true,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -853,3 +856,72 @@ class TransferenciaLote(Base):
     lote_destino_id: Mapped[UUID | None] = mapped_column(ForeignKey("lote_inventario.id", ondelete="RESTRICT"), index=True)
     cantidad: Mapped[int] = mapped_column(Integer)
     lote_origen: Mapped["LoteInventario"] = relationship(foreign_keys=[lote_origen_id])
+
+class EventoAuditoria(Base):
+    __tablename__ = "evento_auditoria"
+    __table_args__ = (
+        UniqueConstraint(
+            "secuencia",
+            name="uq_evento_auditoria_secuencia",
+        ),
+        CheckConstraint(
+            "btrim(origen_actor) <> ''",
+            name="ck_auditoria_origen",
+        ),
+        CheckConstraint(
+            "btrim(accion) <> ''",
+            name="ck_auditoria_accion",
+        ),
+        CheckConstraint(
+            "btrim(referencia_historica) <> ''",
+            name="ck_auditoria_referencia",
+        ),
+        CheckConstraint(
+            "jsonb_typeof(datos_cambio) = 'object'",
+            name="ck_auditoria_datos_objeto",
+        ),
+        Index(
+            "ix_auditoria_producto_secuencia",
+            "producto_id",
+            "secuencia",
+        ),
+        Index("ix_auditoria_usuario", "usuario_id"),
+        Index("ix_auditoria_sucursal", "sucursal_id"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+
+    secuencia: Mapped[int] = mapped_column(
+        BigInteger,
+        Identity(always=True),
+        nullable=False,
+    )
+
+    ocurrido_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    origen_actor: Mapped[str] = mapped_column(String(40))
+    accion: Mapped[str] = mapped_column(String(100))
+    referencia_historica: Mapped[str] = mapped_column(Text)
+    datos_cambio: Mapped[dict[str, object]] = mapped_column(JSONB)
+
+    usuario_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("usuario_interno.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+    sucursal_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("sucursal.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+    producto_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("producto.id", ondelete="RESTRICT"),
+        nullable=True,
+    )

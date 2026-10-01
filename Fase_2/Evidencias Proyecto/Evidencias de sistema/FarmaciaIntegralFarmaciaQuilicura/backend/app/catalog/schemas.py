@@ -1,5 +1,6 @@
 """E2-H1: contratos de catalogo; la edicion no acepta cambios de precio."""
 
+from datetime import datetime
 from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
@@ -52,3 +53,34 @@ class ProductResponse(UpdateProduct):
     id: UUID
     price: Decimal
     image_url: str | None = None
+
+
+
+
+PriceAmount = Annotated[
+    Decimal,
+    Field(
+        ge=0,
+        lt=Decimal(1000000000000),
+        max_digits=14,
+        decimal_places=2,
+        allow_inf_nan=False,
+    ),
+]
+
+
+class UpdateProductPrice(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    price: PriceAmount
+    expected_price: PriceAmount
+
+
+class ProductPriceHistoryEntry(BaseModel):
+    id: UUID
+    product_id: UUID
+    previous_price: Decimal
+    new_price: Decimal
+    changed_at: datetime
+    user_id: UUID
+    user_name: str

@@ -13,8 +13,10 @@ from app.catalog.schemas import (
     CategoryResponse,
     CreateCategory,
     CreateProduct,
+    ProductPriceHistoryEntry,
     ProductResponse,
     UpdateProduct,
+    UpdateProductPrice,
 )
 
 
@@ -108,4 +110,36 @@ def get_image(product_id: UUID, request: Request, actor: Actor):
         images(request).read(key),
         media_type="image/jpeg",
         headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
+@router.patch(
+    "/products/{product_id}/price",
+    response_model=ProductResponse,
+)
+def update_product_price(
+    product_id: UUID,
+    data: UpdateProductPrice,
+    request: Request,
+    actor: Actor,
+):
+    check_origin(request)
+    return request.app.state.catalog.update_price(
+        product_id,
+        data,
+        actor,
+    )
+
+
+@router.get(
+    "/products/{product_id}/price-history",
+    response_model=list[ProductPriceHistoryEntry],
+)
+def list_product_price_history(
+    product_id: UUID,
+    request: Request,
+    actor: Actor,
+):
+    return request.app.state.catalog.list_price_history(
+        product_id,
+        actor,
     )

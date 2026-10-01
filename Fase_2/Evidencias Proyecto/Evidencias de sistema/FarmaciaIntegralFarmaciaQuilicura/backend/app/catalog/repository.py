@@ -8,13 +8,16 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload, sessionmaker
 
+from app.auth.users import User
 from app.catalog.schemas import (
     CategoryResponse,
     CreateProduct,
+    ProductPriceHistoryEntry,
     ProductResponse,
     UpdateProduct,
+    UpdateProductPrice,
 )
-from app.models import Categoria, CodigoBarra, Producto
+from app.models import Categoria, CodigoBarra, EventoAuditoria, Producto
 
 
 class PostgresCatalogRepository:
@@ -167,3 +170,95 @@ class PostgresCatalogRepository:
     def image_key(self, product_id: UUID):
         with self.factory() as db:
             return self.find(db, product_id).image_key
+    
+    def update_price(
+        self,
+        product_id: UUID,
+        data: UpdateProductPrice,
+        actor: User,
+    ) -> ProductResponse:
+        if not actor.is_active or "catalogo.gestionar" not in actor.permissions:
+            raise HTTPException(
+                403,
+                "No tienes permiso para cambiar precios.",
+            )
+
+        with self.transaction() as db:
+            row = self.find(db, product_id, lock=True)
+            previous_price = row.precio_actual
+
+            if previous_price != data.expected_price:
+                raise HTTPException(
+                    409,
+                    "El precio cambió desde que abriste el formulario. "
+                    "Actualiza el producto antes de guardar.",
+                )
+
+            if previous_price == data.price:
+                raise HTTPException(
+                    422,
+                    "El nuevo precio debe ser diferente del precio actual.",
+                )
+
+            new_price = data.price.quantize(previous_price)
+
+            event = EventoAuditoria(
+                origen_actor="USUARIO_INTERNO",
+                accion="catalogo.precio_actualizado",
+                referencia_historica=(
+                    f"Cambio de precio del producto {row.sku}: {row.nombre}"
+                ),
+                usuario_id=actor.id,
+                sucursal_id=actor.branch_id,
+                producto_id=row.id,
+                datos_cambio={
+                    "previous_price": format(previous_price, ".2f"),
+                    "new_price": format(new_price, ".2f"),
+                    "user_name": actor.name,
+                    "product_sku": row.sku,
+                    "product_name": row.nombre,
+                },
+            )
+
+            row.precio_actual = new_price
+            db.add(event)
+            db.flush()
+            result = self.response(row)
+
+        return result
+
+    def list_price_history(
+        self,
+        product_id: UUID,
+        actor: User,
+    ) -> list[ProductPriceHistoryEntry]:
+        if not actor.is_active or "catalogo.gestionar" not in actor.permissions:
+            raise HTTPException(
+                403,
+                "No tienes permiso para consultar el historial de precios.",
+            )
+
+        with self.factory() as db:
+            self.find(db, product_id)
+
+            events = db.scalars(
+                select(EventoAuditoria)
+                .where(
+                    EventoAuditoria.producto_id == product_id,
+                    EventoAuditoria.accion == "catalogo.precio_actualizado",
+                )
+                .order_by(EventoAuditoria.secuencia.desc())
+            )
+
+            return [
+                ProductPriceHistoryEntry(
+                    id=event.id,
+                    product_id=event.producto_id,
+                    previous_price=event.datos_cambio["previous_price"],
+                    new_price=event.datos_cambio["new_price"],
+                    changed_at=event.ocurrido_en,
+                    user_id=event.usuario_id,
+                    user_name=event.datos_cambio["user_name"],
+                )
+                for event in events
+            ]
