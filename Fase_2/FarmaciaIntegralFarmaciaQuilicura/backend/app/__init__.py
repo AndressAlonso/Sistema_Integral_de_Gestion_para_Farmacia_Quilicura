@@ -1,1 +1,0 @@
-"""SIGFQ: backend modular."""
