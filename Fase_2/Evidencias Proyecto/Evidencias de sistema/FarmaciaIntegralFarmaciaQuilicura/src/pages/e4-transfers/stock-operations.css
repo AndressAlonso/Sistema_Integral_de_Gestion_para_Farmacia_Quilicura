@@ -1,0 +1,10 @@
+.stock-operation-dialog textarea { min-height: 95px; padding: 12px; border: 1px solid #e5eaf3; border-radius: 10px; font: inherit; resize: vertical; }
+.stock-operation-dialog .users-dialog-heading p { margin-top: 8px; color: #65748e; }
+.stock-operation-table small { display: block; color: #728199; }
+.stock-operation-table input { width: 150px; }
+.stock-operation-table td { vertical-align: top; }
+.stock-operation-table label { display: grid; gap: 6px; margin-bottom: 10px; }
+.stock-operation-table input[type="date"] { width: 170px; }
+.stock-confirmation { display: flex; gap: 10px; align-items: center; padding: 16px 0; }
+.stock-confirmation input { width: 18px; height: 18px; accent-color: #702582; }
+.stock-operation-dialog .users-button.primary { background: #702582; border-color: #702582; }

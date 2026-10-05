@@ -1,0 +1,40 @@
+.transfer-heading, .transfer-flow { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.transfers-page .users-button.primary, .transfers-dialog .users-button.primary { background: #702582; border-color: #702582; }
+.transfers-page .users-button.primary:hover, .transfers-dialog .users-button.primary:hover { background: #581b68; }
+.transfer-flow { margin-bottom: 16px; }
+.transfer-flow p, .transfer-filter-panel > p { color: #718099; font-size: var(--ui-caption); margin: 5px 0 0; }
+.transfer-summaries { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 18px 0; }
+.transfer-summaries > div { display: grid; gap: 4px; padding: 18px 20px; border: 1px solid #e1e5ec; border-radius: 14px; background: white; }
+.transfer-summaries span, .transfer-summaries small { color: #718099; }
+.transfer-summaries strong { font-size: 27px; line-height: 1.2; }
+.transfer-summaries small { font-size: var(--ui-caption); }
+.transfer-state { display: inline-block; white-space: nowrap; font-size: var(--ui-caption); font-weight: 600; border-radius: 20px; padding: 4px 9px; }
+.transfer-state.solicitada { color: #702582; background: #f4eafa; }
+.transfer-state.autorizada { color: #3455af; background: #edf1ff; }
+.transfer-state.en_transito { color: #8a5700; background: #fff3db; }
+.transfer-state.recibida { color: #2f7233; background: #edf7e5; }
+.transfer-state.rechazada { color: #a5293a; background: #fff0f1; }
+.transfer-filter-panel { margin-bottom: 18px; }
+.transfer-filter-panel h2 { font-size: var(--ui-section-title); }
+.transfer-filters { display: grid; grid-template-columns: 1.6fr repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.transfer-filters label, .transfer-item label { display: grid; gap: 7px; min-width: 0; }
+.transfer-filters label { color: #52627b; font-size: var(--ui-caption); }
+.transfer-filters input, .transfer-filters select { min-width: 0; width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid #e5eaf3; border-radius: 9px; background: #fafbfe; color: #40516d; font: inherit; }
+.transfer-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+.transfer-filter-panel .transfer-actions { margin-bottom: 0; justify-content: flex-end; }
+.transfer-table { min-width: 1100px; }
+.transfer-table small { display: block; color: #718099; }
+.transfer-link { border: 0; padding: 6px 0; color: #233451; background: transparent; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.transfer-route-arrow { display: inline-block; margin: 0 10px; color: #702582; }
+.transfer-wide { grid-column: 1 / -1; }
+.transfer-notice { padding: 14px 18px; margin-bottom: 18px; background: #f4eafa; color: #652475; border-radius: 10px; }
+.transfer-item { display: grid; grid-template-columns: minmax(0, 3fr) minmax(100px, 1fr) auto; gap: 14px; align-items: end; border-bottom: 1px solid #e5eaf3; padding-bottom: 18px; }
+.transfers-dialog .users-panel { margin: 16px 0; }
+.transfers-dialog textarea { min-height: 100px; padding: 12px; border: 1px solid #e5eaf3; border-radius: 10px; resize: vertical; font: inherit; }
+.transfer-detail-item { padding: 16px 0; border-bottom: 1px solid #edf0f6; }
+.transfer-detail-item > span { display: block; color: #718099; margin-top: 5px; }
+.transfer-detail-item ul, .transfer-timeline ol { padding-left: 22px; margin: 12px 0 0; }
+.transfer-timeline li { margin: 12px 0; }
+.transfers-dialog small { overflow-wrap: anywhere; }
+@media (max-width: 1100px) { .transfer-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .transfer-heading, .transfer-flow { flex-wrap: wrap; } }
+@media (max-width: 650px) { .transfer-summaries { grid-template-columns: repeat(2, minmax(0, 1fr)); } .transfer-filters, .transfer-item { grid-template-columns: 1fr; } }
