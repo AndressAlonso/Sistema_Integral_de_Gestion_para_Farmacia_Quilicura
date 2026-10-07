@@ -1,6 +1,7 @@
 from alembic import context
 
 from app.config import database_url
+from app.customers import models as customer_models  # noqa: F401
 from app.db import create_database_engine
 from app.models import Base
 

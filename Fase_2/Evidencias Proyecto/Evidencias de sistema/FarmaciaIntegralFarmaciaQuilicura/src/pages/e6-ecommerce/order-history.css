@@ -1,0 +1,13 @@
+.order-history-page { max-width: 1200px; margin: auto; padding: 0 28px 48px; line-height: 1.6; }
+.order-history-state { margin-top: 28px; padding: 24px; box-shadow: var(--store-shadow); background: white; border: 1px solid var(--store-border); border-radius: var(--store-radius); }
+.order-history-state h1 { font-size: 28px; margin-bottom: 16px; }
+.order-history-state a { display: inline-block; color: var(--brand-purple); margin-top: 18px; font-weight: 600; }
+.order-history-error { color: #8e2525; }
+.order-history-list { list-style: none; display: grid; gap: 18px; padding: 0; }
+.order-history-item { padding: 20px; border: 1px solid var(--store-border); border-radius: var(--store-radius); background: white; overflow-wrap: anywhere; }
+.order-history-item h2 { font-size: 20px; }
+.order-history-item dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0 0; }
+.order-history-item dt { font-weight: 600; }
+.order-history-item dd { margin: 4px 0 0; }
+.order-history-page a:focus-visible { outline: 3px solid var(--brand-purple); outline-offset: 4px; }
+@media(max-width:600px) { .order-history-page { padding: 0 16px 32px; } .order-history-item dl { grid-template-columns: 1fr; } }
