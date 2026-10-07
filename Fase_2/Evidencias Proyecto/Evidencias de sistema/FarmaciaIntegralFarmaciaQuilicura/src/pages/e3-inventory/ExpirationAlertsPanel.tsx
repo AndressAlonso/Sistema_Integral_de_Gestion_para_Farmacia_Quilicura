@@ -112,15 +112,15 @@ function calculateDaysRemaining(
 function classifyExpiration(
   daysRemaining: number,
 ): AlertLevel {
-  if (daysRemaining < 0) {
+  if (daysRemaining <= 0) {
     return 'VENCIDO'
   }
 
-  if (daysRemaining <= 30) {
+  if (daysRemaining <= 15) {
     return 'CRITICO'
   }
 
-  if (daysRemaining <= 60) {
+  if (daysRemaining <= 30) {
     return 'PROXIMO'
   }
 
@@ -133,14 +133,14 @@ function alertLabel(level: AlertLevel): string {
   }
 
   if (level === 'CRITICO') {
-    return 'Vence muy pronto'
+    return 'Crítico'
   }
 
   if (level === 'PROXIMO') {
     return 'Próximo a vencer'
   }
 
-  return 'Vencimiento lejano'
+  return 'Sin alerta'
 }
 
 function alertClass(level: AlertLevel): string {
@@ -160,7 +160,7 @@ function daysRemainingLabel(days: number): string {
   }
 
   if (days === 0) {
-    return 'Vence hoy'
+    return 'Vencido hoy'
   }
 
   return (
@@ -210,13 +210,13 @@ function matchesPeriod(
   }
 
   if (period === 'EXPIRED') {
-    return daysRemaining < 0
+    return daysRemaining <= 0
   }
 
   const maximumDays = Number(period)
 
   return (
-    daysRemaining >= 0
+    daysRemaining > 0
     && daysRemaining <= maximumDays
   )
 }
@@ -607,15 +607,15 @@ export default function ExpirationAlertsPanel({
             </option>
 
             <option value="CRITICO">
-              Vencen muy pronto (0 a 30 días)
+              Críticos (1 a 15 días)
             </option>
 
             <option value="PROXIMO">
-              Próximos a vencer (31 a 60 días)
+              Próximos a vencer (16 a 30 días)
             </option>
 
             <option value="SEGUIMIENTO">
-              Vencimiento lejano (más de 60 días)
+              Sin alerta (más de 30 días)
             </option>
           </select>
         </div>
