@@ -64,6 +64,8 @@ export const adminNavigation = [
 
 // Las pantallas funcionales conservan sus permisos del backend.
 const pagePermissions: Readonly<Record<string, string>> = {
+  '/admin/pos': 'pos.operar',
+  '/admin/cash': 'caja.operar',
   '/admin/products': 'catalogo.gestionar',
   '/admin/users': 'usuarios.gestionar',
   '/admin/branches': 'sucursales.gestionar',
@@ -75,8 +77,6 @@ const pagePermissions: Readonly<Record<string, string>> = {
 // No concede permisos para operaciones futuras.
 const placeholderRoles: Readonly<Record<string, readonly string[]>> = {
   '/admin/orders': ['ADMINISTRADOR', 'ENCARGADO_PEDIDOS'],
-  '/admin/pos': ['ADMINISTRADOR', 'VENDEDOR_CAJERO'],
-  '/admin/cash': ['ADMINISTRADOR', 'VENDEDOR_CAJERO'],
   '/admin/promotions': ['ADMINISTRADOR'],
   '/admin/audit': ['ADMINISTRADOR', 'SOCIO'],
   '/admin/reports': ['ADMINISTRADOR', 'SOCIO'],

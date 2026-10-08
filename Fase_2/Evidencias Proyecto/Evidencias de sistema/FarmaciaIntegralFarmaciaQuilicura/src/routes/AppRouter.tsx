@@ -14,8 +14,12 @@ import UsersPage from '../pages/e1-access-users-branches/users/UsersPage'
 import CatalogPage from '../pages/e2-catalog/CatalogPage'
 import InventoryPage from '../pages/e3-inventory/InventoryPage'
 import TransfersPage from '../pages/e4-transfers/TransfersPage'
+import PosPage from '../pages/e5-pos/PosPage'
+import CashPage from '../pages/e5-pos/CashPage'
 
 function getAdminPage(path: string) {
+  if (path === '/admin/pos') return <PosPage />
+  if (path === '/admin/cash') return <CashPage />
   if (path === '/admin/transfers') return <TransfersPage />
   if (path === '/admin/inventory') {
     return <InventoryPage />

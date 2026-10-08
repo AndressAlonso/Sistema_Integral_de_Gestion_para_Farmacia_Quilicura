@@ -22,6 +22,8 @@ from app.inventory.repository import PostgresInventoryRepository
 from app.inventory.routes import router as inventory_router
 from app.inventory_adjustments.repository import AdjustmentRepository
 from app.inventory_adjustments.routes import router as adjustments_router
+from app.pos.repository import PosRepository
+from app.pos.routes import router as pos_router
 from app.transfers.repository import TransferRepository
 from app.transfers.routes import router as transfers_router
 from app.users.routes import router as users_router
@@ -55,6 +57,7 @@ def create_app(
             app.state.goods_receipts = ReceiptRepository(factory)
             app.state.transfers = TransferRepository(factory)
             app.state.adjustments = AdjustmentRepository(factory)
+            app.state.pos = PosRepository(factory)
             app.state.sessions = SessionRepository(factory)
             app.state.auth = AuthState()
 
@@ -99,7 +102,9 @@ def create_app(
         request: Request,
         exc: RequestValidationError,
     ):
-        if request.url.path.startswith("/api/users"):
+        if request.url.path.startswith(("/api/pos", "/api/cash")):
+            detail = "Revisa los productos, cantidades enteras positivas, importes y datos de confirmación."
+        elif request.url.path.startswith("/api/users"):
             detail = (
                 "Revisa los datos, los roles y la sucursal. "
                 "La contraseña inicial requiere al menos 12 caracteres."
@@ -192,5 +197,6 @@ def create_app(
     app.include_router(receipts_router)
     app.include_router(transfers_router)
     app.include_router(adjustments_router)
+    app.include_router(pos_router)
 
     return app

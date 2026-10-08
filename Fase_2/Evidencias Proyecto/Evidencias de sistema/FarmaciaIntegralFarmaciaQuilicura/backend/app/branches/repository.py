@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import InventarioSucursal, Sucursal, Transferencia, UsuarioInterno
+from app.models import InventarioSucursal, SesionCaja, Sucursal, Transferencia, UsuarioInterno
 
 
 class Branch(BaseModel):
@@ -34,6 +34,10 @@ class BranchInUse(Exception):
 
 
 class BranchPendingTransfers(Exception):
+    pass
+
+
+class BranchOpenCash(Exception):
     pass
 
 
@@ -73,7 +77,8 @@ class PostgresBranchRepository:
         transfers = select(Transferencia.id).where(
             (Transferencia.origen_id == branch_id) | (Transferencia.destino_id == branch_id)
         ).exists()
-        return inventory | transfers
+        cash = select(SesionCaja.id).where(SesionCaja.sucursal_id == branch_id).exists()
+        return inventory | transfers | cash
 
     def _can_delete(self, db: Session, branch_id: UUID) -> bool:
         return not db.scalar(select(
@@ -235,6 +240,12 @@ class PostgresBranchRepository:
 
             if not row.activa:
                 return self._branch(db, row)
+
+            if db.scalar(select(SesionCaja.id).where(
+                SesionCaja.sucursal_id == branch_id,
+                SesionCaja.cierre_en.is_(None),
+            ).limit(1)) is not None:
+                raise BranchOpenCash
 
             pending = db.scalar(select(Transferencia.id).where(
                 ((Transferencia.origen_id == branch_id) | (Transferencia.destino_id == branch_id)),
