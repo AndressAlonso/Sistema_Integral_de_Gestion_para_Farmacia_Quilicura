@@ -35,6 +35,107 @@ class Base(DeclarativeBase):
     pass
 
 
+class ReversaVenta(Base):
+    __tablename__ = "reversa_venta"
+    __table_args__ = (
+        CheckConstraint("tipo IN ('ANULACION','DEVOLUCION')", name="ck_reversa_tipo"),
+        CheckConstraint("btrim(motivo) <> '' AND importe >= 0", name="ck_reversa_datos"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    solicitud_hash: Mapped[str] = mapped_column(String(64))
+    venta_id: Mapped[UUID] = mapped_column(ForeignKey("venta.id", ondelete="RESTRICT"), index=True)
+    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    sesion_caja_id: Mapped[UUID] = mapped_column(ForeignKey("sesion_caja.id", ondelete="RESTRICT"), index=True)
+    fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    tipo: Mapped[str] = mapped_column(String(20))
+    motivo: Mapped[str] = mapped_column(String(250))
+    importe: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+
+
+class ReversaVentaDetalle(Base):
+    __tablename__ = "reversa_venta_detalle"
+    __table_args__ = (
+        UniqueConstraint("reversa_id", "venta_lote_id", name="uq_reversa_lote"),
+        CheckConstraint("cantidad > 0 AND btrim(motivo_condicion) <> ''", name="ck_reversa_detalle"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    reversa_id: Mapped[UUID] = mapped_column(ForeignKey("reversa_venta.id", ondelete="RESTRICT"))
+    venta_lote_id: Mapped[UUID] = mapped_column(ForeignKey("venta_lote.id", ondelete="RESTRICT"))
+    cantidad: Mapped[int] = mapped_column(Integer)
+    reintegrar_stock: Mapped[bool] = mapped_column(Boolean)
+    motivo_condicion: Mapped[str] = mapped_column(String(250))
+
+
+class SesionCaja(Base):
+    __tablename__ = "sesion_caja"
+    __table_args__ = (
+        Index("uq_caja_abierta_usuario_sucursal", "usuario_id", "sucursal_id", unique=True,
+              postgresql_where=Column("cierre_en").is_(None)),
+        CheckConstraint("monto_inicial >= 0", name="ck_caja_monto"),
+        CheckConstraint("(cierre_en IS NULL AND efectivo_contado IS NULL AND resumen_cierre IS NULL) OR "
+                        "(cierre_en >= apertura_en AND efectivo_contado >= 0 AND resumen_cierre IS NOT NULL)",
+                        name="ck_caja_cierre"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    sucursal_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"))
+    apertura_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    monto_inicial: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    cierre_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    efectivo_contado: Mapped[Decimal | None] = mapped_column(Numeric(14, 2))
+    resumen_cierre: Mapped[dict | None] = mapped_column(JSONB)
+
+
+class Venta(Base):
+    __tablename__ = "venta"
+    __table_args__ = (
+        CheckConstraint("medio_pago IN ('EFECTIVO','DEBITO','CREDITO','TRANSFERENCIA')", name="ck_venta_pago"),
+        CheckConstraint("subtotal >= 0 AND descuento >= 0 AND total >= 0 AND total = subtotal - descuento",
+                        name="ck_venta_totales"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True)
+    solicitud_hash: Mapped[str] = mapped_column(String(64))
+    sesion_caja_id: Mapped[UUID] = mapped_column(ForeignKey("sesion_caja.id", ondelete="RESTRICT"), index=True)
+    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    sucursal_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True)
+    fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    medio_pago: Mapped[str] = mapped_column(String(20))
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    descuento: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+
+
+class VentaDetalle(Base):
+    __tablename__ = "venta_detalle"
+    __table_args__ = (
+        UniqueConstraint("venta_id", "producto_id", name="uq_venta_producto"),
+        CheckConstraint("cantidad > 0 AND precio_base >= 0 AND precio_final >= 0 AND "
+                        "precio_final <= precio_base AND total = precio_final * cantidad", name="ck_venta_detalle"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    venta_id: Mapped[UUID] = mapped_column(ForeignKey("venta.id", ondelete="RESTRICT"))
+    producto_id: Mapped[UUID] = mapped_column(ForeignKey("producto.id", ondelete="RESTRICT"))
+    nombre: Mapped[str] = mapped_column(String(150))
+    sku: Mapped[str] = mapped_column(String(64))
+    cantidad: Mapped[int] = mapped_column(Integer)
+    precio_base: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    precio_final: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    promocion: Mapped[dict | None] = mapped_column(JSONB)
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+
+
+class VentaLote(Base):
+    __tablename__ = "venta_lote"
+    __table_args__ = (
+        UniqueConstraint("venta_detalle_id", "lote_id", name="uq_venta_detalle_lote"),
+        CheckConstraint("cantidad > 0", name="ck_venta_lote_cantidad"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    venta_detalle_id: Mapped[UUID] = mapped_column(ForeignKey("venta_detalle.id", ondelete="RESTRICT"))
+    lote_id: Mapped[UUID] = mapped_column(ForeignKey("lote_inventario.id", ondelete="RESTRICT"))
+    cantidad: Mapped[int] = mapped_column(Integer)
+
+
 usuario_rol = Table(
     "usuario_rol",
     Base.metadata,

@@ -24,6 +24,7 @@ ROLE_CATALOG = {
         "catálogo, precios, promociones, configuraciones, autorizaciones, auditoría e indicadores.",
         (
             "usuarios.gestionar",
+            "pos.operar", "caja.operar", "ventas.reversar",
             "roles.gestionar",
             "sucursales.gestionar",
             "inventario.consultar",
@@ -39,6 +40,7 @@ ROLE_CATALOG = {
     "VENDEDOR_CAJERO": RoleDefinition(
         "Vendedor / Cajero",
         "Operación de POS, ventas, comprobantes, apertura y cierre de caja y escáner móvil de productos.",
+        ("pos.operar", "caja.operar"),
     ),
     "ENCARGADO_INVENTARIO": RoleDefinition(
         "Encargado de inventario",
@@ -61,6 +63,9 @@ ROLE_CATALOG = {
 
 # Solo permisos existentes. El alcance futuro no habilita módulos por adelantado.
 PERMISSIONS = {
+    "ventas.reversar": ("Registrar anulaciones y devoluciones como administrador", True),
+    "pos.operar": ("Buscar productos, cobrar ventas y consultar comprobantes POS", True),
+    "caja.operar": ("Abrir, consultar y cerrar la caja propia de la sucursal asignada", True),
     "transferencias.consultar": ("Consultar transferencias de las sucursales autorizadas", True),
     "transferencias.solicitar": ("Solicitar transferencias con reserva de stock", True),
     "transferencias.autorizar": ("Aprobar o rechazar transferencias como administrador", True),
