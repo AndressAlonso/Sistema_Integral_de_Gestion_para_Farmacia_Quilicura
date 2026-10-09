@@ -1026,3 +1026,75 @@ class EventoAuditoria(Base):
         ForeignKey("producto.id", ondelete="RESTRICT"),
         nullable=True,
     )
+
+
+class VinculacionScanner(Base):
+    """E8-H1: conexión temporal entre una pantalla POS y el móvil."""
+
+    __tablename__ = "vinculacion_scanner"
+    __table_args__ = (
+        UniqueConstraint(
+            "codigo_hash",
+            name="uq_scanner_codigo_hash",
+        ),
+        CheckConstraint(
+            "qr_expira_en > creada_en AND expira_en >= qr_expira_en",
+            name="ck_scanner_expiracion",
+        ),
+        CheckConstraint(
+            "(vinculada_en IS NULL AND sesion_movil_id IS NULL) OR "
+            "(vinculada_en IS NOT NULL AND sesion_movil_id IS NOT NULL "
+            "AND vinculada_en >= creada_en AND vinculada_en < qr_expira_en)",
+            name="ck_scanner_vinculacion",
+        ),
+        CheckConstraint(
+            "revocada_en IS NULL OR revocada_en >= creada_en",
+            name="ck_scanner_revocacion",
+        ),
+        CheckConstraint(
+            "sesion_movil_id IS NULL OR sesion_movil_id <> sesion_web_id",
+            name="ck_scanner_sesiones_distintas",
+        ),
+        Index("ix_scanner_caja", "sesion_caja_id"),
+        Index("ix_scanner_sesion_web", "sesion_web_id"),
+        Index("ix_scanner_sesion_movil", "sesion_movil_id"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+    )
+    usuario_id: Mapped[UUID] = mapped_column(
+        ForeignKey("usuario_interno.id", ondelete="RESTRICT"),
+    )
+    sucursal_id: Mapped[UUID] = mapped_column(
+        ForeignKey("sucursal.id", ondelete="RESTRICT"),
+    )
+    sesion_caja_id: Mapped[UUID] = mapped_column(
+        ForeignKey("sesion_caja.id", ondelete="RESTRICT"),
+    )
+    sesion_web_id: Mapped[UUID] = mapped_column(
+        ForeignKey("sesion_interna.id", ondelete="RESTRICT"),
+    )
+    sesion_movil_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("sesion_interna.id", ondelete="RESTRICT"),
+    )
+    codigo_hash: Mapped[str] = mapped_column(
+        String(64),
+    )
+    creada_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+    qr_expira_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+    )
+    expira_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+    )
+    vinculada_en: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+    revocada_en: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )

@@ -24,6 +24,8 @@ from app.inventory_adjustments.repository import AdjustmentRepository
 from app.inventory_adjustments.routes import router as adjustments_router
 from app.pos.repository import PosRepository
 from app.pos.routes import router as pos_router
+from app.scanner.routes import router as scanner_router
+from app.scanner.service import ScannerService
 from app.transfers.repository import TransferRepository
 from app.transfers.routes import router as transfers_router
 from app.users.routes import router as users_router
@@ -58,6 +60,7 @@ def create_app(
             app.state.transfers = TransferRepository(factory)
             app.state.adjustments = AdjustmentRepository(factory)
             app.state.pos = PosRepository(factory)
+            app.state.scanner = ScannerService(factory)
             app.state.sessions = SessionRepository(factory)
             app.state.auth = AuthState()
 
@@ -102,35 +105,53 @@ def create_app(
         request: Request,
         exc: RequestValidationError,
     ):
-        if request.url.path.startswith(("/api/pos", "/api/cash")):
-            detail = "Revisa los productos, cantidades enteras positivas, importes y datos de confirmación."
-        elif request.url.path.startswith("/api/users"):
+        path = request.url.path
+
+        if path.startswith(("/api/pos", "/api/cash")):
+            detail = (
+                "Revisa los productos, cantidades enteras positivas, "
+                "importes y datos de confirmación."
+            )
+        elif path.startswith("/api/scanner"):
+            detail = (
+                "Revisa el código y los datos de vinculación del escáner."
+            )
+        elif path.startswith("/api/users"):
             detail = (
                 "Revisa los datos, los roles y la sucursal. "
                 "La contraseña inicial requiere al menos 12 caracteres."
             )
-        elif request.url.path.startswith("/api/branches"):
+        elif path.startswith("/api/branches"):
             detail = (
                 "Revisa el código, el nombre y la dirección "
                 "de la sucursal."
             )
-        elif request.url.path.startswith("/api/categories"):
+        elif path.startswith("/api/categories"):
             detail = (
                 "Ingresa un nombre de categoría de entre "
                 "1 y 150 caracteres."
             )
-        elif request.url.path.startswith("/api/products"):
+        elif path.startswith("/api/products"):
             detail = (
                 "Revisa el nombre, SKU, categoría, precio "
                 "y códigos de barras."
             )
-        elif request.url.path.startswith("/api/transfers"):
-            detail = "Revisa las sucursales, productos, cantidades enteras positivas y datos de confirmación."
-        elif request.url.path.startswith("/api/goods-receipts"):
-            detail = "Revisa proveedor, documento, sucursal, productos, lotes y cantidades positivas."
-        elif request.url.path.startswith("/api/inventory-adjustments"):
-            detail = "Revisa la sucursal, el motivo y las cantidades enteras no negativas de los lotes modificados."
-        elif request.url.path.startswith("/api/inventory"):
+        elif path.startswith("/api/transfers"):
+            detail = (
+                "Revisa las sucursales, productos, cantidades "
+                "enteras positivas y datos de confirmación."
+            )
+        elif path.startswith("/api/goods-receipts"):
+            detail = (
+                "Revisa proveedor, documento, sucursal, productos, "
+                "lotes y cantidades positivas."
+            )
+        elif path.startswith("/api/inventory-adjustments"):
+            detail = (
+                "Revisa la sucursal, el motivo y las cantidades "
+                "enteras no negativas de los lotes modificados."
+            )
+        elif path.startswith("/api/inventory"):
             detail = (
                 "Revisa los datos de la consulta de inventario."
             )
@@ -198,5 +219,6 @@ def create_app(
     app.include_router(transfers_router)
     app.include_router(adjustments_router)
     app.include_router(pos_router)
+    app.include_router(scanner_router)
 
     return app

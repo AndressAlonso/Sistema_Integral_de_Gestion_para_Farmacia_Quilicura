@@ -7,6 +7,7 @@ import './pos.css'
 import SalesDialog from './SalesDialog'
 import ProductPhoto from '../e2-catalog/ProductPhoto'
 import '../e2-catalog/catalog.css'
+import ScannerLinkDialog from './ScannerLinkDialog'
 
 export default function PosPage() {
   const { user } = useOutletContext<AuthSession>()
@@ -26,7 +27,6 @@ export default function PosPage() {
   })
   const dialog = useRef<HTMLDialogElement>(null)
   const locked = useRef(false)
-  const linkingDialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     if (!cart.length || pending) return
     let active = true
@@ -90,8 +90,10 @@ export default function PosPage() {
   }
 
   return <section className="pos-page">
-    <div className="pos-section-title"><button className="pos-secondary" onClick={() => setShowSales(true)}>Ventas, comprobantes y devoluciones</button><button className="pos-secondary" type="button" onClick={() => linkingDialog.current?.showModal()}>Vincular sesión</button></div>
-    <dialog className="pos-dialog" ref={linkingDialog}><div className="pos-dialog-body"><div className="pos-section-title"><h2>Vincular sesión con la app móvil</h2><button type="button" onClick={() => linkingDialog.current?.close()}>Cerrar</button></div><p>La conexión con la app móvil estará disponible cuando se complete su integración.</p><p>Cajero: <strong>{user.name}</strong> · Sucursal: <strong>{user.branch_name}</strong></p><p className="pos-notice" role="status">Sin dispositivo vinculado. Por ahora puedes utilizar un lector USB o buscar productos manualmente.</p></div></dialog>
+    <div className="pos-section-title"><button className="pos-secondary" onClick={() => setShowSales(true)}>Ventas, comprobantes y devoluciones</button><ScannerLinkDialog
+      userName={user.name}
+      branchName={user.branch_name}
+    />  </div>
     {showSales && <SalesDialog userId={user.id} canReverse={user.roles.includes('ADMINISTRADOR') && user.permissions.includes('ventas.reversar')} onClose={() => setShowSales(false)} onReceipt={setReceipt} />}
     <header className="pos-heading"><div><p className="pos-eyebrow">VENTA EN SUCURSAL</p><h1>Punto de venta</h1><p>{user.branch_name} · {user.name}</p></div><Link className="pos-secondary" to="/admin/cash">{cash ? 'Caja abierta · Ver caja' : 'Abrir caja'}</Link></header>
     {error && <p className="pos-error" role="alert">{error}</p>}

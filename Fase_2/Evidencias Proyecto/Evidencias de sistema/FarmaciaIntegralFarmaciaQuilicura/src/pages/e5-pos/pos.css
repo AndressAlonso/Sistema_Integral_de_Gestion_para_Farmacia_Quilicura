@@ -48,3 +48,31 @@
 @media(max-width: 1000px) { .pos-workspace { grid-template-columns: 1fr; } .pos-metrics { grid-template-columns: repeat(2,1fr); } }
 @media(max-width: 600px) { .pos-panel { padding: 16px; } .pos-product { flex-wrap: wrap; } .pos-search { flex-wrap: wrap; } .pos-cart-row { grid-template-columns: 1fr 70px; } }
 @media print { body * { visibility: hidden; } .pos-receipt,.pos-receipt * { visibility: visible; } .pos-receipt { position: absolute; left: 0; top: 0; width: 100%; box-sizing: border-box; box-shadow: none; border: none; } .pos-receipt button { display: none; } }
+.scanner-link-dialog {
+  width: min(540px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+.scanner-link-qr {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.scanner-link-qr svg {
+  display: block;
+  width: min(240px, 100%);
+  height: auto;
+  background: white;
+  border-radius: 12px;
+}
+
+.scanner-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+}
