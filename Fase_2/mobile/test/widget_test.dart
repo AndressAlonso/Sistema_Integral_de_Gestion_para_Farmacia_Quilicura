@@ -1,39 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sigfq_mobile/auth_api.dart';
 import 'package:sigfq_mobile/main.dart';
 
 void main() {
-  testWidgets('Vinculación y lectura manual conservan ceros', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: ScannerPage()));
+  testWidgets('Sin vinculación no permite leer productos', (tester) async {
+    final api = AuthApi();
+    addTearDown(api.dispose);
 
-    final manual = find.widgetWithText(
-      OutlinedButton,
-      'Ingresar código manualmente',
+    await tester.pumpWidget(MaterialApp(home: ScannerPage(api: api)));
+
+    expect(find.text('Vincula una caja'), findsOneWidget);
+
+    final cameraButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Abrir cámara'),
     );
 
-    expect(tester.widget<OutlinedButton>(manual).onPressed, isNull);
+    final manualButton = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, 'Ingresar código manualmente'),
+    );
 
-    await tester.tap(find.text('Vincular'));
-    await tester.pumpAndSettle();
+    expect(cameraButton.onPressed, isNull);
+    expect(manualButton.onPressed, isNull);
+  });
 
-    await tester.tap(manual);
-    await tester.pumpAndSettle();
+  test('Rechaza códigos que no son de vinculación', () async {
+    final api = AuthApi();
+    addTearDown(api.dispose);
 
-    await tester.tap(find.text('Registrar'));
-    await tester.pumpAndSettle();
-    expect(find.text('Ingresa un código.'), findsOneWidget);
-
-    await tester.enterText(find.byType(TextFormField), '000000000001');
-    await tester.tap(find.text('Registrar'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('000000000001'), findsOneWidget);
-    expect(find.byType(AlertDialog), findsNothing);
-
-    await tester.tap(find.text('Desvincular'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('000000000001'), findsNothing);
-    expect(tester.widget<OutlinedButton>(manual).onPressed, isNull);
+    await expectLater(
+      api.claimScanner('000000000001'),
+      throwsA(isA<AuthApiException>()),
+    );
   });
 }

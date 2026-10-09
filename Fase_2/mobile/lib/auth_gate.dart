@@ -6,7 +6,7 @@ import 'auth_api.dart';
 class AuthGate extends StatefulWidget {
   const AuthGate({required this.scannerBuilder, super.key});
 
-  final WidgetBuilder scannerBuilder;
+  final Widget Function(BuildContext context, AuthApi api) scannerBuilder;
 
   @override
   State<AuthGate> createState() => _AuthGateState();
@@ -215,7 +215,7 @@ class _AuthGateState extends State<AuthGate> {
             Expanded(
               child: AbsorbPointer(
                 absorbing: _busy,
-                child: widget.scannerBuilder(context),
+                child: widget.scannerBuilder(context, _api),
               ),
             ),
           ],

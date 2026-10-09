@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'auth_gate.dart';
 import 'barcode_camera_page.dart';
+import 'auth_api.dart';
+import 'scanner_link.dart';
+import 'scanner_pairing_page.dart';
 
 const pharmacyPurple = Color(0xFF702583);
 const pharmacyGreen = Color(0xFF437D36);
@@ -17,87 +21,194 @@ class MyApp extends StatelessWidget {
       title: 'Farmacia Quilicura',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-  useMaterial3: true,
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: pharmacyGreen,
-    primary: pharmacyGreen,
-    secondary: pharmacyPurple,
-    surface: Colors.white,
-  ),
-  scaffoldBackgroundColor: const Color(0xFFF5F7F6),
-  appBarTheme: const AppBarTheme(
-    systemOverlayStyle: SystemUiOverlayStyle.dark,
-    backgroundColor: Colors.white,
-    surfaceTintColor: Colors.transparent,
-    foregroundColor: Color(0xFF26332D),
-    centerTitle: false,
-    elevation: 0,
-  ),
-  inputDecorationTheme: InputDecorationTheme(
-    filled: true,
-    fillColor: const Color(0xFFF8FAF9),
-    contentPadding: const EdgeInsets.symmetric(
-      horizontal: 16,
-      vertical: 17,
-    ),
-    prefixIconColor: const Color(0xFF748078),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Color(0xFFDDE4DF)),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(
-        color: pharmacyGreen,
-        width: 1.5,
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: pharmacyGreen,
+          primary: pharmacyGreen,
+          secondary: pharmacyPurple,
+          surface: Colors.white,
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF5F7F6),
+        appBarTheme: const AppBarTheme(
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          foregroundColor: Color(0xFF26332D),
+          centerTitle: false,
+          elevation: 0,
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFFF8FAF9),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 17,
+          ),
+          prefixIconColor: const Color(0xFF748078),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFDDE4DF)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: pharmacyGreen, width: 1.5),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: pharmacyGreen,
+            foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: pharmacyPurple,
+            side: const BorderSide(color: Color(0xFFDFD7E4)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+          ),
+        ),
       ),
-    ),
-  ),
-  filledButtonTheme: FilledButtonThemeData(
-    style: FilledButton.styleFrom(
-      backgroundColor: pharmacyGreen,
-      foregroundColor: Colors.white,
-      minimumSize: const Size.fromHeight(52),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
-    ),
-  ),
-  outlinedButtonTheme: OutlinedButtonThemeData(
-    style: OutlinedButton.styleFrom(
-      foregroundColor: pharmacyPurple,
-      side: const BorderSide(color: Color(0xFFDFD7E4)),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
-    ),
-  ),
-),
-      home: AuthGate(scannerBuilder: (_) => const ScannerPage()),
+      home: AuthGate(scannerBuilder: (context, api) => ScannerPage(api: api)),
     );
   }
 }
 
 class ScannerPage extends StatefulWidget {
-  const ScannerPage({super.key});
+  const ScannerPage({super.key, required this.api});
+
+  final AuthApi api;
 
   @override
   State<ScannerPage> createState() => _ScannerPageState();
 }
 
 class _ScannerPageState extends State<ScannerPage> {
-  bool _linked = false;
+  ScannerLink? _link;
+  bool _connectionBusy = false;
   String? _lastCode;
 
-  void _toggleConnection() {
+  bool get _linked => _link?.isLinked ?? false;
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _toggleConnection() async {
+    if (_connectionBusy) return;
+
     setState(() {
-      _linked = !_linked;
-      _lastCode = null;
+      _connectionBusy = true;
     });
+
+    try {
+      final current = _link;
+
+      if (current != null) {
+        final result = await widget.api.revokeScanner(current.id);
+
+        if (!mounted) return;
+
+        if (result.state != 'REVOKED') {
+          _showMessage('El servidor no confirmó la desvinculación.');
+          return;
+        }
+
+        setState(() {
+          _link = null;
+          _lastCode = null;
+        });
+
+        _showMessage('Escáner desvinculado del POS.');
+        return;
+      }
+
+      final result = await Navigator.of(context).push<ScannerLink>(
+        MaterialPageRoute<ScannerLink>(
+          builder: (_) => ScannerPairingPage(api: widget.api),
+        ),
+      );
+
+      if (!mounted || result == null) return;
+
+      if (!result.isLinked) {
+        _showMessage('La vinculación no quedó activa.');
+        return;
+      }
+
+      setState(() {
+        _link = result;
+        _lastCode = null;
+      });
+
+      _showMessage('Escáner vinculado al POS.');
+    } on AuthApiException catch (error) {
+      _showMessage(error.message);
+    } catch (_) {
+      _showMessage(
+        'No pudimos confirmar la operación. Revisa la conexión y el POS.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _connectionBusy = false;
+        });
+      }
+    }
+  }
+
+  Future<bool> _checkConnection() async {
+    final current = _link;
+    if (current == null || _connectionBusy) return false;
+
+    setState(() {
+      _connectionBusy = true;
+    });
+
+    try {
+      final result = await widget.api.scannerStatus(current.id);
+
+      if (!mounted) return false;
+
+      if (!result.isLinked) {
+        setState(() {
+          _link = null;
+          _lastCode = null;
+        });
+
+        _showMessage('La vinculación terminó. Genera un nuevo QR en el POS.');
+        return false;
+      }
+
+      setState(() {
+        _link = result;
+      });
+
+      return true;
+    } on AuthApiException catch (error) {
+      _showMessage(error.message);
+      return false;
+    } catch (_) {
+      _showMessage('No pudimos verificar la conexión con el POS.');
+      return false;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _connectionBusy = false;
+        });
+      }
+    }
   }
 
   void _recordCode(String code) {
@@ -106,7 +217,7 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   Future<void> _openCamera() async {
-    if (!_linked) return;
+    if (!await _checkConnection() || !mounted) return;
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
@@ -116,7 +227,7 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   Future<void> _manualEntry() async {
-    if (!_linked) return;
+    if (!await _checkConnection() || !mounted) return;
 
     final controller = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -195,10 +306,7 @@ class _ScannerPageState extends State<ScannerPage> {
         ),
         title: const Text(
           'Escáner de productos',
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w700,
-          ),
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -213,7 +321,7 @@ class _ScannerPageState extends State<ScannerPage> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Modo de prueba · POS simulado',
+                      'Vinculación real · lecturas de prueba',
                       style: TextStyle(color: pharmacyPurple, fontSize: 12),
                     ),
                   ),
@@ -236,15 +344,19 @@ class _ScannerPageState extends State<ScannerPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          _linked
-                              ? 'Caja de prueba vinculada'
-                              : 'Vincula una caja',
+                          _linked ? 'POS vinculado' : 'Vincula una caja',
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                       TextButton(
-                        onPressed: _toggleConnection,
-                        child: Text(_linked ? 'Desvincular' : 'Vincular'),
+                        onPressed: _connectionBusy ? null : _toggleConnection,
+                        child: Text(
+                          _connectionBusy
+                              ? 'Espera…'
+                              : _linked
+                              ? 'Desvincular'
+                              : 'Vincular',
+                        ),
                       ),
                     ],
                   ),
@@ -252,94 +364,97 @@ class _ScannerPageState extends State<ScannerPage> {
               ),
               const SizedBox(height: 14),
               Expanded(
-  child: Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: const Color(0xFFE3E9E5),
-      ),
-      boxShadow: const [
-        BoxShadow(
-          color: Color(0x08000000),
-          blurRadius: 20,
-          offset: Offset(0, 6),
-        ),
-      ],
-    ),
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxHeight < 280;
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFE3E9E5)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x08000000),
+                        blurRadius: 20,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxHeight < 280;
 
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Flexible(
-              child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Container(
-                    width: compact ? 84 : 112,
-                    height: compact ? 84 : 112,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3EDF6),
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    child: Icon(
-                      Icons.qr_code_scanner_rounded,
-                      size: compact ? 44 : 58,
-                      color: pharmacyPurple,
-                    ),
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Flexible(
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Container(
+                                  width: compact ? 84 : 112,
+                                  height: compact ? 84 : 112,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3EDF6),
+                                    borderRadius: BorderRadius.circular(28),
+                                  ),
+                                  child: Icon(
+                                    Icons.qr_code_scanner_rounded,
+                                    size: compact ? 44 : 58,
+                                    color: pharmacyPurple,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: compact ? 12 : 22),
+                          const Text(
+                            'Escanea un producto',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFF26332D),
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _linked
+                                ? 'Coloca el código frente a la cámara.'
+                                : 'Vincula una caja para comenzar.',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFF748078),
+                              fontSize: 14,
+                              height: 1.4,
+                            ),
+                          ),
+                          SizedBox(height: compact ? 16 : 26),
+                          FilledButton.icon(
+                            onPressed: _linked && !_connectionBusy
+                                ? _openCamera
+                                : null,
+                            icon: const Icon(
+                              Icons.camera_alt_outlined,
+                              size: 20,
+                            ),
+                            label: const Text(
+                              'Abrir cámara',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
-            ),
-            SizedBox(height: compact ? 12 : 22),
-            const Text(
-              'Escanea un producto',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFF26332D),
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _linked
-                  ? 'Coloca el código frente a la cámara.'
-                  : 'Vincula una caja para comenzar.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF748078),
-                fontSize: 14,
-                height: 1.4,
-              ),
-            ),
-            SizedBox(height: compact ? 16 : 26),
-            FilledButton.icon(
-              onPressed: _linked ? _openCamera : null,
-              icon: const Icon(Icons.camera_alt_outlined, size: 20),
-              label: const Text(
-                'Abrir cámara',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    ),
-  ),
-),
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: _linked ? _manualEntry : null,
+                onPressed: _linked && !_connectionBusy ? _manualEntry : null,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(48),
                 ),

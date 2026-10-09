@@ -2,6 +2,8 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
+import 'scanner_link.dart';
+
 class AuthSession {
   const AuthSession({
     required this.userId,
@@ -172,6 +174,92 @@ class AuthApi {
       'No pudimos completar la solicitud. Intenta nuevamente.',
       statusCode: status,
     );
+  }
+
+  Future<ScannerLink> claimScanner(String qrContent) async {
+    const prefix = 'sigfq:pair:v1:';
+
+    if (!qrContent.startsWith(prefix)) {
+      throw const AuthApiException(
+        'Este QR no es de vinculación. '
+        'Genera uno desde el botón Vincular sesión del POS.',
+      );
+    }
+
+    final code = qrContent.substring(prefix.length);
+
+    if (!RegExp(r'^[A-Za-z0-9_-]{43}$').hasMatch(code)) {
+      throw const AuthApiException(
+        'El código de vinculación tiene un formato incorrecto.',
+      );
+    }
+
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/scanner/links/claim',
+        data: {'pairing_code': code},
+      );
+
+      return _readScannerLink(response.data);
+    } on DioException catch (error) {
+      throw _translateError(error);
+    }
+  }
+
+  Future<ScannerLink> scannerStatus(String linkId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/scanner/links/${Uri.encodeComponent(linkId)}',
+      );
+
+      return _readScannerLink(response.data);
+    } on DioException catch (error) {
+      throw _translateError(error);
+    }
+  }
+
+  Future<ScannerLink> revokeScanner(String linkId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/scanner/links/${Uri.encodeComponent(linkId)}/revoke',
+      );
+
+      return _readScannerLink(response.data);
+    } on DioException catch (error) {
+      throw _translateError(error);
+    }
+  }
+
+  ScannerLink _readScannerLink(Map<String, dynamic>? data) {
+    try {
+      if (data == null) {
+        throw const FormatException('Respuesta vacía');
+      }
+
+      final link = ScannerLink.fromJson(data);
+
+      const states = {
+        'PENDING',
+        'LINKED',
+        'REVOKED',
+        'EXPIRED',
+        'DISCONNECTED',
+      };
+
+      if (!states.contains(link.state)) {
+        throw const FormatException('Estado desconocido');
+      }
+
+      return link;
+    } on FormatException {
+      throw const AuthApiException(
+        'El servidor devolvió una vinculación con formato incorrecto.',
+      );
+    } on TypeError {
+      throw const AuthApiException(
+        'El servidor devolvió una vinculación incompleta.',
+      );
+    }
   }
 
   void dispose() {
