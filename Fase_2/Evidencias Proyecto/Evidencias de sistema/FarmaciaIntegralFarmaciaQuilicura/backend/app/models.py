@@ -1098,3 +1098,79 @@ class VinculacionScanner(Base):
     revocada_en: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
     )
+
+class LecturaScanner(Base):
+    """E8-H1: lectura enviada desde el móvil a una vinculación POS."""
+
+    __tablename__ = "lectura_scanner"
+    __table_args__ = (
+        UniqueConstraint(
+            "secuencia",
+            name="uq_lectura_scanner_secuencia",
+        ),
+        CheckConstraint(
+            "btrim(codigo) <> '' AND codigo = btrim(codigo)",
+            name="ck_lectura_scanner_codigo",
+        ),
+        CheckConstraint(
+            "resultado IN ('FOUND', 'NOT_FOUND', 'INACTIVE')",
+            name="ck_lectura_scanner_resultado",
+        ),
+        CheckConstraint(
+            "(resultado = 'NOT_FOUND' AND producto_id IS NULL) OR "
+            "(resultado IN ('FOUND', 'INACTIVE') "
+            "AND producto_id IS NOT NULL)",
+            name="ck_lectura_scanner_producto",
+        ),
+        CheckConstraint(
+            "recibida_pos_en IS NULL OR recibida_pos_en >= creada_en",
+            name="ck_lectura_scanner_recepcion",
+        ),
+        Index(
+            "ix_lectura_scanner_vinculacion_secuencia",
+            "vinculacion_id",
+            "secuencia",
+        ),
+        Index(
+            "ix_lectura_scanner_producto",
+            "producto_id",
+        ),
+    )
+
+    # Android genera este UUID y lo conserva al reintentar el envío.
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+    )
+
+    secuencia: Mapped[int] = mapped_column(
+        BigInteger,
+        Identity(always=True),
+        nullable=False,
+    )
+
+    vinculacion_id: Mapped[UUID] = mapped_column(
+        ForeignKey("vinculacion_scanner.id", ondelete="RESTRICT"),
+    )
+
+    codigo: Mapped[str] = mapped_column(
+        String(128),
+    )
+
+    producto_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("producto.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+
+    resultado: Mapped[str] = mapped_column(
+        String(20),
+    )
+
+    creada_en: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+    )
+
+    recibida_pos_en: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )

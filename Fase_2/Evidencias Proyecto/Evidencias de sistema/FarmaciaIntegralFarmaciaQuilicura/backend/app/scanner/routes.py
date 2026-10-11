@@ -9,6 +9,8 @@ from app.scanner.schemas import (
     ClaimScanner,
     CreateScannerLinkResponse,
     ScannerLinkResponse,
+    ScannerReadResponse,
+    SubmitScannerRead,
 )
 from app.scanner.service import ScannerError
 
@@ -85,5 +87,60 @@ def revoke_link(link_id: UUID, request: Request):
             actor,
             token,
             link_id,
+        ),
+    )
+
+@router.post(
+    "/links/{link_id}/reads",
+    response_model=ScannerReadResponse,
+)
+def submit_read(
+    link_id: UUID,
+    data: SubmitScannerRead,
+    request: Request,
+):
+    return execute(
+        request,
+        lambda service, actor, token: service.submit_read(
+            actor,
+            token,
+            link_id,
+            data.request_id,
+            data.code,
+        ),
+    )
+
+
+@router.get(
+    "/links/{link_id}/reads",
+    response_model=list[ScannerReadResponse],
+)
+def pending_reads(link_id: UUID, request: Request):
+    return execute(
+        request,
+        lambda service, actor, token: service.pending_reads(
+            actor,
+            token,
+            link_id,
+        ),
+    )
+
+
+@router.post(
+    "/links/{link_id}/reads/{read_id}/ack",
+    response_model=ScannerReadResponse,
+)
+def acknowledge_read(
+    link_id: UUID,
+    read_id: UUID,
+    request: Request,
+):
+    return execute(
+        request,
+        lambda service, actor, token: service.acknowledge_read(
+            actor,
+            token,
+            link_id,
+            read_id,
         ),
     )

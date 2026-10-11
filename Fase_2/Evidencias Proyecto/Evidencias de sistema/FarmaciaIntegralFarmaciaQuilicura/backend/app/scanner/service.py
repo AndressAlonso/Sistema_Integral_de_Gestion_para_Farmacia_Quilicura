@@ -5,10 +5,13 @@ from hashlib import sha256
 from secrets import token_urlsafe
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.auth.sessions import SessionRepository
 from app.models import (
+    CodigoBarra,
+    LecturaScanner,
+    Producto,
     SesionCaja,
     SesionInterna,
     Sucursal,
@@ -261,3 +264,149 @@ class ScannerService:
 
             db.flush()
             return self._response(link, "REVOKED")
+        
+    @staticmethod
+    def _read_response(read):
+        return {
+            "id": read.id,
+            "sequence": read.secuencia,
+            "link_id": read.vinculacion_id,
+            "code": read.codigo,
+            "product_id": read.producto_id,
+            "result": read.resultado,
+            "created_at": read.creada_en,
+            "received_at": read.recibida_pos_en,
+        }
+
+    def submit_read(self, actor, token, link_id, request_id, code):
+        self._authorize(actor)
+
+        with self.factory.begin() as db:
+            now = datetime.now(timezone.utc)
+            link = self._owned_link(db, actor, token, link_id, now)
+
+            session = self._session(db, actor, token, now)
+            if session.id != link.sesion_movil_id:
+                raise ScannerError(
+                    403,
+                    "Solo la sesión móvil vinculada puede enviar lecturas.",
+                )
+
+            # Se coordina con el cierre de caja y las operaciones del POS.
+            db.scalar(
+                select(SesionCaja)
+                .where(SesionCaja.id == link.sesion_caja_id)
+                .with_for_update()
+            )
+
+            # Serializa el mismo UUID incluso si llega por otra vinculación.
+            db.execute(
+                text(
+                    "SELECT pg_advisory_xact_lock("
+                    "hashtextextended(:key, 0))"
+                ),
+                {"key": f"scanner-read:{request_id}"},
+            )
+
+            now = datetime.now(timezone.utc)
+            if self._state(db, link, now) != "LINKED":
+                raise ScannerError(
+                    409,
+                    "La vinculación terminó. Vincula nuevamente el teléfono.",
+                )
+
+            previous = db.get(LecturaScanner, request_id)
+            if previous is not None:
+                if (
+                    previous.vinculacion_id != link.id
+                    or previous.codigo != code
+                ):
+                    raise ScannerError(
+                        409,
+                        "El identificador de lectura ya se usó "
+                        "con otros datos.",
+                    )
+
+                return self._read_response(previous)
+
+            product = db.scalar(
+                select(Producto)
+                .join(CodigoBarra, CodigoBarra.producto_id == Producto.id)
+                .where(CodigoBarra.valor == code)
+            )
+
+            if product is None:
+                result = "NOT_FOUND"
+            elif not product.activo:
+                result = "INACTIVE"
+            else:
+                result = "FOUND"
+
+            read = LecturaScanner(
+                id=request_id,
+                vinculacion_id=link.id,
+                codigo=code,
+                producto_id=product.id if product is not None else None,
+                resultado=result,
+                creada_en=now,
+            )
+            db.add(read)
+            db.flush()
+
+            return self._read_response(read)
+
+    def _web_link(self, db, actor, token, link_id):
+        now = datetime.now(timezone.utc)
+        link = self._owned_link(db, actor, token, link_id, now)
+        session = self._session(db, actor, token, now)
+
+        if session.id != link.sesion_web_id:
+            raise ScannerError(
+                403,
+                "Solo la sesión POS vinculada puede recibir lecturas.",
+            )
+
+        db.scalar(
+            select(SesionCaja)
+            .where(SesionCaja.id == link.sesion_caja_id)
+            .with_for_update()
+        )
+
+        if self._state(db, link, datetime.now(timezone.utc)) != "LINKED":
+            raise ScannerError(409, "La vinculación no está activa.")
+
+        return link
+
+    def pending_reads(self, actor, token, link_id):
+        self._authorize(actor)
+
+        with self.factory.begin() as db:
+            link = self._web_link(db, actor, token, link_id)
+
+            reads = db.scalars(
+                select(LecturaScanner)
+                .where(
+                    LecturaScanner.vinculacion_id == link.id,
+                    LecturaScanner.recibida_pos_en.is_(None),
+                )
+                .order_by(LecturaScanner.secuencia)
+                .limit(50)
+            )
+
+            return [self._read_response(read) for read in reads]
+
+    def acknowledge_read(self, actor, token, link_id, read_id):
+        self._authorize(actor)
+
+        with self.factory.begin() as db:
+            link = self._web_link(db, actor, token, link_id)
+            read = db.get(LecturaScanner, read_id)
+
+            if read is None or read.vinculacion_id != link.id:
+                raise ScannerError(404, "No se encontró la lectura.")
+
+            if read.recibida_pos_en is None:
+                read.recibida_pos_en = datetime.now(timezone.utc)
+                db.flush()
+
+            return self._read_response(read)
