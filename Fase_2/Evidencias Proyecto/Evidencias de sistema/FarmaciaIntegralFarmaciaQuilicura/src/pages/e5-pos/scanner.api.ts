@@ -21,6 +21,17 @@ export type CreatedScannerLink = ScannerLink & {
   pairing_code: string
 }
 
+export type ScannerRead = {
+  id: string
+  sequence: number
+  link_id: string
+  code: string
+  product_id: string | null
+  result: 'FOUND' | 'NOT_FOUND' | 'INACTIVE'
+  created_at: string
+  received_at: string | null
+}
+
 async function request<T>(
   path: string,
   method: 'GET' | 'POST',
@@ -48,6 +59,18 @@ export const scannerApi = {
   revoke: (id: string) =>
     request<ScannerLink>(
       `/api/scanner/links/${encodeURIComponent(id)}/revoke`,
+      'POST',
+    ),
+
+  pendingReads: (id: string) =>
+    request<ScannerRead[]>(
+      `/api/scanner/links/${encodeURIComponent(id)}/reads`,
+      'GET',
+    ),
+
+  acknowledgeRead: (linkId: string, readId: string) =>
+    request<ScannerRead>(
+      `/api/scanner/links/${encodeURIComponent(linkId)}/reads/${encodeURIComponent(readId)}/ack`,
       'POST',
     ),
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'scanner_read.dart';
 import 'auth_gate.dart';
 import 'barcode_camera_page.dart';
 import 'auth_api.dart';
@@ -94,6 +95,8 @@ class _ScannerPageState extends State<ScannerPage> {
   ScannerLink? _link;
   bool _connectionBusy = false;
   String? _lastCode;
+  ScannerReadRequest? _pendingRead;
+  String _lastReadLabel = 'Todavía no hay lecturas';
 
   bool get _linked => _link?.isLinked ?? false;
 
@@ -106,6 +109,12 @@ class _ScannerPageState extends State<ScannerPage> {
   }
 
   Future<void> _toggleConnection() async {
+    if (_pendingRead != null) {
+      _showMessage(
+        'Hay una lectura pendiente. Abre la cámara y reintenta el envío.',
+      );
+      return;
+    }
     if (_connectionBusy) return;
 
     setState(() {
@@ -211,82 +220,109 @@ class _ScannerPageState extends State<ScannerPage> {
     }
   }
 
-  void _recordCode(String code) {
-    if (!mounted || !_linked) return;
-    setState(() => _lastCode = code);
+  void _recordRead(ScannerRead read) {
+    if (!mounted) return;
+
+    setState(() {
+      _lastCode = read.code;
+      _lastReadLabel = switch (read.result) {
+        'FOUND' => 'Último código recibido por el servidor',
+        'NOT_FOUND' => 'Última lectura: producto no encontrado',
+        'INACTIVE' => 'Última lectura: producto desactivado',
+        _ => 'Última lectura',
+      };
+    });
   }
 
-  Future<void> _openCamera() async {
-    if (!await _checkConnection() || !mounted) return;
+  Future<void> _openReader({String? initialCode}) async {
+    final linkId = _pendingRead?.linkId ?? _link?.id;
+    if (!mounted || linkId == null) return;
 
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => BarcodeCameraPage(onRead: _recordCode),
+        builder: (_) => BarcodeCameraPage(
+          api: widget.api,
+          linkId: linkId,
+          pendingRead: _pendingRead,
+          initialCode: initialCode,
+          onSent: _recordRead,
+          onPendingChanged: (request) {
+            if (!mounted) return;
+            setState(() {
+              _pendingRead = request;
+            });
+          },
+        ),
       ),
     );
   }
 
+  Future<void> _openCamera() async {
+    if (_pendingRead == null) {
+      if (!await _checkConnection() || !mounted) return;
+    }
+
+    await _openReader();
+  }
+
   Future<void> _manualEntry() async {
+    if (_pendingRead != null) {
+      await _openCamera();
+      return;
+    }
+
     if (!await _checkConnection() || !mounted) return;
 
-    final controller = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    var enteredCode = '';
 
-    try {
-      final code = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) {
-          void submit() {
-            if (formKey.currentState!.validate()) {
-              Navigator.of(dialogContext).pop(controller.text.trim());
-            }
+    final code = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        void submit() {
+          if (formKey.currentState?.validate() ?? false) {
+            Navigator.of(dialogContext).pop(enteredCode.trim());
           }
+        }
 
-          return AlertDialog(
-            title: const Text('Ingresar código'),
-            content: Form(
-              key: formKey,
-              child: TextFormField(
-                controller: controller,
-                autofocus: true,
-                autocorrect: false,
-                enableSuggestions: false,
-                maxLength: 128,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Código de barras',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Ingresa un código.';
-                  }
-                  return null;
-                },
-                onFieldSubmitted: (_) => submit(),
-              ),
+        return AlertDialog(
+          title: const Text('Ingresar código'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              autofocus: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              maxLength: 128,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(labelText: 'Código de barras'),
+              onChanged: (value) => enteredCode = value,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Ingresa un código.';
+                }
+                return null;
+              },
+              onFieldSubmitted: (_) => submit(),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(minimumSize: const Size(100, 48)),
-                onPressed: submit,
-                child: const Text('Registrar'),
-              ),
-            ],
-          );
-        },
-      );
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(minimumSize: const Size(100, 48)),
+              onPressed: submit,
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
 
-      if (code != null) _recordCode(code);
-    } finally {
-      // Espera a que termine la animación de salida del diálogo.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        controller.dispose();
-      });
-    }
+    if (!mounted || code == null) return;
+    await _openReader(initialCode: code);
   }
 
   @override
@@ -321,7 +357,7 @@ class _ScannerPageState extends State<ScannerPage> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Vinculación real · lecturas de prueba',
+                      'Lectura de códigos · POS',
                       style: TextStyle(color: pharmacyPurple, fontSize: 12),
                     ),
                   ),
@@ -482,7 +518,7 @@ class _ScannerPageState extends State<ScannerPage> {
                           Text(
                             _lastCode == null
                                 ? 'Todavía no hay lecturas'
-                                : 'Última lectura · recepción simulada',
+                                : _lastReadLabel,
                             style: const TextStyle(
                               color: pharmacyGreen,
                               fontSize: 12,

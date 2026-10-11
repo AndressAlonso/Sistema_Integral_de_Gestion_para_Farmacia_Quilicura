@@ -2,6 +2,7 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
+import 'scanner_read.dart';
 import 'scanner_link.dart';
 
 class AuthSession {
@@ -258,6 +259,56 @@ class AuthApi {
     } on TypeError {
       throw const AuthApiException(
         'El servidor devolvió una vinculación incompleta.',
+      );
+    }
+  }
+
+  Future<ScannerRead> submitScannerRead({
+    required String linkId,
+    required String requestId,
+    required String code,
+  }) async {
+    if (code.isEmpty ||
+        code.length > 128 ||
+        code != code.trim() ||
+        code.runes.any((character) => character < 32 || character == 127)) {
+      throw const AuthApiException(
+        'El código leído tiene un formato incorrecto.',
+        statusCode: 422,
+      );
+    }
+
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/scanner/links/${Uri.encodeComponent(linkId)}/reads',
+        data: {'request_id': requestId, 'code': code},
+      );
+
+      final data = response.data;
+      if (data == null) {
+        throw const FormatException('Respuesta vacía.');
+      }
+
+      final read = ScannerRead.fromJson(data);
+
+      if (read.id != requestId || read.linkId != linkId || read.code != code) {
+        throw const FormatException(
+          'La respuesta no corresponde a la lectura enviada.',
+        );
+      }
+
+      return read;
+    } on DioException catch (error) {
+      throw _translateError(error);
+    } on FormatException {
+      throw const AuthApiException(
+        'No pudimos verificar la respuesta del servidor. '
+        'Reintenta la misma lectura.',
+      );
+    } on TypeError {
+      throw const AuthApiException(
+        'El servidor devolvió una lectura incompleta. '
+        'Reintenta la misma lectura.',
       );
     }
   }

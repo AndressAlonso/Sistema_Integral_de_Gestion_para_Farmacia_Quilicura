@@ -7,6 +7,7 @@ import { scannerApi, type ScannerLink } from './scanner.api'
 type Props = {
   userName: string
   branchName: string
+  onLinkChange: (link: ScannerLink | null) => void
 }
 
 const labels = {
@@ -26,6 +27,7 @@ function message(error: unknown) {
 export default function ScannerLinkDialog({
   userName,
   branchName,
+  onLinkChange,
 }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const locked = useRef(false)
@@ -39,6 +41,14 @@ export default function ScannerLinkDialog({
   const linkId = link?.id
   const linkState = link?.state
   const active = linkState === 'PENDING' || linkState === 'LINKED'
+
+  useEffect(() => {
+    onLinkChange(
+      !busy && !connectionError && link?.state === 'LINKED'
+        ? link
+        : null,
+    )
+  }, [link, busy, connectionError, onLinkChange])
 
   useEffect(() => {
     if (!linkId || !active || busy) return
