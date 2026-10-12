@@ -1,9 +1,13 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   useDeferredValue,
   useEffect,
   useMemo,
   useState,
 } from 'react'
+
+import { Link } from 'react-router-dom'
+import LotStatusDialog from './LotStatusDialog'
 
 import { ApiError } from '../../services/http'
 import {
@@ -14,6 +18,8 @@ import {
 
 interface LotPanelProps {
   inventoryRecords: InventoryRecord[]
+  targetLotId?: string
+  returnTransferId?: string
 }
 
 function formatDate(value: string): string {
@@ -56,9 +62,11 @@ function getErrorMessage(error: unknown): string {
 }
 
 export default function LotPanel({
-  inventoryRecords,
+  inventoryRecords, targetLotId, returnTransferId,
 }: LotPanelProps) {
   const [lots, setLots] = useState<InventoryLot[]>([])
+  const [statusLot, setStatusLot] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
 
   const [branchId, setBranchId] = useState('')
   const [priorityFirst, setPriorityFirst] = useState(true)
@@ -83,6 +91,11 @@ export default function LotPanel({
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
+  // FEFO visual: la fecha alcanzada tampoco es vendible. Usar el día local.
+  const today = new Date()
+  const localToday = [today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0')].join('-')
   const firstFefoLotIds = useMemo(() => {
     const firstLotByInventory = new Map<string, string>()
 
@@ -90,6 +103,7 @@ export default function LotPanel({
       if (
         lot.is_active
         && lot.quantity > 0
+        && lot.expiration_date > localToday
         && !firstLotByInventory.has(lot.inventory_id)
       ) {
         firstLotByInventory.set(
@@ -100,22 +114,22 @@ export default function LotPanel({
     })
 
     return new Set(firstLotByInventory.values())
-  }, [lots])
+  }, [lots, localToday])
 
   const visibleLots = useMemo(
     () => lots
-      .filter(lot => (!branchId || lot.branch_id === branchId) && normalize(lot.product_name + ' ' + lot.product_sku).includes(normalize(search)))
+      .filter(lot => (!targetLotId || lot.id === targetLotId) && (!branchId || lot.branch_id === branchId) && normalize(lot.product_name + ' ' + lot.product_sku).includes(normalize(search)))
       .sort((a, b) =>
         (Number(firstFefoLotIds.has(b.id)) - Number(firstFefoLotIds.has(a.id))) * (priorityFirst ? 1 : -1)
         || a.expiration_date.localeCompare(b.expiration_date)
         || a.lot_number.localeCompare(b.lot_number)
         || a.id.localeCompare(b.id)),
-    [lots, branchId, search, firstFefoLotIds, priorityFirst],
+    [lots, branchId, search, firstFefoLotIds, priorityFirst, targetLotId],
   )
   const inventoryIds = new Set(visibleLots.map(lot => lot.inventory_id))
   const selectedInventory = inventoryIds.size === 1
     ? inventoryRecords.find(record => inventoryIds.has(record.id)) : undefined
-  const totalLotQuantity = visibleLots.reduce((total, lot) => total + lot.quantity, 0)
+  const totalLotQuantity = (selectedInventory ? lots.filter(lot => lot.inventory_id === selectedInventory.id) : visibleLots).reduce((total, lot) => total + lot.quantity, 0)
   return (
     <section
       className="lot-panel"
@@ -132,8 +146,8 @@ export default function LotPanel({
           </h2>
 
           <p>
-            Pulsa Estado para invertir la prioridad del listado;
-            dentro de cada grupo, se ordenan por fecha de vencimiento.
+            Cada fila es un lote de un producto en una sucursal; por eso un producto puede aparecer varias veces.
+            Primero en salir identifica el lote habilitado con unidades que vence antes, por producto y sucursal.
           </p>
         </div>
 
@@ -146,6 +160,10 @@ export default function LotPanel({
       <div className="lot-toolbar"><div className="lot-entry-note"><p>Registra los lotes al recibir mercadería, con proveedor y documento de respaldo.</p>
       <span className="lot-cell-detail">Usa «Crear lotes / recibir mercadería» en la cabecera de Inventario.</span></div>
       </div>
+      <div className="lot-entry-note" aria-label="Cómo interpretar los lotes"><p><strong>Deshabilitado:</strong> bloqueado para salidas. <strong>Vencido:</strong> no vendible, aunque esté habilitado. <strong>Sin unidades:</strong> cantidad 0; conserva su historial.</p><p>Reactivar quita el bloqueo: no agrega unidades ni cambia el vencimiento. Recibir mercadería aumenta cantidades; ajustar inventario corrige cantidades con un motivo.</p></div>
+      {notice && <p className="lot-message" role="status">{notice}</p>}
+      {targetLotId && <div className="lot-navigation"><p>Mostrando el lote seleccionado desde la transferencia.</p><Link to="/admin/inventory?tab=lots">Ver todos los lotes</Link>
+        {returnTransferId && <Link to={`/admin/transfers?transfer_id=${encodeURIComponent(returnTransferId)}`}>Volver a la transferencia</Link>}</div>}
       {error && (
         <p
           className="lot-message lot-error"
@@ -211,16 +229,20 @@ export default function LotPanel({
                   Cantidad
                 </th>
 
-                <th scope="col" aria-sort="other"><button type="button" className="lot-state-sort" onClick={() => setPriorityFirst(value => !value)} aria-label={priorityFirst ? 'Estado: Primero en salir arriba. Pulsa para colocarlos abajo.' : 'Estado: Primero en salir abajo. Pulsa para colocarlos arriba.'}>Estado <span className="lot-sort-indicator" aria-hidden="true">{priorityFirst ? '↑' : '↓'}</span></button><span className="lot-cell-detail">{priorityFirst ? 'Prioritarios arriba' : 'Prioritarios abajo'}</span></th>
+                <th scope="col">Estado del lote</th>
+                <th scope="col" aria-sort="other"><button type="button" className="lot-state-sort" onClick={() => setPriorityFirst(value => !value)} aria-label={priorityFirst ? 'Prioridad de salida: Primero en salir arriba. Pulsa para colocarlos abajo.' : 'Prioridad de salida: Primero en salir abajo. Pulsa para colocarlos arriba.'}>Prioridad de salida <span className="lot-sort-indicator" aria-hidden="true">{priorityFirst ? '↑' : '↓'}</span></button><span className="lot-cell-detail">{priorityFirst ? 'Prioritarios arriba' : 'Prioritarios abajo'}</span></th>
+                <th scope="col">Acción</th>
               </tr>
             </thead>
 
-            <tbody>
+            <PaginatedTableBody total={visibleLots.length} columns={7}>
               {visibleLots.map((lot) => {
                 const isNextFefo = (
                   firstFefoLotIds.has(lot.id)
                 )
 
+                const expired = lot.expiration_date <= localToday
+                const eligible = !expired && lot.is_active && lot.quantity > 0
                 return (
                   <tr key={lot.id}>
                     <th scope="row">
@@ -244,18 +266,18 @@ export default function LotPanel({
                     </td>
 
                     <td>
-                      {isNextFefo ? (
-                        <span className="lot-status lot-fefo">
-                          Primero en salir
-                        </span>
-                      ) : (
-                        <span className="lot-status">
-                          {lot.is_active
-                            ? 'Habilitado'
-                            : 'Deshabilitado'}
-                        </span>
-                      )}
+                      <div className="lot-state-tags">
+                        {expired && <span className="lot-status lot-expired">Vencido · No vendible</span>}
+                        {!expired && !lot.is_active && <span className="lot-status">Deshabilitado</span>}
+                        {lot.quantity === 0 && <span className="lot-status">Sin unidades</span>}
+                        {eligible && <span className="lot-status">Vigente</span>}
+                      </div>
                     </td>
+                    <td>
+                      {isNextFefo ? <span className="lot-status lot-fefo">Primero en salir</span>
+                        : <span className="lot-cell-detail">{eligible ? 'Después' : 'No aplica'}</span>}
+                    </td>
+                    <td><button type="button" className="users-button" onClick={() => setStatusLot(lot.id)}>Revisar lote</button></td>
                   </tr>
                 )
               })}
@@ -263,17 +285,23 @@ export default function LotPanel({
               {visibleLots.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={7}
                     className="empty-state"
                   >
                     {branchId || productSearch ? 'No hay lotes que coincidan con los filtros.' : 'No hay lotes registrados.'}
                   </td>
                 </tr>
               )}
-            </tbody>
+            </PaginatedTableBody>
           </table>
         </div>
       )}
+      {statusLot && <LotStatusDialog lotId={statusLot} onClose={() => setStatusLot(null)} onChanged={value => {
+        setLots(previous => previous.map(lot => lot.id === value.lot_id ? { ...lot, is_active: value.is_active } : lot))
+        setStatusLot(null); setNotice(value.is_active
+          ? 'Lote habilitado. Cantidades y fechas conservadas. Si hay una transferencia pendiente, vuelve a ella y confirma su recepción.'
+          : 'Lote deshabilitado. Bloqueado para salidas; cantidades y fechas conservadas.')
+      }} />}
     </section>
   )
 }

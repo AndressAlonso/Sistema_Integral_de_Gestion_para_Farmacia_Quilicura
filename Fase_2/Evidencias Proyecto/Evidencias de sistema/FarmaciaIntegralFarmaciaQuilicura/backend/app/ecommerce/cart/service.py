@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from app.ecommerce.cart.schemas import CartLine, CartResponse
 from app.ecommerce.schemas import PublicBranch
+from app.pos.pricing import money
+from app.promotions.pricing import calculate_price
 
 
 class CartService:
@@ -25,7 +27,7 @@ class CartService:
         return max(0, min(inventory.stock_fisico - inventory.stock_reservado, fresh_free - unallocated))
 
     def validate(self, data):
-        today, branches, products, inventories, lots, reservations = self.repository.snapshot([i.product_id for i in data.items])
+        today, branches, products, inventories, lots, reservations, promotions, now = self.repository.snapshot([i.product_id for i in data.items])
         branch = next((b for b in branches if b.id == data.pickup_branch_id), None)
         issues = []
         if not data.items:
@@ -44,8 +46,12 @@ class CartService:
                 line.issues.append("Requiere receta. Compra presencial.")
             else:
                 line.name = product.nombre
-                line.unit_price = product.precio_actual
-                line.subtotal = product.precio_actual * item.quantity
+                price = calculate_price(product, promotions, now)
+                line.base_unit_price = price["base_price"]
+                line.unit_price = price["price"]
+                line.unit_discount = price["discount"]
+                line.promotion = price["promotion"]
+                line.subtotal = money(line.unit_price * item.quantity)
                 stocks = {}
                 for inventory in inventories:
                     if inventory.producto_id == product.id:

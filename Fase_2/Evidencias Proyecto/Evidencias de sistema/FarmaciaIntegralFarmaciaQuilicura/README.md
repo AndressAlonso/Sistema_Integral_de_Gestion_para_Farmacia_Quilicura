@@ -1,3 +1,11 @@
+# SIGFQ — instalación y actualización
+
+Para esta versión de Proyecto, sigue la [guía de instalación y actualización](docs/ACTUALIZACION_PROYECTO.md). Incluye la migración de promociones, el arranque en Windows y los límites actuales.
+
+El contenido siguiente conserva la documentación previa de acceso y sucursales; sus referencias a módulos futuros son históricas.
+
+---
+
 # SIGFQ: autenticación, usuarios y sucursales con PostgreSQL
 
 Sistema Integral de Gestión para Farmacia Quilicura.

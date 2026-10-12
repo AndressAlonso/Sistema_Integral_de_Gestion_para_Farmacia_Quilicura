@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   type FormEvent,
   type ReactNode,
@@ -217,7 +218,7 @@ export default function InventoryTable({
           </tr>
         </thead>
 
-        <tbody>
+        <PaginatedTableBody total={records.length} columns={8}>
           {records.map((record) => {
             const consistent = isConsistent(record)
             const isEditing = editingId === record.id
@@ -383,7 +384,7 @@ export default function InventoryTable({
               </td>
             </tr>
           )}
-        </tbody>
+        </PaginatedTableBody>
       </table>
     </div>
   )

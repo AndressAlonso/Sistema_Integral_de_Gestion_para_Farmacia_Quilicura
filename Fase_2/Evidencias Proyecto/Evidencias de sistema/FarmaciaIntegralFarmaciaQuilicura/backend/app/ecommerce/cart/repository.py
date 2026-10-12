@@ -9,6 +9,7 @@ from app.models import (
     TransferenciaDetalle,
     TransferenciaLote,
 )
+from app.promotions.repository import PromotionRepository
 
 
 class CartRepository:
@@ -37,4 +38,6 @@ class CartRepository:
                 .where(Transferencia.estado.in_(("SOLICITADA", "AUTORIZADA")),
                        LoteInventario.inventario_sucursal_id.in_(inventory_ids))
                 .group_by(TransferenciaLote.lote_origen_id)).all())
-            return today, branches, products, inventories, lots, reservations
+            promotions = PromotionRepository.pricing(db)
+            now = db.scalar(select(func.current_timestamp()))
+            return today, branches, products, inventories, lots, reservations, promotions, now

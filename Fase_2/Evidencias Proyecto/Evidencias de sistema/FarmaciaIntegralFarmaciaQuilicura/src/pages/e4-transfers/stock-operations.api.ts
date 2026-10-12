@@ -2,7 +2,7 @@ import { ApiError, apiRequest } from '../../services/http'
 
 export interface StockLot {
   id: string; product_id: string; product_name: string; sku: string; branch_id: string
-  number: string; expiration_date: string; quantity: number
+  number: string; expiration_date: string; quantity: number; is_active?: boolean; product_active?: boolean
 }
 export interface OperationOptions {
   products: { id: string; name: string; sku: string; branch_id: string; quantity: number }[]

@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.promotions.pricing import AppliedPromotion
+
 
 class PublicBranch(BaseModel):
     id: UUID
@@ -31,6 +33,9 @@ class PublicProduct(BaseModel):
     description: str
     category: PublicCategory
     price: Decimal
+    base_price: Decimal | None = None
+    discount: Decimal = Field(default=Decimal(0), ge=0)
+    promotion: AppliedPromotion | None = None
     requires_prescription: bool
     # Restricción del canal, no confirmación de unidades vendibles.
     online_purchase_allowed: bool

@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.ecommerce.schemas import PublicBranch
+from app.promotions.pricing import AppliedPromotion
 
 
 class CartItemRequest(BaseModel):
@@ -29,6 +30,9 @@ class CartLine(BaseModel):
     name: str | None = None
     quantity: int
     unit_price: Decimal | None = None
+    base_unit_price: Decimal | None = None
+    unit_discount: Decimal = Field(default=Decimal(0), ge=0)
+    promotion: AppliedPromotion | None = None
     subtotal: Decimal | None = None
     local_available: int | None = None
     global_available: int = 0

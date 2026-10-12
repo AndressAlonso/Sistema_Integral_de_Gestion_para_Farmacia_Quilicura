@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { PublicProduct } from '../types/catalog'
 import AddToCartButton from './AddToCartButton'
-
-const currency = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 2 })
+import PromotionPrice from './PromotionPrice'
 
 export default function ProductCard({ product, detail = false }: { product: PublicProduct; detail?: boolean }) {
   const [failedImage, setFailedImage] = useState<string | null>(null)
@@ -15,15 +14,17 @@ export default function ProductCard({ product, detail = false }: { product: Publ
     <div className="online-product-content">
       <p className="online-category">{product.category.name}</p>
       {detail ? <h1>{product.name}</h1> : <h2><Link to={`/tienda/productos/${encodeURIComponent(product.id)}`}>{product.name}</Link></h2>}
-      <p className="online-price">{currency.format(Number(product.price))}</p>
+      <PromotionPrice price={product.price} basePrice={product.base_price} discount={product.discount} promotion={product.promotion} />
       {product.requires_prescription && <p className="online-prescription">Requiere receta · Compra presencial</p>}
       <p className="online-description">{product.description || 'Sin información adicional.'}</p>
       <h3>Disponibilidad por sucursal <span className="online-stock-caption">Informativa</span></h3>
       {product.availability.length ? <ul className="online-stock">{product.availability.map(stock =>
         <li key={stock.branch_id}><span className="online-branch-name">{stock.branch_name}</span><span className={`online-stock-tag${stock.available === 0 ? ' online-stock-empty' : ''}`}><span>{stock.available === 0 ? 'Sin stock' : 'Disponible'}</span><strong>{stock.available} unidades</strong></span></li>,
       )}</ul> : <p>No hay sucursales activas para consultar.</p>}
+      <div className="online-product-actions">
       {!detail && <Link className="online-product-button" to={`/tienda/productos/${encodeURIComponent(product.id)}`} aria-label={`Ver producto: ${product.name}`}>Ver producto <span aria-hidden="true">→</span></Link>}
       {product.online_purchase_allowed && !product.requires_prescription && <AddToCartButton productId={product.id} />}
+      </div>
     </div>
   </article>
 }

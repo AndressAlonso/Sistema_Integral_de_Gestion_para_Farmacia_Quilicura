@@ -345,7 +345,8 @@
 
 .inventory-app table {
   width: 100%;
-  min-width: 760px;
+  min-width: 0;
+  table-layout: fixed;
   border-collapse: collapse;
   color: #253a5d;
   text-align: left;
@@ -1065,8 +1066,8 @@
     margin-left: 20px;
   }
 
-  .monitoring-table {
-    min-width: 900px;
+  .inventory-app .monitoring-table {
+    min-width: 0;
   }
 }
 
@@ -1083,17 +1084,13 @@
   }
 
   .inventory-tabs {
-    display: flex;
-    justify-content: flex-start;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .inventory-tab {
-    flex: 0 0 auto;
-    width: auto;
-    min-width: 130px;
-    scroll-snap-align: start;
+    min-width: 0;
+    padding-inline: 8px;
+    white-space: normal;
   }
 
   .stock-guide {
@@ -1326,3 +1323,157 @@
 }
 
 .inventory-stock-table thead th { vertical-align: top; }
+
+/* Estado del lote separado de su prioridad FEFO. */
+.lot-state-tags { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.lot-expired { background: #fff0f2; color: #8e182e; font-weight: 650; }
+
+.lot-navigation { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin: 14px 0; }
+.lot-navigation a { color: #702582; font-weight: 600; }
+
+/* Las columnas se adaptan al panel sin ocultar información ni barras laterales. */
+.inventory-app table th,
+.inventory-app table td {
+  min-width: 0;
+  padding: 16px 10px;
+  overflow-wrap: anywhere;
+}
+.inventory-app table thead th,
+.inventory-app table .product-name,
+.inventory-app table .branch-label,
+.inventory-app table .lot-status,
+.inventory-app table .stock-status,
+.inventory-app table .expiration-status,
+.inventory-app table button {
+  white-space: normal;
+}
+.inventory-app table input,
+.inventory-app table select {
+  min-width: 0;
+  max-width: 100%;
+}
+.inventory-app .minimum-action-cell,
+.inventory-app .minimum-form { min-width: 0; }
+.inventory-app .minimum-form { grid-template-columns: minmax(0, 1fr); }
+.inventory-app .lot-table th:nth-child(1) { width: 21%; }
+.inventory-app .lot-table th:nth-child(2) { width: 22%; }
+.inventory-app .lot-table th:nth-child(3) { width: 12%; }
+.inventory-app .lot-table th:nth-child(4) { width: 8%; }
+.inventory-app .lot-table th:nth-child(5) { width: 14%; }
+.inventory-app .lot-table th:nth-child(6) { width: 13%; }
+.inventory-app .lot-table th:nth-child(7) { width: 10%; }
+.inventory-app .lot-state-sort { flex-wrap: wrap; }
+.inventory-app .lot-branch-options button { max-width: 100%; }
+.inventory-app .lot-table .users-button { padding: 8px; max-width: 100%; }
+
+@media (max-width: 700px) {
+  .inventory-app .lot-table,
+  .inventory-app .lot-table thead,
+  .inventory-app .lot-table tbody { display: block; width: 100%; }
+  .inventory-app .lot-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid #e7ece9; }
+  .inventory-app .lot-table tr > th,
+  .inventory-app .lot-table tr > td { display: block; width: auto; border-bottom: 0; text-align: left; }
+  .inventory-app .lot-table thead th:nth-child(3),
+  .inventory-app .lot-table thead th:nth-child(4),
+  .inventory-app .lot-table thead th:nth-child(5),
+  .inventory-app .lot-table thead th:nth-child(7) { display: none; }
+  .inventory-app .lot-table thead th:nth-child(6) { grid-column: 1 / -1; }
+  .inventory-app .lot-table tbody td::before { display: block; margin-bottom: 6px; color: #65526c; font-size: 11px; font-weight: 600; }
+  .inventory-app .lot-table tbody td:nth-child(3)::before { content: 'Vencimiento'; }
+  .inventory-app .lot-table tbody td:nth-child(4)::before { content: 'Cantidad'; }
+  .inventory-app .lot-table tbody td:nth-child(5)::before { content: 'Estado del lote'; }
+  .inventory-app .lot-table tbody td:nth-child(6)::before { content: 'Prioridad de salida'; }
+  .inventory-app .lot-table tbody td:last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width:700px) { .inventory-app .lot-table tfoot { display:block; } .inventory-app .lot-table tfoot tr { display:block; } .inventory-app .lot-table tfoot td { width:100%; } }
+
+/* Inventario: más ancho útil y desplazamiento dentro del listado. */
+.inventory-main { max-width: 1600px; }
+.inventory-app .table-scroll {
+  max-height: 480px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.inventory-app table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f7f4f8;
+}
+.inventory-app table tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: #fff;
+  border-top: 1px solid #e5dfe8;
+}
+.inventory-app .table-pagination { padding: 4px 0; }
+@media (min-width: 1000px) and (min-height: 760px) {
+  .inventory-main {
+    height: calc(100dvh - 129px);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px 12px;
+    min-height: 0;
+  }
+  .inventory-heading { flex: 0 0 auto; margin-bottom: 14px; }
+  .inventory-tabs { flex: 0 0 auto; margin-bottom: 14px; }
+  .inventory-tab-content {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .inventory-panel, .lot-panel, .expiration-panel, .movement-panel {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .inventory-app .table-scroll {
+    flex: 1 1 0;
+    min-height: 120px;
+    max-height: none;
+  }
+  .panel-heading, .lot-panel-heading, .monitoring-panel-heading {
+    flex: 0 0 auto;
+    padding: 16px 20px 0;
+  }
+  .lot-toolbar { padding: 12px 20px; gap: 10px; }
+  .lot-entry-note { flex: 0 0 auto; padding: 10px 14px; }
+  .lot-entry-note p { font-size: 12px; }
+  .lot-consistency { margin-bottom: 12px; }
+  .expiration-filters, .movement-filters { padding: 14px 20px; }
+  .stock-guide { flex: 0 0 auto; margin-bottom: 14px; gap: 12px; }
+  .stock-guide > div { padding: 14px 18px; }
+  .stock-guide p { max-width: none; }
+  .table-footer { flex: 0 0 auto; padding: 10px 20px; }
+  .inventory-footer { flex: 0 0 auto; padding-top: 12px; }
+}
+@media (max-width: 700px) {
+  .inventory-app .lot-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f7f4f8;
+  }
+  .inventory-app .lot-table thead th { position: static; }
+}
+
+/* Con pocos resultados, el espacio libre queda antes de la paginación. */
+@media (min-width: 1000px) and (min-height: 760px) {
+  .inventory-app .table-scroll > table {
+    height: 100%;
+  }
+  .inventory-app .table-scroll > table > thead,
+  .inventory-app .table-scroll > table > tfoot,
+  .inventory-app .table-scroll > table > tbody > tr {
+    height: 1px;
+  }
+  .inventory-app .table-scroll > table > tbody::after {
+    content: '';
+    display: table-row;
+    height: 100%;
+  }
+}

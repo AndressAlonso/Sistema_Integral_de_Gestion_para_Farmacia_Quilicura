@@ -38,9 +38,10 @@ class PosError(Exception):
 
 
 class PosService:
-    def __init__(self, repository, promotions=()):
+    def __init__(self, repository, promotions=(), promotion_provider=None):
         self.repo = repository
         self.promotions = promotions
+        self.promotion_provider = promotion_provider
 
     @staticmethod
     def authorize(actor, permission):
@@ -119,6 +120,8 @@ class PosService:
 
     def calculate(self, db, actor, items):
         lines, stock = [], {}
+        promotions = self.promotions + (self.promotion_provider(db) if self.promotion_provider else ())
+        now = datetime.now(timezone.utc)
         for item in sorted(items, key=lambda row: str(row.product_id)):
             product = TransferRepository.product(db, item.product_id)
             if product is None or not product.activo:
@@ -137,8 +140,8 @@ class PosService:
                 product.precio_actual,
                 product.id,
                 product.categoria_id,
-                datetime.now(timezone.utc),
-                self.promotions,
+                now,
+                promotions,
             )
             lines.append(
                 {

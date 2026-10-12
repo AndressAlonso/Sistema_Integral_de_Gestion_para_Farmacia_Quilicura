@@ -12,6 +12,7 @@ import RequireAuth from '../pages/e1-access-users-branches/auth/RequireAuth'
 import BranchesPage from '../pages/e1-access-users-branches/branches/BranchesPage'
 import UsersPage from '../pages/e1-access-users-branches/users/UsersPage'
 import CatalogPage from '../pages/e2-catalog/CatalogPage'
+import PromotionsPage from '../pages/e2-catalog/promotions/PromotionsPage'
 import InventoryPage from '../pages/e3-inventory/InventoryPage'
 import TransfersPage from '../pages/e4-transfers/TransfersPage'
 import PosPage from '../pages/e5-pos/PosPage'
@@ -26,6 +27,7 @@ import GuestContinuationPage from '../pages/e6-ecommerce/pages/GuestContinuation
 import OrderHistoryPage from '../pages/e6-ecommerce/pages/OrderHistoryPage'
 
 function getAdminPage(path: string) {
+  if (path === '/admin/promotions') return <PromotionsPage />
   if (path === '/admin/pos') return <PosPage />
   if (path === '/admin/cash') return <CashPage />
   if (path === '/admin/transfers') return <TransfersPage />
@@ -52,6 +54,10 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route
+          path="/"
+          element={<Navigate to="/tienda" replace />}
+        />
         <Route element={<EcommerceLayout />}>
         <Route path="/tienda" element={<OnlineCatalogPage />} />
         <Route path="/tienda/productos/:productId" element={<ProductDetailPage />} />

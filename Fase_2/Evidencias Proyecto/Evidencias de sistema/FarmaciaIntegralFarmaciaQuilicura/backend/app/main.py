@@ -33,6 +33,8 @@ from app.inventory_adjustments.repository import AdjustmentRepository
 from app.inventory_adjustments.routes import router as adjustments_router
 from app.pos.repository import PosRepository
 from app.pos.routes import router as pos_router
+from app.promotions.repository import PromotionRepository
+from app.promotions.routes import router as promotions_router
 from app.scanner.routes import router as scanner_router
 from app.scanner.service import ScannerService
 from app.transfers.repository import TransferRepository
@@ -71,6 +73,7 @@ def create_app(
             app.state.transfers = TransferRepository(factory)
             app.state.adjustments = AdjustmentRepository(factory)
             app.state.pos = PosRepository(factory)
+            app.state.promotions = PromotionRepository(factory)
             app.state.scanner = ScannerService(factory)
             app.state.sessions = SessionRepository(factory)
             app.state.auth = AuthState()
@@ -244,6 +247,7 @@ def create_app(
     app.include_router(transfers_router)
     app.include_router(adjustments_router)
     app.include_router(pos_router)
+    app.include_router(promotions_router)
     app.include_router(scanner_router)
     app.include_router(ecommerce_router)
     app.include_router(cart_router)

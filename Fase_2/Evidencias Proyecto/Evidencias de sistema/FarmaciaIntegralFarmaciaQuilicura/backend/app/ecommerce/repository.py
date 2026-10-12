@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -11,6 +12,8 @@ from app.ecommerce.schemas import (
     PublicProduct,
 )
 from app.models import InventarioSucursal, Producto, Sucursal
+from app.promotions.pricing import calculate_price
+from app.promotions.repository import PromotionRepository
 
 
 class PublicCatalogRepository:
@@ -77,13 +80,16 @@ class PublicCatalogRepository:
             }
             if any(value < 0 for value in stocks.values()):
                 raise HTTPException(500, "No pudimos consultar la disponibilidad.")
+            promotions = PromotionRepository.pricing(db)
+            now = datetime.now(timezone.utc)
+            prices = {product.id: calculate_price(product, promotions, now) for product in products}
             return [
                 PublicProduct(
                     id=p.id,
                     name=p.nombre,
                     description=p.descripcion,
                     category=PublicCategory(id=p.categoria_id, name=p.categoria.nombre),
-                    price=p.precio_actual,
+                    **prices[p.id],
                     requires_prescription=p.requiere_receta,
                     online_purchase_allowed=not p.requiere_receta,
                     image_url=f"/api/ecommerce/products/{p.id}/image?v={p.image_key}"

@@ -10,7 +10,7 @@
 .public-header { padding: 10px 0; border-bottom: 1px solid var(--store-border); }
 .public-header-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .public-header .public-header-brand { display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0; color: var(--brand-purple); text-decoration: none; }
-.public-header-brand img { display: block; width: clamp(68px, 7vw, 84px); height: auto; object-fit: contain; }
+.public-header-brand img { display: block; width: clamp(68px, 7vw, 84px); height: auto; object-fit: contain; mix-blend-mode: multiply; }
 .public-header-brand > span { font-size: 13px; font-weight: 650; border-left: 1px solid var(--store-border); padding-left: 12px; }
 .public-header-nav, .public-header-customer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .public-header-nav { justify-content: flex-end; }

@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   type FormEvent,
   useEffect,
@@ -146,12 +147,15 @@ export default function InventoryMovementHistory({
   }
 
   useEffect(() => {
-    void loadMovements({
-      inventoryId: '',
-      movementType: '',
-      startDate: '',
-      endDate: '',
+    let active = true
+    void listInventoryMovements({}).then(records => {
+      if (active) setMovements(records)
+    }).catch(cause => {
+      if (active) setError(getErrorMessage(cause))
+    }).finally(() => {
+      if (active) setLoading(false)
     })
+    return () => { active = false }
   }, [])
 
   async function handleSubmit(
@@ -439,7 +443,7 @@ export default function InventoryMovementHistory({
               </tr>
             </thead>
 
-            <tbody>
+            <PaginatedTableBody total={movements.length} columns={8}>
               {movements.map((movement) => (
                 <tr key={movement.id}>
                   <td>
@@ -516,7 +520,7 @@ export default function InventoryMovementHistory({
                   </td>
                 </tr>
               )}
-            </tbody>
+            </PaginatedTableBody>
           </table>
         </div>
       )}

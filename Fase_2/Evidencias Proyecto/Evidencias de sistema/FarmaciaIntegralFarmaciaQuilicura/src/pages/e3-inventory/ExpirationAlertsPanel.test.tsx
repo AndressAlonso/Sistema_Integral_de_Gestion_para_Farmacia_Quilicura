@@ -64,7 +64,7 @@ describe('E3-H4: alertas de vencimiento', () => {
     await showPanel()
     applyFilter('Estado del vencimiento', status as string)
     expect(screen.getByText(`${count} lotes encontrados`)).toBeTruthy()
-    expect(screen.getAllByRole('row')).toHaveLength(Number(count) + 1)
+    expect(document.querySelectorAll('tbody tr')).toHaveLength(Number(count))
   })
 
   it('incluye hoy en vencidos y excluye hoy de los períodos futuros', async () => {

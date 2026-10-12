@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent } from 'react'
 import { useCart } from '../hooks/useCart'
 import type { CartLine } from '../types/cart'
+import PromotionPrice from './PromotionPrice'
 
 const money = (value: string) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 2 }).format(Number(value))
 export default function CartItem({ line }: { line: CartLine }) {
@@ -16,7 +17,7 @@ export default function CartItem({ line }: { line: CartLine }) {
   }
   return <li className="cart-item">
     <h2>{line.name ?? 'Producto no disponible'}</h2>
-    {line.unit_price !== null && <p className="cart-unit-price">Precio actual: {money(line.unit_price)}</p>}
+    {line.unit_price !== null && <PromotionPrice price={line.unit_price} basePrice={line.base_unit_price} discount={line.unit_discount} promotion={line.promotion} />}
     {line.subtotal !== null && <p className="cart-subtotal">Subtotal: <strong>{money(line.subtotal)}</strong></p>}
     <form onSubmit={confirm}><label htmlFor={id}>Cantidad<input id={id} type="number" min="1" max="99" step="1" required value={quantity} onChange={e => setQuantity(e.target.value)} /></label><button type="submit">Actualizar cantidad</button></form>
     <button className="cart-remove" type="button" onClick={() => remove(line.product_id)} aria-label={`Quitar ${line.name ?? 'producto'}`}>Quitar producto</button>

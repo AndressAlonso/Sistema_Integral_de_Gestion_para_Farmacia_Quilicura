@@ -1,5 +1,6 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import type { AuthSession } from '../e1-access-users-branches/auth/login.api'
 import { ApiError } from '../../services/http'
 import TransferDetail from './TransferDetail'
@@ -11,6 +12,8 @@ import './transfers.css'
 export default function TransfersPage() {
   const session = useOutletContext<AuthSession>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const returnTransferId = searchParams.get('transfer_id')
   const [transfers, setTransfers] = useState<Transfer[]>([])
   const [options, setOptions] = useState<TransferOptions | null>(null)
   const [loading, setLoading] = useState(true)
@@ -23,18 +26,24 @@ export default function TransfersPage() {
   useEffect(() => {
     let active = true
     Promise.all([listTransfers(), transferOptions()]).then(([data, choices]) => {
-      if (active) { setTransfers(data.transfers); setOptions(choices); setLoading(false); setError('') }
+      if (active) { setTransfers(data.transfers); setOptions(choices); setLoading(false); setError('')
+        if (returnTransferId) {
+          const target = data.transfers.find(row => row.id === returnTransferId)
+          if (target) setSelected({ transfer: target, action: target.actions.includes('receive') ? 'receive' : undefined })
+        }
+      }
     }).catch((cause: unknown) => {
       if (!active) return
       if (cause instanceof ApiError && cause.status === 401) navigate('/login', { replace: true })
       setError(cause instanceof Error ? cause.message : 'No se pudieron cargar las transferencias.'); setLoading(false)
     })
     return () => { active = false }
-  }, [attempt, navigate])
+  }, [attempt, navigate, returnTransferId])
 
+  function clearReturn() { if (returnTransferId) setSearchParams(previous => { previous.delete('transfer_id'); return previous }, { replace: true }) }
   function refresh() { setLoading(true); setAttempt(value => value + 1) }
   function saved(transfer: Transfer) {
-    setCreating(false); setSelected(null)
+    setCreating(false); setSelected(null); clearReturn()
     setMessage(`${transferCode(transfer.id)}: ${states[transfer.state]}. Operación confirmada.`)
     refresh()
   }
@@ -77,7 +86,7 @@ export default function TransfersPage() {
     </section>
     <section className="users-panel" aria-busy={loading}><header className="users-panel-heading"><h2>Listado de transferencias</h2><p>{filtered.length} resultados · Las acciones dependen del estado, permisos y sucursal asignada.</p></header>
       <div className="users-table-scroll"><table className="users-table transfer-table"><thead><tr>{['ID', 'Fecha', 'Ruta', 'Productos', 'Unidades', 'Reserva', 'Responsable', 'Estado', 'Acciones'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
-        <tbody>{!filtered.length && <tr><td colSpan={9} className="users-empty">{loading ? 'Cargando transferencias…' : error ? 'No se pudo actualizar el listado.' : 'No hay transferencias que coincidan con los filtros.'}</td></tr>}
+        <PaginatedTableBody total={filtered.length} columns={9}>{!filtered.length && <tr><td colSpan={9} className="users-empty">{loading ? 'Cargando transferencias…' : error ? 'No se pudo actualizar el listado.' : 'No hay transferencias que coincidan con los filtros.'}</td></tr>}
           {filtered.map(transfer => <tr key={transfer.id}>
             <td><button type="button" className="transfer-link" onClick={() => setSelected({ transfer })}>{transferCode(transfer.id)}</button></td>
             <td>{new Date(transfer.created_at).toLocaleDateString('es-CL')}<small>{new Date(transfer.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</small></td>
@@ -85,9 +94,9 @@ export default function TransfersPage() {
             <td>{['SOLICITADA', 'AUTORIZADA'].includes(transfer.state) ? `${units(transfer)} reservadas` : transfer.state === 'RECHAZADA' ? 'Liberada al rechazar' : 'Liberada al despachar'}</td>
             <td>{transfer.requested_by}</td><td><span className={`transfer-state ${transfer.state.toLowerCase()}`}>{states[transfer.state]}</span></td>
             <td><div className="users-row-actions">{transfer.actions.map(action => <button type="button" key={action} onClick={() => setSelected({ transfer, action })}>{actions[action]}</button>)}<button type="button" aria-label={`Ver detalle ${transferCode(transfer.id)}`} onClick={() => setSelected({ transfer })}>Ver detalle</button></div></td>
-          </tr>)}</tbody></table></div></section>
+          </tr>)}</PaginatedTableBody></table></div></section>
     {creating && options && <TransferForm options={options} userId={session.user.id} onClose={() => { setCreating(false); refresh() }} onSaved={saved} />}
-    {selected && <TransferDetail transfer={selected.transfer} initialAction={selected.action} onClose={() => { setSelected(null); refresh() }} onChanged={saved} />}
+    {selected && <TransferDetail transfer={selected.transfer} initialAction={selected.action} onClose={() => { setSelected(null); clearReturn(); refresh() }} onChanged={saved} />}
   </div>
 }
 

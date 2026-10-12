@@ -115,6 +115,36 @@ class TransferService:
             self.check_scope(actor, row)
             return self.response(db, row, actor)
 
+    @staticmethod
+    def validate_destination(db, product, branch_id, source):
+        # Solo consulta: no crea inventario ni lotes en destino.
+        lot = db.scalar(
+            select(LoteInventario)
+            .join(InventarioSucursal)
+            .where(
+                InventarioSucursal.producto_id == product.id,
+                InventarioSucursal.sucursal_id == branch_id,
+                LoteInventario.numero_lote == source.numero_lote,
+            )
+            .execution_options(populate_existing=True)
+        )
+        if lot is None:
+            return
+        causes = []
+        if not lot.activo:
+            causes.append("está deshabilitado")
+        if lot.fecha_vencimiento != source.fecha_vencimiento:
+            causes.append("tiene un vencimiento distinto")
+        if causes:
+            branch = db.get(Sucursal, branch_id)
+            raise TransferError(
+                409,
+                f"No puedes enviar {product.nombre}: el lote {source.numero_lote} "
+                f"en {branch.nombre} {' y '.join(causes)}. "
+                "Revisa el lote destino en Inventario → Lotes o selecciona otra sucursal. "
+                "No se confirmó esta operación ni se cambiaron cantidades o reservas.",
+            )
+
     def create(self, actor, data):
         self.authorize(actor, "solicitar")
         if "ADMINISTRADOR" not in actor.roles and actor.branch_id != data.origin_id:
@@ -173,6 +203,7 @@ class TransferService:
                         remaining, max(0, lot.cantidad - reservations.get(lot.id, 0))
                     )
                     if take:
+                        self.validate_destination(db, product, data.destination_id, lot)
                         db.add(
                             TransferenciaLote(
                                 detalle_id=detail.id,
@@ -222,10 +253,18 @@ class TransferService:
                 actual = {item.product_id: item.quantity for item in data.items}
                 expected = {item.producto_id: item.cantidad for item in row.detalles}
                 if len(actual) != len(data.items) or actual != expected:
-                    raise TransferError(
-                        409,
-                        "Las cantidades recibidas deben coincidir completamente con el despacho. La transferencia continúa en tránsito.",
-                    )
+                    mismatch = next((item for item in row.detalles
+                                     if actual.get(item.producto_id) != item.cantidad), None)
+                    if mismatch is not None:
+                        received = actual.get(mismatch.producto_id)
+                        reason = (f"Se esperaban {mismatch.cantidad} unidades de {mismatch.producto.nombre} "
+                                  + (f"y registraste {received}." if received is not None
+                                     else "y no informaste la cantidad recibida."))
+                    else:
+                        reason = "Revisa que el conteo incluya exactamente los productos enviados, sin repetirlos."
+                    unchanged = ("La recepción no se completó. La transferencia sigue en tránsito y no se incorporaron unidades al destino."
+                                 if row.estado == "EN_TRANSITO" else "No se registraron cambios en el inventario.")
+                    raise TransferError(409, f"{reason} Revisa el conteo. {unchanged}")
             target = {
                 "approve": "AUTORIZADA",
                 "reject": "RECHAZADA",
@@ -308,6 +347,7 @@ class TransferService:
                         409,
                         "Un lote reservado ya no está disponible o venció; rechaza la solicitud para liberar su reserva.",
                     )
+                self.validate_destination(db, product, row.destino_id, lot)
                 lot.cantidad -= allocation.cantidad
             self.repo.movement(
                 db,
@@ -334,9 +374,19 @@ class TransferService:
                 if lot and (
                     not lot.activo or lot.fecha_vencimiento != source.fecha_vencimiento
                 ):
+                    causes = []
+                    if not lot.activo:
+                        causes.append("está deshabilitado")
+                    if lot.fecha_vencimiento != source.fecha_vencimiento:
+                        causes.append("tiene un vencimiento distinto "
+                                      f"(enviado: {source.fecha_vencimiento.strftime('%d/%m/%Y')}; "
+                                      f"registrado en destino: {lot.fecha_vencimiento.strftime('%d/%m/%Y')})")
                     raise TransferError(
                         409,
-                        "El lote destino está inactivo o tiene otro vencimiento; requiere revisión.",
+                        f"No se puede recibir {detail.producto.nombre}: el lote {lot.numero_lote} "
+                        f"de {row.destino.nombre} {' y '.join(causes)}. "
+                        "Revisa el lote antes de continuar. La recepción no se completó. "
+                        "La transferencia sigue en tránsito y no se incorporaron unidades al destino.",
                     )
                 if lot is None:
                     lot = LoteInventario(

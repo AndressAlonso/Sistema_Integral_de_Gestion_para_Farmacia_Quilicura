@@ -8,6 +8,7 @@ from app.catalog.images import ProductImages
 from app.pos.pricing import development_promotions
 from app.pos.schemas import Cart, CloseCash, OpenCash, ReversalInput, SaleInput
 from app.pos.service import PosError, PosService
+from app.promotions.repository import PromotionRepository
 
 router = APIRouter(prefix="/api", tags=["POS y caja — E5"])
 
@@ -21,6 +22,7 @@ def execute(request, operation):
             PosService(
                 request.app.state.pos,
                 development_promotions(request.app.state.settings),
+                promotion_provider=PromotionRepository.pricing,
             ),
             actor,
         )

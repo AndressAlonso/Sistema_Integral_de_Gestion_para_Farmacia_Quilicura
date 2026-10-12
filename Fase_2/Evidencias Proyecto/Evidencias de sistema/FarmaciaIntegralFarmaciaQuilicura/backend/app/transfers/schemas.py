@@ -97,3 +97,34 @@ class TransferOptionsResponse(BaseModel):
     stock: list[TransferStockOption]
     can_create: bool
     origin_ids: list[UUID]
+
+
+class ReactivateDestinationLot(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    reason: str = Field(min_length=3, max_length=250)
+    confirmed: Literal[True]
+    expected_expiration_date: date
+    expected_quantity: int = Field(strict=True, ge=0)
+
+
+class ReceiptLotReview(BaseModel):
+    product_name: str
+    number: str
+    incoming_quantity: int
+    source_expiration: date
+    destination_lot_id: UUID | None
+    destination_expiration: date | None
+    destination_active: bool | None
+    destination_quantity: int | None
+    conflicts: list[Literal["INACTIVE", "EXPIRATION_MISMATCH"]]
+    can_reactivate: bool
+
+
+class ReceiptReview(BaseModel):
+    destination_name: str
+    items: list[ReceiptLotReview]
+
+
+class ReactivationResult(BaseModel):
+    lot_id: UUID
+    changed: bool

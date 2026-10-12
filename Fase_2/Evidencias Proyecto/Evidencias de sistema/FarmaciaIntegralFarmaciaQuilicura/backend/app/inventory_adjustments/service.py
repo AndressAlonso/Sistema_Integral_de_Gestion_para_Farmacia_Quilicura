@@ -103,20 +103,21 @@ class AdjustmentService:
             for product_id, group in groupby(
                 lots, key=lambda lot: lot.inventario.producto_id
             ):
+                # El ajuste corrige existencias físicas, incluso si su uso está bloqueado.
                 product = TransferRepository.product(db, product_id)
-                if not product.activo:
-                    raise AdjustmentError(409, "Un producto está inactivo.")
                 inv = TransferRepository.inventory(db, product_id, data.branch_id)
                 reserved = TransferRepository.reserved_lots(db, inv.id)
                 changes = []
                 for old in group:
                     lot = self.repo.refresh_lot(db, old.id)
                     item = items[lot.id]
-                    if not lot.activo or lot.cantidad != item.expected_quantity:
+                    if lot.cantidad != item.expected_quantity:
                         raise AdjustmentError(
                             409,
-                            "Un lote cambió o está inactivo. Actualiza las cantidades antes de guardar.",
+                            "Un lote cambió. Actualiza las cantidades antes de guardar.",
                         )
+                    if (not lot.activo or not product.activo) and item.new_quantity > lot.cantidad:
+                        raise AdjustmentError(409, "Un lote o producto deshabilitado solo admite reducir sus unidades mediante un ajuste.")
                     if item.new_quantity < reserved.get(lot.id, 0):
                         raise AdjustmentError(
                             409, "El ajuste afectaría unidades reservadas del lote."

@@ -1,0 +1,6 @@
+.table-pagination { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:8px 0; color:#344765; font-size:13px; }
+.table-pagination label, .table-pagination > div { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.table-pagination select, .table-pagination button { min-height:36px; padding:7px 10px; border:1px solid #dcd4e2; border-radius:7px; background:white; color:#344765; font:inherit; }
+.table-pagination button:disabled { opacity:.5; cursor:default; }
+.table-pagination :focus-visible { outline:3px solid #702582; outline-offset:3px; }
+@media print { .table-pagination { display:none; } }

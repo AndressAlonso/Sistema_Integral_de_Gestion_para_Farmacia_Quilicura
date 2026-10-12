@@ -78,3 +78,13 @@
   .online-detail .online-product-content { padding: 22px; }
   .online-notice { margin: 16px 0 20px; }
 }
+
+/* Keep product actions together, with the same width and clear hierarchy. */
+.online-product-actions { display: grid; gap: 10px; margin-top: auto; }
+.online-product-actions .online-product-button { margin-top: 0; min-height: 46px; text-align: center; }
+.online-product-actions .cart-add { margin: 0; min-width: 0; }
+.online-product-actions .cart-add button { width: 100%; min-height: 46px; padding: 10px 14px; font-size: 13px; line-height: 1.5; }
+.online-product-actions .cart-add p:empty { margin: 0; }
+.online-product-actions .cart-add p { overflow-wrap: anywhere; }
+.online-store button { cursor: pointer; }
+.online-store button:disabled { cursor: not-allowed; }

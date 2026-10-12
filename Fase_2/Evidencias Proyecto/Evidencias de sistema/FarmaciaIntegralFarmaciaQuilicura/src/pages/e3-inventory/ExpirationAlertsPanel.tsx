@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   type FormEvent,
   useEffect,
@@ -685,7 +686,7 @@ export default function ExpirationAlertsPanel({
               </tr>
             </thead>
 
-            <tbody>
+            <PaginatedTableBody total={filteredLots.length} columns={6}>
               {filteredLots.map((item) => (
                 <tr key={item.lot.id}>
                   <th scope="row">
@@ -766,7 +767,7 @@ export default function ExpirationAlertsPanel({
                   </td>
                 </tr>
               )}
-            </tbody>
+            </PaginatedTableBody>
           </table>
         </div>
       )}

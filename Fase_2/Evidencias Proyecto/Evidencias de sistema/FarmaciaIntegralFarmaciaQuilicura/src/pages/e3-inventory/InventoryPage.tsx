@@ -3,7 +3,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '../../services/http'
 import ExpirationAlertsPanel from './ExpirationAlertsPanel'
@@ -35,6 +35,7 @@ function normalize(value: string): string {
 
 export default function InventoryPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const session = useOutletContext<AuthSession>()
   const [operation, setOperation] = useState<'receipt' | 'adjustment' | null>(null)
   const [revision, setRevision] = useState(0)
@@ -45,7 +46,7 @@ export default function InventoryPage() {
 
   const [activeTab, setActiveTab] = useState<
     InventoryTab
-  >('availability')
+  >(() => searchParams.get('tab') === 'lots' ? 'lots' : 'availability')
 
   const [inventoryRecords, setInventoryRecords] =
     useState<InventoryRecord[]>([])
@@ -224,7 +225,7 @@ export default function InventoryPage() {
           <div>
             <p className="eyebrow">CONTROL DE EXISTENCIAS</p>
             <h1>Inventario</h1>
-            <p className="inventory-description">Disponibilidad por sucursal, lotes y vencimientos en un solo lugar.</p>
+            <p className="inventory-description">Consulta cantidades por sucursal, revisa lotes y registra entradas o ajustes.</p>
           </div>
           <div className="inventory-heading-actions">
             {canAdjust && <button type="button" className="users-button" onClick={() => setOperation('adjustment')}>Ajustar inventario</button>}
@@ -352,9 +353,9 @@ export default function InventoryPage() {
                 </h2>
 
                 <p>
-                  Unidades que pueden utilizarse en nuevas
-                  operaciones. Se calcula restando las
-                  unidades reservadas.
+                  Stock físico menos unidades reservadas.
+                  Antes de una salida también se comprueba
+                  que los lotes estén habilitados y no vencidos.
                 </p>
               </div>
             </section>
@@ -420,6 +421,8 @@ export default function InventoryPage() {
             aria-labelledby="inventory-tab-lots"
           >
             <LotPanel
+              targetLotId={searchParams.get('lot_id') ?? undefined}
+              returnTransferId={searchParams.get('transfer_id') ?? undefined}
               key={revision}
               inventoryRecords={inventoryRecords}
             />

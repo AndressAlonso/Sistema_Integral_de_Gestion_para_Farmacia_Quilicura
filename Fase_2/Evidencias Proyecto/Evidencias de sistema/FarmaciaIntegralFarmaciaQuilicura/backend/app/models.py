@@ -1174,3 +1174,24 @@ class LecturaScanner(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+
+class Promocion(Base):
+    """E2-H3: una promoción apunta a producto o categoría."""
+    __tablename__ = "promocion"
+    __table_args__ = (
+        CheckConstraint("btrim(nombre) <> ''", name="ck_promocion_nombre"),
+        CheckConstraint("tipo IN ('PERCENT', 'FIXED_PRICE')", name="ck_promocion_tipo"),
+        CheckConstraint("valor >= 0 AND valor < 1000000000000 AND (tipo <> 'PERCENT' OR valor <= 100)", name="ck_promocion_valor"),
+        CheckConstraint("termina_en > inicia_en", name="ck_promocion_vigencia"),
+        CheckConstraint("(producto_id IS NULL) <> (categoria_id IS NULL)", name="ck_promocion_destino"),
+    )
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    nombre: Mapped[str] = mapped_column(String(150))
+    tipo: Mapped[str] = mapped_column(String(20))
+    valor: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    inicia_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    termina_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    producto_id: Mapped[UUID | None] = mapped_column(ForeignKey("producto.id", ondelete="RESTRICT"), index=True)
+    categoria_id: Mapped[UUID | None] = mapped_column(ForeignKey("categoria.id", ondelete="RESTRICT"), index=True)
+    activo: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

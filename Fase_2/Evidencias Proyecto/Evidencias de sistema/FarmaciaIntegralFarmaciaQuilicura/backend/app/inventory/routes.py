@@ -15,6 +15,13 @@ from app.auth.routes import (
     check_origin,
 )
 from app.auth.users import User
+from app.inventory.lot_status import (
+    DisableLot,
+    LotReactivationResult,
+    LotStatusResponse,
+    LotStatusService,
+    ReactivateLot,
+)
 from app.inventory.schemas import (
     CreateInventoryLot,
     ExpirationAlertListResponse,
@@ -351,3 +358,19 @@ def list_inventory_lots(
     return {
         "lots": lots,
     }
+
+@router.get("/lots/{lot_id}/status", response_model=LotStatusResponse)
+def lot_status(lot_id: UUID, request: Request, actor: Reader):
+    return LotStatusService(request.app.state.inventory.session_factory).get(actor, lot_id)
+
+
+@router.post("/lots/{lot_id}/reactivate", response_model=LotReactivationResult)
+def reactivate_lot(lot_id: UUID, data: ReactivateLot, request: Request, actor: LotManager):
+    check_origin(request)
+    return LotStatusService(request.app.state.inventory.session_factory).reactivate(actor, lot_id, data)
+
+
+@router.post("/lots/{lot_id}/disable", response_model=LotReactivationResult)
+def disable_lot(lot_id: UUID, data: DisableLot, request: Request, actor: LotManager):
+    check_origin(request)
+    return LotStatusService(request.app.state.inventory.session_factory).disable(actor, lot_id, data)
