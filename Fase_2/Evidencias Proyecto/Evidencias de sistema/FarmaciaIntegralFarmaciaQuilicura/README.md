@@ -232,9 +232,9 @@ sucursales.gestionar
 inventario.consultar
 ```
 
-El rol `ADMIN` recibe los permisos administrativos correspondientes.
+El rol `ADMINISTRADOR` recibe los permisos administrativos correspondientes.
 
-Si el rol ya existe, el seed agrega únicamente los permisos obligatorios que falten. No elimina permisos personalizados.
+Si el rol ya existe, `sync_roles()` conserva sus permisos sin completar vínculos nuevos. Los roles nuevos reciben los permisos del catálogo actual. No elimina permisos personalizados.
 
 El seed:
 
@@ -361,7 +361,7 @@ En la instancia local preparada mediante el seed:
 ```text
 Correo: interno@farmacia.cl
 Contraseña: valor configurado en DEMO_PASSWORD
-Rol: ADMIN
+Rol: ADMINISTRADOR
 Estado: Activo
 Sucursal: LOCAL-01
 ```
@@ -639,3 +639,56 @@ Pa*a nuevas funcionalidades:
 7.*Crear un*Pull Request hacia `Proyecto`.
 8.*Documentar las*reglas implementadas y pendientes.*9. Integrar solamente cuando no ex*stan conflictos.
 ````*
+
+
+## Reconciliación reproducible de permisos E4
+
+Después de preparar el esquema PostgreSQL mediante el procedimiento habitual y configurar
+el entorno del backend, ejecuta desde `backend`, con el entorno virtual activo:
+
+```powershell
+python -m app.role_catalog --reconcile-e4
+```
+
+El comando ejecuta `sync_roles()`, reconcilia E4 y verifica el resultado en una única
+transacción. No necesita ejecutar los seeds específicos de transferencias, recepción
+ni ajustes, ni depende de su orden. No ejecuta migraciones.
+
+Sin la opción, `python -m app.role_catalog` conserva el comportamiento normal:
+crea permisos y roles faltantes, pero no completa permisos de roles existentes.
+Con `--reconcile-e4` agrega solo los vínculos obligatorios de E4 que falten:
+
+| Permiso | ADMINISTRADOR | ENCARGADO_INVENTARIO |
+|---|---|---|
+| transferencias.consultar | Sí | Sí |
+| transferencias.solicitar | Sí | Sí |
+| transferencias.autorizar | Sí | No |
+| transferencias.despachar | Sí | Sí |
+| transferencias.recibir | Sí | Sí |
+| inventario.registrar_entrada | Sí | Sí |
+| inventario.ajustar | Sí | Sí |
+
+Son 7 y 6 permisos de E4, respectivamente, además de los demás permisos del rol.
+Se conservan UUID, nombres personalizados, permisos adicionales y `usuario_rol`.
+No crea ni asigna usuarios automáticamente, ni modifica contraseñas o sesiones.
+Si el catálogo está vacío, `sync_roles()` también crea los otros permisos y roles base.
+El comando informa todos los permisos creados, vínculos E4 agregados por rol y commit;
+una ejecución repetida sin incorporaciones confirma la idempotencia.
+
+Si ENCARGADO_INVENTARIO ya tiene `transferencias.autorizar`, el comando no elimina
+la relación: informa el conflicto, revierte la transacción completa y termina con
+código distinto de cero. La asignación debe revisarse explícitamente antes de repetirlo.
+
+Para verificar, usa una cuenta interna activa que ya tenga asignado uno de esos roles:
+
+1. Consulta `GET /api/auth/me` con su cookie de sesión interna y revisa
+   `user.permissions`: debe contener los 7 o 6 permisos de E4 de la matriz.
+   Los permisos efectivos son la unión de todos sus roles; un usuario con ambos roles
+   también tendrá `transferencias.autorizar` por ADMINISTRADOR.
+2. Recarga la interfaz para actualizar su estado y abre `/admin/transfers`.
+   El acceso requiere `transferencias.consultar`.
+3. No es necesario cerrar una sesión válida: el backend consulta los permisos actuales.
+
+Las pruebas unitarias de reconciliación usan dobles en memoria sin PostgreSQL.
+Las pruebas reales de persistencia requieren un entorno PostgreSQL de pruebas y rollback;
+los dobles no verifican constraints, bloqueos ni rollback del motor PostgreSQL.

@@ -126,11 +126,11 @@ class PostgresInventoryRepository:
             lot.fecha_vencimiento - today
         ).days
 
-        if days_remaining < 0:
+        if days_remaining <= 0:
             alert_level = "VENCIDO"
-        elif days_remaining <= 30:
+        elif days_remaining <= 15:
             alert_level = "CRITICO"
-        elif days_remaining <= 60:
+        elif days_remaining <= 30:
             alert_level = "PROXIMO"
         else:
             alert_level = "SEGUIMIENTO"
@@ -366,7 +366,7 @@ class PostgresInventoryRepository:
             if not include_expired:
                 query = query.where(
                     LoteInventario.fecha_vencimiento
-                    >= reference_date
+                    > reference_date
                 )
 
             if product_id is not None:
