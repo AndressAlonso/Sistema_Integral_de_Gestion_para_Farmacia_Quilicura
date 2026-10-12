@@ -31,3 +31,14 @@ clientes/sesiones y escáner pendientes. No ejecutar seeds ni recrear la base.
 La integración no se declara validada completamente hasta aplicar las migraciones
 autorizadas y repetir las pruebas de clientes/invitados. E6-H5 sigue pendiente
 de E7-H1, tal como documenta la rama fuente.
+
+## Verificación posterior autorizada — 11 de octubre de 2026
+
+El usuario autorizó aplicar las migraciones. Se generó un respaldo local ignorado
+por Git en backend/data/backups/before-e6-e8-20261011-212250.dump y se ejecutó
+alembic upgrade head. La base quedó en 0016_merge_e6_e8.
+La selección de pruebas de catálogo, carrito, invitados, clientes, roles,
+alertas de vencimiento, POS y concurrencia finalizó con 139 aprobadas.
+Los diez fallos por tablas ausentes de la comprobación anterior quedaron resueltos.
+FastAPI se reinició con los routers integrados. No se probó la app en un Android
+físico; tampoco se considera completada E6-H5 por esta integración.
