@@ -29,7 +29,6 @@ from app.inventory.service import (
     AccessDenied,
     InvalidExpirationAlertDays,
     InvalidMovementDateRange,
-    InventoryLotAlreadyExists,
     InventoryNotFound,
     InventoryService,
 )
@@ -321,37 +320,10 @@ def create_lot(
     actor: LotManager,
 ):
     check_origin(request)
-
-    try:
-        return service(request).create_lot(
-            actor,
-            data,
-        )
-    except AccessDenied:
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                "No tienes permiso para gestionar "
-                "lotes de inventario."
-            ),
-        ) from None
-    except InventoryNotFound:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                "No existe el registro de inventario "
-                "seleccionado."
-            ),
-        ) from None
-    except InventoryLotAlreadyExists:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Ya existe un lote con ese número para "
-                "el producto y la sucursal seleccionados."
-            ),
-        ) from None
-
+    raise HTTPException(
+        status_code=409,
+        detail="Registra el lote y sus cantidades desde Recepción de mercadería, con proveedor y documento.",
+    )
 
 @router.get(
     "/{inventory_id}/lots",

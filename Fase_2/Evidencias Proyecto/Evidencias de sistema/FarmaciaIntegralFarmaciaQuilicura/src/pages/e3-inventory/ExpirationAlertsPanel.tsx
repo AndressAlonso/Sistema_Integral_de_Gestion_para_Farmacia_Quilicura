@@ -382,23 +382,14 @@ export default function ExpirationAlertsPanel({
     ],
   )
 
-  async function loadLots(): Promise<void> {
-    setLoading(true)
-    setError('')
-
-    try {
-      const records = await listInventoryLots()
-
-      setLots(records)
-    } catch (cause: unknown) {
-      setError(getErrorMessage(cause))
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    void loadLots()
+    let active = true
+    listInventoryLots().then(records => {
+      if (active) { setLots(records); setLoading(false) }
+    }).catch((cause: unknown) => {
+      if (active) { setError(getErrorMessage(cause)); setLoading(false) }
+    })
+    return () => { active = false }
   }, [])
 
   function handleSubmit(
@@ -670,17 +661,8 @@ export default function ExpirationAlertsPanel({
 
             <thead>
               <tr>
-                <th scope="col">
-                  Producto
-                </th>
-
-                <th scope="col">
-                  Sucursal
-                </th>
-
-                <th scope="col">
-                  Lote
-                </th>
+                <th scope="col">Lote / Sucursal</th>
+                <th scope="col">Producto</th>
 
                 <th scope="col">
                   Fecha de vencimiento
@@ -707,26 +689,12 @@ export default function ExpirationAlertsPanel({
               {filteredLots.map((item) => (
                 <tr key={item.lot.id}>
                   <th scope="row">
-                    <span className="product-name">
-                      {item.lot.product_name}
-                    </span>
-
-                    <span className="product-detail">
-                      SKU: {item.lot.product_sku}
-                    </span>
+                    <span className="lot-code-primary">{item.lot.lot_number}</span>
+                    <span className="lot-cell-detail">{item.lot.branch_name} · {item.lot.branch_code}</span>
                   </th>
-
                   <td>
-                    <span className="branch-label">
-                      {item.lot.branch_name}{' '}
-                      ({item.lot.branch_code})
-                    </span>
-                  </td>
-
-                  <td>
-                    <span className="lot-number">
-                      {item.lot.lot_number}
-                    </span>
+                    <span className="product-name">{item.lot.product_name}</span>
+                    <span className="product-detail">SKU: {item.lot.product_sku}</span>
                   </td>
 
                   <td>
@@ -762,7 +730,7 @@ export default function ExpirationAlertsPanel({
               {filteredLots.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={6}
                     className="empty-state"
                   >
                     <span

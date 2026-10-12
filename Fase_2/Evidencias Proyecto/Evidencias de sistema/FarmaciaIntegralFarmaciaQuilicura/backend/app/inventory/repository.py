@@ -16,10 +16,6 @@ class InventoryNotFound(Exception):
     pass
 
 
-class InventoryLotAlreadyExists(Exception):
-    pass
-
-
 class PostgresInventoryRepository:
     def __init__(
         self,
@@ -211,50 +207,6 @@ class PostgresInventoryRepository:
                 self._lot_record(lot)
                 for lot in lots
             ]
-
-    def create_lot(
-        self,
-        inventory_id: UUID,
-        lot_number: str,
-        expiration_date: date,
-        quantity: int,
-    ) -> dict[str, Any]:
-        normalized_lot_number = lot_number.strip()
-
-        with self.session_factory() as db:
-            inventory = db.get(
-                InventarioSucursal,
-                inventory_id,
-            )
-
-            if inventory is None:
-                raise InventoryNotFound
-
-            existing_lot = db.scalar(
-                select(LoteInventario).where(
-                    LoteInventario.inventario_sucursal_id
-                    == inventory_id,
-                    LoteInventario.numero_lote
-                    == normalized_lot_number,
-                )
-            )
-
-            if existing_lot is not None:
-                raise InventoryLotAlreadyExists
-
-            lot = LoteInventario(
-                inventario_sucursal_id=inventory_id,
-                numero_lote=normalized_lot_number,
-                fecha_vencimiento=expiration_date,
-                cantidad=quantity,
-                activo=True,
-            )
-
-            db.add(lot)
-            db.commit()
-            db.refresh(lot)
-
-            return self._lot_record(lot)
 
     def list_movements(
         self,

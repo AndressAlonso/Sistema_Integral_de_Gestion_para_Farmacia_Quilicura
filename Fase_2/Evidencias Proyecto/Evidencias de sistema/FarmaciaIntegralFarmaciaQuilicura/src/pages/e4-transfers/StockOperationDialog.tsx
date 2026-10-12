@@ -20,11 +20,11 @@ function initial(key: string, kind: Operation): { draft: Draft; pending: boolean
     documentType: 'FACTURA', documentNumber: '', documentDate: new Date().toISOString().slice(0, 10), rows: [] } }
 }
 
-export default function StockOperationDialog({ userId, canReceive, onClose, onSaved }: {
-  userId: string; canReceive: boolean; onClose: () => void; onSaved: (message: string) => void
+export default function StockOperationDialog({ userId, canReceive, initialOperation, onClose, onSaved }: {
+  initialOperation?: Operation; userId: string; canReceive: boolean; onClose: () => void; onSaved: (message: string) => void
 }) {
   const key = `sigfq-stock-operation:${userId}`
-  const [start] = useState(() => initial(key, canReceive ? 'receipt' : 'adjustment'))
+  const [start] = useState(() => initial(key, initialOperation ?? (canReceive ? 'receipt' : 'adjustment')))
   const [draft, setDraft] = useState(start.draft)
   const [pending, setPending] = useState(start.pending)
   const [options, setOptions] = useState<OperationOptions | null>(null)

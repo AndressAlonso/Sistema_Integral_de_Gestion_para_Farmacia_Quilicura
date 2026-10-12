@@ -4,7 +4,6 @@ import type { AuthSession } from '../e1-access-users-branches/auth/login.api'
 import { ApiError } from '../../services/http'
 import TransferDetail from './TransferDetail'
 import TransferForm from './TransferForm'
-import StockOperationDialog from './StockOperationDialog'
 import { actions, listTransfers, states, transferCode, transferOptions, units, type Transfer, type TransferAction, type TransferOptions } from './transfers.api'
 import '../e1-access-users-branches/users/users.css'
 import './transfers.css'
@@ -19,7 +18,6 @@ export default function TransfersPage() {
   const [message, setMessage] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [creating, setCreating] = useState(false)
-  const [movementOpen, setMovementOpen] = useState(false)
   const [selected, setSelected] = useState<{ transfer: Transfer; action?: TransferAction } | null>(null)
   const [filters, setFilters] = useState({ query: '', state: '', origin: '', destination: '', date: '' })
   useEffect(() => {
@@ -61,10 +59,6 @@ export default function TransfersPage() {
   return <div className="users-page transfers-page">
     <header className="users-heading transfer-heading"><div><h1>Transferencias</h1><p>Gestiona solicitudes, autorizaciones, despachos y recepciones entre sucursales.</p></div>
       <div className="transfer-actions">
-        {(session.user.permissions.includes('inventario.registrar_entrada') || (
-          session.user.permissions.includes('inventario.ajustar')
-          && session.user.roles.some(role => ['ADMINISTRADOR', 'ENCARGADO_INVENTARIO'].includes(role))
-        )) && <button type="button" className="users-button" onClick={() => { setMessage(''); setMovementOpen(true) }}>Registrar movimiento</button>}
         {options?.can_create && <button type="button" className="users-button primary" disabled={loading} onClick={() => { setMessage(''); setCreating(true) }}>+ Nueva transferencia</button>}
       </div></header>
     <section className="users-panel transfer-flow" aria-label="Flujo de transferencia"><div><strong>Flujo de transferencia</strong><p>Se reserva al solicitar; el stock físico sale al confirmar el despacho.</p></div>
@@ -94,7 +88,6 @@ export default function TransfersPage() {
           </tr>)}</tbody></table></div></section>
     {creating && options && <TransferForm options={options} userId={session.user.id} onClose={() => { setCreating(false); refresh() }} onSaved={saved} />}
     {selected && <TransferDetail transfer={selected.transfer} initialAction={selected.action} onClose={() => { setSelected(null); refresh() }} onChanged={saved} />}
-    {movementOpen && <StockOperationDialog userId={session.user.id} canReceive={session.user.permissions.includes('inventario.registrar_entrada')} onClose={() => setMovementOpen(false)} onSaved={text => { setMovementOpen(false); setMessage(text); refresh() }} />}
   </div>
 }
 

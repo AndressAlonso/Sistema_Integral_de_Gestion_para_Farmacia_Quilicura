@@ -9,7 +9,6 @@ from pydantic import (
     field_validator,
 )
 
-
 StockStatus = Literal[
     "SIN_STOCK",
     "BAJO",

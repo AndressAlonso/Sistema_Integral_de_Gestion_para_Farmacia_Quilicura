@@ -1,5 +1,6 @@
 import {
   type FormEvent,
+  type ReactNode,
   useState,
 } from 'react'
 
@@ -11,6 +12,8 @@ import {
 
 interface InventoryTableProps {
   records: InventoryRecord[]
+  productFilter?: ReactNode
+  branchFilter?: ReactNode
   onRecordUpdated: (
     record: InventoryRecord,
   ) => void
@@ -98,6 +101,8 @@ function minimumErrorMessage(
 export default function InventoryTable({
   records,
   onRecordUpdated,
+  productFilter,
+  branchFilter,
 }: InventoryTableProps) {
   const [editingId, setEditingId] = useState<
     string | null
@@ -188,8 +193,8 @@ export default function InventoryTable({
 
         <thead>
           <tr>
-            <th scope="col">Producto</th>
-            <th scope="col">Sucursal</th>
+            <th scope="col">Producto<div className="lot-column-filter">{productFilter}</div></th>
+            <th scope="col">Sucursal{branchFilter}</th>
 
             <th scope="col" className="numeric">
               Físico
@@ -234,9 +239,9 @@ export default function InventoryTable({
 
                 <td>
                   <span className="branch-label">
-                    {record.branch_name}{' '}
-                    ({record.branch_code})
+                    {record.branch_name}
                   </span>
+                  <span className="product-detail">Código: {record.branch_code}</span>
                 </td>
 
                 {!consistent ? (

@@ -1172,3 +1172,157 @@
     width: 100%;
   }
 }
+/* Consulta de lotes: entrada documental separada del listado. */
+.lot-toolbar {
+  display: grid;
+  gap: 20px;
+  padding: 20px 26px 24px;
+}
+.lot-entry-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding: 14px 16px;
+  border: 1px solid #ece6ef;
+  border-radius: 9px;
+  background: #faf8fc;
+}
+.lot-entry-note p {
+  flex: 1 1 340px;
+  margin: 0;
+  color: #687286;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.lot-receipt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #702582;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.lot-receipt-link:hover { text-decoration: underline; }
+.lot-receipt-link:focus-visible { outline: 2px solid #702582; outline-offset: 4px; }
+.lot-code-primary {
+  display: block;
+  color: #253a5d;
+  font-size: 14px;
+  font-weight: 700;
+}
+.lot-cell-detail {
+  display: block;
+  margin-top: 5px;
+  color: #788194;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+@media (max-width: 760px) {
+  .lot-toolbar { padding: 20px; }
+}
+.lot-state-heading { display: inline-flex; align-items: center; gap: 8px; }
+.lot-sort-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #f4eafa;
+  color: #702582;
+  font-size: 16px;
+  font-weight: 700;
+}
+.lot-table thead th { vertical-align: top; }
+.lot-column-filter { margin-top: 10px; }
+.lot-column-filter input,.lot-column-filter select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 180px;
+  max-width: 320px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid #ded6e3;
+  border-radius: 7px;
+  background: white;
+  color: #344765;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+}
+.lot-column-filter input:focus-visible,.lot-column-filter select:focus-visible {
+  outline: 2px solid #702582;
+  outline-offset: 2px;
+}
+.lot-branch-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 360px;
+  margin-top: 10px;
+}
+.lot-branch-options button {
+  padding: 6px 11px;
+  border: 1px solid #e5dfe9;
+  border-radius: 20px;
+  background: #fff;
+  color: #687286;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.lot-branch-options button:hover { background: #faf6fc; border-color: #cdb6d6; }
+.lot-branch-options button[aria-pressed="true"] {
+  background: #f0e5f5;
+  border-color: #d7bde2;
+  color: #702582;
+  font-weight: 650;
+}
+.lot-branch-options button:focus-visible { outline: 2px solid #702582; outline-offset: 2px; }
+.lot-state-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.lot-state-sort:hover { color: #702582; }
+.lot-state-sort:focus-visible { outline: 2px solid #702582; outline-offset: 4px; border-radius: 4px; }
+.lot-created {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+  color: #788194;
+  font-size: 11px;
+  font-weight: 400;
+  text-align: left;
+}
+.lot-created-label { color: #65738a; font-weight: 500; }
+.inventory-heading { align-items: center; gap: 24px; margin-bottom: 24px; }
+.inventory-heading h1 { font-size: clamp(26px, 2.5vw, 34px); margin: 8px 0; }
+.inventory-heading-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+.inventory-heading-actions .users-button { white-space: normal; }
+.inventory-app .inventory-stock-table tbody th,
+.inventory-app .monitoring-table tbody th { text-align: left; }
+.inventory-app .inventory-stock-table tbody td,
+.inventory-app .monitoring-table tbody td { vertical-align: middle; }
+.inventory-app .branch-label { display: block; font-weight: 600; }
+.inventory-app .product-detail, .inventory-app .lot-cell-detail { line-height: 1.5; margin-top: 4px; }
+@media (max-width: 800px) {
+  .inventory-heading { flex-direction: column; align-items: flex-start; }
+  .inventory-heading-actions { justify-content: flex-start; }
+}
+
+.inventory-stock-table thead th { vertical-align: top; }
