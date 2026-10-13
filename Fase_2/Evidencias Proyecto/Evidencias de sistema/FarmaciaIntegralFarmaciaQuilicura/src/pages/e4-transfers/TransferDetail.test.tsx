@@ -103,3 +103,18 @@ describe('Selección y confirmación de transferencias', () => {
     expect(screen.queryByRole('button', { name: /Confirmar/ })).toBeNull()
   })
 })
+
+it('editar el conteo de recepción exige una nueva confirmación', async () => {
+  const incoming: Transfer = { ...transfer, state: 'EN_TRANSITO', actions: ['receive'] }
+  vi.mocked(getTransfer).mockResolvedValue(incoming)
+  render(<MemoryRouter><TransferDetail transfer={incoming} onClose={vi.fn()} onChanged={vi.fn()} /></MemoryRouter>)
+  fireEvent.click(await screen.findByRole('radio', { name: 'Registrar recepción de productos' }))
+  const count = screen.getByLabelText('Producto QA — esperadas: 18')
+  fireEvent.change(count, { target: { value: '18' } })
+  fireEvent.click(screen.getByRole('checkbox'))
+  expect(screen.getByRole('button', { name: 'Confirmar recepción' }).hasAttribute('disabled')).toBe(false)
+  fireEvent.change(count, { target: { value: '17' } })
+  expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(false)
+  expect(screen.getByRole('button', { name: 'Confirmar recepción' }).hasAttribute('disabled')).toBe(true)
+  expect(changeTransfer).not.toHaveBeenCalled()
+})

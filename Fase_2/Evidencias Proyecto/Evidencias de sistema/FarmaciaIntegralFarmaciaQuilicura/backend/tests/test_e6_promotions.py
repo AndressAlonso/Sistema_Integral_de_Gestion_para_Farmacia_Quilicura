@@ -4,9 +4,10 @@ from decimal import Decimal
 from uuid import uuid4
 
 import pytest
-from app.models import Producto, Promocion
 from sqlalchemy import func, select
 from test_e6_cart import cart, snapshot, validate  # noqa: F401
+
+from app.models import Producto, Promocion
 
 
 def promotion(ctx, kind="PERCENT", value="20", category=False, active=True, expired=False):

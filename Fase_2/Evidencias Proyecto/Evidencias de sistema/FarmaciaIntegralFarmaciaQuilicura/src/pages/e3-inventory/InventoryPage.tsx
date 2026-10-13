@@ -307,6 +307,8 @@ export default function InventoryPage() {
             role="tabpanel"
             aria-labelledby="inventory-tab-availability"
           >
+            <details className="inventory-stock-help">
+              <summary>Disponible = físico − reservado <span>Ver explicación</span></summary>
             <section
               className="stock-guide"
               aria-label="Cómo se interpreta el stock"
@@ -359,6 +361,7 @@ export default function InventoryPage() {
                 </p>
               </div>
             </section>
+            </details>
 
             <section
               className="inventory-panel"

@@ -49,3 +49,40 @@ body:has(dialog.app-modal[open]) { overflow: hidden; }
 .access-summary-dot { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: #98a2b3; }
 .access-summary-dot.active { background: #659e36; }
 .users-page .access-summary { margin: -8px 0 20px; }
+
+dialog.app-modal.compact-dialog {
+  width: min(640px, calc(100vw - 32px));
+  height: fit-content;
+  max-height: calc(100dvh - 32px);
+  padding: 24px;
+  background: white;
+}
+dialog.compact-dialog h2 { font-size: 24px; }
+dialog.compact-dialog .users-dialog-actions { flex-wrap: wrap; }
+dialog.compact-dialog .users-fields input:not([type=checkbox]) { width: 100%; min-width: 0; }
+dialog.compact-dialog .branches-dialog-content { padding: 0; min-height: 0; width: 100%; }
+dialog.compact-dialog .branches-dialog-content > form { flex: none; }
+dialog.compact-dialog .s1-dialog-head { margin-bottom: 20px; padding-bottom: 16px; }
+dialog.compact-dialog footer { position: static; margin-top: 24px; padding-bottom: 0; background: white; }
+@media (max-width: 600px) {
+  dialog.app-modal.compact-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 20px; }
+}
+
+
+.users-table-scroll, .branches-table-scroll, .promotions-table { container-type: inline-size; }
+@container (max-width: 1050px) {
+  table.responsive-admin-table { display: block; min-width: 0; width: 100%; }
+  .responsive-admin-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .responsive-admin-table tbody { display: grid; gap: 12px; padding: 12px; }
+  .responsive-admin-table tbody > tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; padding: 16px; border: 1px solid #e4e9f3; border-radius: 12px; background: white; }
+  .responsive-admin-table tbody > tr > :is(td, th) { display: block; min-width: 0; padding: 0; border: 0; text-align: left; overflow-wrap: anywhere; }
+  .responsive-admin-table tbody > tr > :is(td, th)::before { content: attr(data-label); display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #65748e; }
+  .responsive-admin-table tbody > tr > :is(th, td[colspan], td:last-child) { grid-column: 1 / -1; }
+  .responsive-admin-table .catalog-product-name { min-width: 0; max-width: none; }
+  .responsive-admin-table .catalog-heading-actions { width: auto; }
+  .responsive-admin-table tfoot, .responsive-admin-table tfoot tr, .responsive-admin-table tfoot td { display: block; width: 100%; }
+  .responsive-admin-table tfoot td { padding: 12px; }
+}
+@container (max-width: 480px) {
+  .responsive-admin-table tbody > tr { grid-template-columns: 1fr; }
+}

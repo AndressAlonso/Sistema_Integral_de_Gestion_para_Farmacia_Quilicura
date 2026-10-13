@@ -3,12 +3,6 @@ from datetime import timedelta
 from uuid import UUID
 
 import pytest
-from app.models import (
-    InventarioSucursal,
-    LoteInventario,
-    MovimientoInventario,
-    Transferencia,
-)
 from sqlalchemy import func, select
 from test_auth import login
 from test_transfers import (  # noqa: F401
@@ -17,6 +11,13 @@ from test_transfers import (  # noqa: F401
     stocks,
     transfer,
     transit,
+)
+
+from app.models import (
+    InventarioSucursal,
+    LoteInventario,
+    MovimientoInventario,
+    Transferencia,
 )
 
 

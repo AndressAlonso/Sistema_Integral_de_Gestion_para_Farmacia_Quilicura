@@ -1,8 +1,12 @@
+import { createPortal } from 'react-dom'
+import './lot-status.css'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   type FormEvent,
   type ReactNode,
   useState,
+  useEffect,
+  useRef,
 } from 'react'
 
 import { ApiError } from '../../services/http'
@@ -82,7 +86,7 @@ function minimumErrorMessage(
     }
 
     if (error.status === 403) {
-      return 'No tienes permiso para configurar el mínimo.'
+      return 'No tienes permiso para configurar el aviso.'
     }
 
     if (error.status === 404) {
@@ -90,13 +94,13 @@ function minimumErrorMessage(
     }
 
     if (error.status === 422) {
-      return 'El mínimo debe estar entre 0 y 1.000.000.'
+      return 'La cantidad del aviso debe estar entre 0 y 1.000.000.'
     }
 
     return error.message
   }
 
-  return 'No pudimos actualizar el stock mínimo.'
+  return 'No pudimos guardar el aviso de stock bajo.'
 }
 
 export default function InventoryTable({
@@ -179,9 +183,14 @@ export default function InventoryTable({
     }
   }
 
+  const editingRecord = records.find(record => record.id === editingId)
+  const busy = submittingId !== null
   return (
-    <div
-      className="table-scroll"
+    <>{(productFilter || branchFilter) && <div className="inventory-list-filters" role="group" aria-label="Filtros de disponibilidad">
+      {productFilter && <label className="inventory-list-search"><span>Buscar producto</span>{productFilter}</label>}
+      {branchFilter && <div className="inventory-list-branch"><span>Sucursal</span>{branchFilter}</div>}
+    </div>}<div
+      className={`table-scroll${records.length <= 15 ? ' inventory-stock-scroll-small' : ''}`}
       tabIndex={0}
       role="region"
       aria-label="Stock por producto y sucursal"
@@ -194,8 +203,8 @@ export default function InventoryTable({
 
         <thead>
           <tr>
-            <th scope="col">Producto<div className="lot-column-filter">{productFilter}</div></th>
-            <th scope="col">Sucursal{branchFilter}</th>
+            <th scope="col">Producto</th>
+            <th scope="col">Sucursal</th>
 
             <th scope="col" className="numeric">
               Físico
@@ -210,7 +219,7 @@ export default function InventoryTable({
             </th>
 
             <th scope="col" className="numeric">
-              Mínimo
+              Aviso de stock bajo
             </th>
 
             <th scope="col">Estado</th>
@@ -221,10 +230,6 @@ export default function InventoryTable({
         <PaginatedTableBody total={records.length} columns={8}>
           {records.map((record) => {
             const consistent = isConsistent(record)
-            const isEditing = editingId === record.id
-            const isSubmitting = (
-              submittingId === record.id
-            )
 
             return (
               <tr key={record.id}>
@@ -277,7 +282,7 @@ export default function InventoryTable({
                     <td className="numeric">
                       {record.minimum === 0
                         ? 'No configurado'
-                        : record.minimum}
+                        : `${record.minimum} o menos`}
                     </td>
 
                     <td>
@@ -291,82 +296,8 @@ export default function InventoryTable({
                     </td>
 
                     <td className="minimum-action-cell">
-                      {isEditing ? (
-                        <form
-                          className="minimum-form"
-                          onSubmit={(event) => {
-                            void handleMinimumSubmit(
-                              event,
-                              record,
-                            )
-                          }}
-                        >
-                          <label
-                            className="sr-only"
-                            htmlFor={`minimum-${record.id}`}
-                          >
-                            Stock mínimo para{' '}
-                            {record.product_name}
-                          </label>
-
-                          <input
-                            id={`minimum-${record.id}`}
-                            type="number"
-                            min={0}
-                            max={1_000_000}
-                            step={1}
-                            value={minimumValue}
-                            onChange={(event) => {
-                              setMinimumValue(
-                                event.target.value,
-                              )
-                              setErrorId(null)
-                              setErrorMessage('')
-                            }}
-                            disabled={isSubmitting}
-                            autoFocus
-                            required
-                          />
-
-                          <button
-                            type="submit"
-                            className="minimum-save-button"
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting
-                              ? 'Guardando…'
-                              : 'Guardar'}
-                          </button>
-
-                          <button
-                            type="button"
-                            className="minimum-cancel-button"
-                            onClick={cancelEditing}
-                            disabled={isSubmitting}
-                          >
-                            Cancelar
-                          </button>
-
-                          {errorId === record.id && (
-                            <span
-                              className="minimum-error"
-                              role="alert"
-                            >
-                              {errorMessage}
-                            </span>
-                          )}
-                        </form>
-                      ) : (
-                        <button
-                          type="button"
-                          className="minimum-edit-button"
-                          onClick={() => {
-                            startEditing(record)
-                          }}
-                        >
-                          Configurar mínimo
-                        </button>
-                      )}
+                      <button type="button" className="minimum-edit-button" disabled={submittingId !== null}
+                        onClick={() => startEditing(record)}>Configurar aviso</button>
                     </td>
                   </>
                 )}
@@ -387,5 +318,35 @@ export default function InventoryTable({
         </PaginatedTableBody>
       </table>
     </div>
+    {editingRecord && <StockNoticeDialog busy={busy} onClose={cancelEditing}>
+      <form onSubmit={event => void handleMinimumSubmit(event, editingRecord)}>
+        <header><h2 id="stock-notice-title">Aviso de stock bajo</h2>
+          <button type="button" className="lot-status-close" aria-label="Cerrar aviso de stock bajo" disabled={busy} onClick={cancelEditing}>×</button></header>
+        <h3>{editingRecord.product_name}</h3>
+        <p className="lot-status-note">{editingRecord.branch_name} · Actualmente disponibles: <strong>{editingRecord.available} unidades</strong></p>
+        <div className="stock-notice-field">
+          <label htmlFor={`minimum-${editingRecord.id}`}>Avisar cuando queden</label>
+          <input id={`minimum-${editingRecord.id}`} type="number" min={0} max={1_000_000} step={1} required autoFocus
+            disabled={busy} value={minimumValue} aria-describedby="stock-notice-help"
+            onChange={event => { setMinimumValue(event.target.value); setErrorId(null); setErrorMessage('') }} />
+          <span>unidades o menos.</span>
+        </div>
+        <p id="stock-notice-help" className="lot-status-note">Este aviso no modifica las cantidades. Con 0, no se configura un aviso de stock bajo; «Sin stock» seguirá apareciendo cuando no queden unidades.</p>
+        {errorId === editingRecord.id && <p className="lot-status-error" role="alert">{errorMessage}</p>}
+        <footer><button type="button" disabled={busy} onClick={cancelEditing}>Cancelar</button>
+          <button type="submit" className="lot-status-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar aviso'}</button></footer>
+      </form>
+    </StockNoticeDialog>}</>
   )
+}
+
+function StockNoticeDialog({ children, busy, onClose }: { children: ReactNode; busy: boolean; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    const element = dialog.current
+    element?.showModal()
+    return () => { if (element?.open) element.close() }
+  }, [])
+  return createPortal(<dialog ref={dialog} className="lot-status-dialog" aria-labelledby="stock-notice-title" aria-busy={busy}
+    onCancel={event => { event.preventDefault(); if (!busy) onClose() }}>{children}</dialog>, document.body)
 }

@@ -349,7 +349,7 @@ export default function CatalogPage() {
           aria-label="Listado de productos"
           tabIndex={0}
         >
-          <table className="users-table catalog-table">
+          <table className="users-table catalog-table responsive-admin-table">
             <thead>
               <tr>
                 <th scope="col">Imagen</th>
@@ -363,7 +363,7 @@ export default function CatalogPage() {
                 <th scope="col">Acciones</th>
               </tr>
             </thead>
-            <PaginatedTableBody total={visible.length} columns={9}>
+            <PaginatedTableBody total={visible.length} columns={9} labels={["Imagen", "Producto / SKU", "Categoría", "Precio", "Códigos de barras", "Condición", "Estado", "Publicación online", "Acciones"]}>
               {visible.map(product => (
                 <tr key={product.id}>
                   <td><ProductPhoto src={product.image_url} name={product.name} /></td>

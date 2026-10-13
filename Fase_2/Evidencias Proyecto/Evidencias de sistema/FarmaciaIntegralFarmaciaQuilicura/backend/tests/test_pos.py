@@ -24,7 +24,7 @@ from app.models import (
 from app.pos.pricing import Promotion, best_price
 
 
-@pytest.mark.parametrize("payment", ["EFECTIVO", "DEBITO", "CREDITO"])
+@pytest.mark.parametrize("payment", ["EFECTIVO", "DEBITO", "CREDITO", "TRANSFERENCIA"])
 def test_current_payment_methods(pos, payment):
     cash = open_cash(pos)
     receipt = sell(pos, payment=payment)
@@ -33,16 +33,21 @@ def test_current_payment_methods(pos, payment):
     assert Decimal(summary["payments"][payment]) == Decimal(receipt["total"])
 
 
-def test_new_transfer_payment_rejected_without_stock_change(pos):
-    open_cash(pos)
+def test_transfer_payment_records_once_without_changing_expected_cash(pos):
+    cash = open_cash(pos, "1000")
     payload = sale_payload(pos, payment="TRANSFERENCIA")
     with pos.factory() as db:
         before = db.get(InventarioSucursal, pos.inventory_id).stock_fisico
-    response = pos.client.post("/api/pos/sales", json=payload)
-    assert response.status_code == 422
+    first = pos.client.post("/api/pos/sales", json=payload)
+    retry = pos.client.post("/api/pos/sales", json=payload)
+    assert first.status_code == retry.status_code == 200
+    assert first.json() == retry.json()
+    summary = pos.client.get(f"/api/cash/{cash['id']}/summary").json()
+    assert Decimal(summary["payments"]["TRANSFERENCIA"]) == Decimal(first.json()["total"])
+    assert Decimal(summary["expected_cash"]) == Decimal(1000)
     with pos.factory() as db:
-        assert db.get(Venta, UUID(payload["request_id"])) is None
-        assert db.get(InventarioSucursal, pos.inventory_id).stock_fisico == before
+        assert db.get(Venta, UUID(payload["request_id"])).medio_pago == "TRANSFERENCIA"
+        assert db.get(InventarioSucursal, pos.inventory_id).stock_fisico == before - 2
 
 
 def test_pos_image_reuses_catalog_without_edit_permission(pos, tmp_path):
@@ -492,3 +497,31 @@ def test_best_promotion_no_stacking_and_expiration():
         None,
     )
     assert best_price(Decimal(1000), product, category, now) == (Decimal(1000), None)
+
+
+@pytest.mark.parametrize("payment", ["EFECTIVO", "DEBITO"])
+def test_cash_discount_is_historical_and_never_subtracted_twice(pos, payment):
+    pos.settings.app_environment = "development"
+    pos.settings.pos_demo_product_id = pos.product_id
+    cash = open_cash(pos, "1000")
+    url = f"/api/cash/{cash['id']}/summary"
+    empty = pos.client.get(url).json()
+    assert empty["subtotal"] == empty["discount"] == "0.00"
+    receipt = sell(pos, 2, payment)
+    pos.settings.pos_demo_product_id = None
+    sell(pos, 1, "EFECTIVO")
+    summary = pos.client.get(url).json()
+    assert summary["subtotal"] == "3000.00"
+    assert summary["discount"] == receipt["discount"] == "400.00"
+    assert summary["total"] == "2600.00"
+    expected = "3600.00" if payment == "EFECTIVO" else "2000.00"
+    assert summary["expected_cash"] == expected
+    closed = pos.client.post(f"/api/cash/{cash['id']}/close",
+        json={"counted_cash":expected,"summary_version":summary["version"]})
+    assert closed.status_code == 200, closed.text
+    assert closed.json()["summary"]["discount"] == "400.00"
+    assert closed.json()["summary"]["difference"] == "0.00"
+    new_cash = open_cash(pos)
+    fresh = pos.client.get(f"/api/cash/{new_cash['id']}/summary").json()
+    assert fresh["discount"] == fresh["subtotal"] == fresh["total"] == "0.00"
+    assert pos.client.get(url).json()["discount"] == "400.00"

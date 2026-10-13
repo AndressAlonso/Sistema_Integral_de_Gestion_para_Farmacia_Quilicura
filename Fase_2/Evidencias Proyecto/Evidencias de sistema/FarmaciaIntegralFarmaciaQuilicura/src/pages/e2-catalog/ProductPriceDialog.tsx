@@ -25,6 +25,7 @@ export default function ProductPriceDialog({
 }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [validation, setValidation] = useState('')
+  const [newPrice, setNewPrice] = useState('')
 
   useEffect(() => {
     const element = dialog.current
@@ -66,7 +67,7 @@ export default function ProductPriceDialog({
   return (
     <dialog
       ref={dialog}
-      className="app-modal users-dialog users-dialog-fullscreen catalog-dialog"
+      className="app-modal users-dialog catalog-dialog compact-dialog"
       aria-labelledby="product-price-title"
       aria-busy={busy}
       onCancel={event => {
@@ -115,7 +116,8 @@ export default function ProductPriceDialog({
               maxLength={15}
               placeholder="Ej.: 2490,00"
               aria-describedby="product-price-help"
-              onChange={() => setValidation('')}
+              value={newPrice}
+              onChange={event => { setNewPrice(event.target.value); setValidation('') }}
             />
             <small id="product-price-help">
               Sin separador de miles. Hasta dos decimales.
@@ -123,8 +125,10 @@ export default function ProductPriceDialog({
           </label>
 
           <p className="catalog-full catalog-notice">
-            Al guardar se registrarán el precio anterior, el nuevo,
-            la fecha y tu usuario en el historial.
+            {newPrice.trim() && Number.isFinite(Number(newPrice.replace(',', '.')))
+              ? `Cambiarás el precio base de ${currency.format(Number(product.price))} a ${currency.format(Number(newPrice.replace(',', '.')))}.`
+              : 'Revisa el precio actual y el nuevo antes de confirmar.'}
+            {' '}Se aplicará en la tienda y el POS. El cambio quedará registrado con fecha y usuario.
           </p>
         </fieldset>
 
@@ -148,7 +152,7 @@ export default function ProductPriceDialog({
             className="users-button primary"
             disabled={busy}
           >
-            {busy ? 'Guardando…' : 'Guardar precio'}
+            {busy ? 'Guardando…' : 'Confirmar cambio de precio'}
           </button>
         </footer>
       </form>

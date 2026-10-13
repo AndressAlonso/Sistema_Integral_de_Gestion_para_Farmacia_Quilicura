@@ -23,7 +23,7 @@ import CustomerRegisterPage from '../pages/e6-ecommerce/pages/CustomerRegisterPa
 import CustomerLoginPage from '../pages/e6-ecommerce/pages/CustomerLoginPage'
 import EcommerceLayout from '../pages/e6-ecommerce/layouts/EcommerceLayout'
 import CartPage from '../pages/e6-ecommerce/pages/CartPage'
-import GuestContinuationPage from '../pages/e6-ecommerce/pages/GuestContinuationPage'
+import OrderConfirmationPage from '../pages/e6-ecommerce/pages/OrderConfirmationPage'
 import OrderHistoryPage from '../pages/e6-ecommerce/pages/OrderHistoryPage'
 
 function getAdminPage(path: string) {
@@ -60,11 +60,12 @@ export default function AppRouter() {
         />
         <Route element={<EcommerceLayout />}>
         <Route path="/tienda" element={<OnlineCatalogPage />} />
+        <Route path="/tienda/confirmar" element={<OrderConfirmationPage />} />
         <Route path="/tienda/productos/:productId" element={<ProductDetailPage />} />
         <Route path="/tienda/registro" element={<CustomerRegisterPage />} />
         <Route path="/tienda/iniciar-sesion" element={<CustomerLoginPage />} />
         <Route path="/tienda/carrito" element={<CartPage />} />
-        <Route path="/tienda/invitado" element={<GuestContinuationPage />} />
+        <Route path="/tienda/invitado" element={<Navigate to="/tienda/confirmar" replace />} />
         <Route path="/tienda/mis-pedidos" element={<OrderHistoryPage />} />
         </Route>
         <Route

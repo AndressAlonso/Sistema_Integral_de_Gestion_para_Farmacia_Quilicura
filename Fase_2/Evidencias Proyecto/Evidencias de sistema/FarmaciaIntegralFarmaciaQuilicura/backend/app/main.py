@@ -31,6 +31,7 @@ from app.inventory.repository import PostgresInventoryRepository
 from app.inventory.routes import router as inventory_router
 from app.inventory_adjustments.repository import AdjustmentRepository
 from app.inventory_adjustments.routes import router as adjustments_router
+from app.orders.routes import router as orders_router
 from app.pos.repository import PosRepository
 from app.pos.routes import router as pos_router
 from app.promotions.repository import PromotionRepository
@@ -133,6 +134,8 @@ def create_app(
             detail = (
                 "Revisa el código y los datos de vinculación del escáner."
             )
+        elif path.startswith("/api/customers/orders"):
+            detail = "Revisa los productos, cantidades, sucursal, nombre y correo, total y confirmación del pedido."
         elif path.startswith("/api/customers"):
             detail = "Revisa el nombre, el correo y la contraseña de entre 12 y 128 caracteres."
         elif path.startswith("/api/ecommerce/guest"):
@@ -247,6 +250,7 @@ def create_app(
     app.include_router(transfers_router)
     app.include_router(adjustments_router)
     app.include_router(pos_router)
+    app.include_router(orders_router)
     app.include_router(promotions_router)
     app.include_router(scanner_router)
     app.include_router(ecommerce_router)

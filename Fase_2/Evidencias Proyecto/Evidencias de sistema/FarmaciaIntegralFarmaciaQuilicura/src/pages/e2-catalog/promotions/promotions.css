@@ -13,3 +13,19 @@
   .promotions-panel { padding: 16px 12px; }
   .promotions-actions > button { width: 100%; }
 }
+
+.promotions-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+dialog.app-modal.promotions-dialog { width: min(900px, calc(100vw - 32px)); height: fit-content; max-height: calc(100dvh - 32px); padding: 24px; background: white; color: #183653; }
+.promotions-dialog::backdrop { background: #17243b65; }
+.promotions-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.promotions-dialog-heading h2 { font-size: 24px; margin: 0 0 6px; }
+.promotions-dialog-heading p { font-size: 13px; color: #65748e; }
+.promotions-dialog-heading > button { flex-shrink: 0; width: 44px; font-size: 24px; }
+.promotions-dialog .promotions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 18px 0; }
+.promotions-dialog .promotions-actions { justify-content: flex-end; position: sticky; bottom: -24px; padding: 16px 0; background: white; border-top: 1px solid #e5e1e9; }
+@media (max-width: 600px) {
+  dialog.app-modal.promotions-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 20px; }
+  .promotions-dialog .promotions-grid { grid-template-columns: minmax(0, 1fr); }
+  .promotions-dialog .promotions-actions { bottom: -20px; }
+  .promotions-heading > button { width: 100%; }
+}

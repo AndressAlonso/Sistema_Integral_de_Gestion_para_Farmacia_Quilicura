@@ -9,7 +9,7 @@ type HistoryState =
 
 export default function OrderHistoryState(props: HistoryState) {
   switch (props.state) {
-    case 'loading': return <p className="order-history-state" role="status">Consultando sesión de cliente…</p>
+    case 'loading': return <p className="order-history-state" role="status">Consultando tus pedidos…</p>
     case 'session-required': return <section className="order-history-state"><h1>Acceso requerido</h1><p>Inicia sesión como cliente para acceder a esta página.</p><Link to="/tienda/iniciar-sesion">Iniciar sesión</Link></section>
     case 'blocked': return <p className="order-history-state">El historial estará disponible cuando se habilite la creación de pedidos online</p>
     // Preparado para una consulta real; este estado no se utiliza en la página actual.

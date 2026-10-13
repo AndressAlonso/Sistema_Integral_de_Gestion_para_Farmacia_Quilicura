@@ -5,11 +5,9 @@ from app.models import (
     LoteInventario,
     Producto,
     Sucursal,
-    Transferencia,
-    TransferenciaDetalle,
-    TransferenciaLote,
 )
 from app.promotions.repository import PromotionRepository
+from app.transfers.repository import TransferRepository
 
 
 class CartRepository:
@@ -30,14 +28,7 @@ class CartRepository:
             )))
             inventory_ids = [row.id for row in inventories]
             lots = list(db.scalars(select(LoteInventario).where(LoteInventario.inventario_sucursal_id.in_(inventory_ids))))
-            reservations = dict(db.execute(select(
-                TransferenciaLote.lote_origen_id, func.sum(TransferenciaLote.cantidad),
-            ).join(TransferenciaDetalle, TransferenciaDetalle.id == TransferenciaLote.detalle_id)
-                .join(Transferencia, Transferencia.id == TransferenciaDetalle.transferencia_id)
-                .join(LoteInventario, LoteInventario.id == TransferenciaLote.lote_origen_id)
-                .where(Transferencia.estado.in_(("SOLICITADA", "AUTORIZADA")),
-                       LoteInventario.inventario_sucursal_id.in_(inventory_ids))
-                .group_by(TransferenciaLote.lote_origen_id)).all())
+            reservations = TransferRepository.reserved_lots_for(db, inventory_ids)
             promotions = PromotionRepository.pricing(db)
             now = db.scalar(select(func.current_timestamp()))
             return today, branches, products, inventories, lots, reservations, promotions, now

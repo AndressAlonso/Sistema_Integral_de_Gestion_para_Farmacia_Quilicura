@@ -19,7 +19,7 @@ export default function CartPage() {
   }, [])
   const missingBranch = draft.pickup_branch_id && !branches.some(b => b.id === draft.pickup_branch_id)
   return <main className="cart-page"><PublicHeader /><h1>Tu carrito</h1><Link to="/tienda">Seguir consultando el catálogo</Link>
-    <p className="cart-notice">La validación no reserva unidades. Los precios y la disponibilidad pueden cambiar. Todavía no se crean pedidos.</p>
+    <p className="cart-notice">La validación no reserva unidades. Los precios y la disponibilidad pueden cambiar. Las unidades se reservarán cuando confirmes el pedido.</p>
     <label className="cart-branch" htmlFor="cart-branch">Sucursal de retiro<select id="cart-branch" value={draft.pickup_branch_id ?? ''} onChange={e => selectBranch(e.target.value)}>
       <option value="">Selecciona una sucursal</option>
       {missingBranch && <option value={draft.pickup_branch_id ?? ''} disabled>Sucursal guardada no disponible: elige otra</option>}

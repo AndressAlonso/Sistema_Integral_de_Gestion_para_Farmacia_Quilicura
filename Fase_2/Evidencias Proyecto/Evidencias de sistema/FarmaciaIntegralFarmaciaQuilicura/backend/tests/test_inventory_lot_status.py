@@ -2,6 +2,11 @@
 from uuid import UUID
 
 import pytest
+from sqlalchemy import func, select
+from test_auth import login
+from test_receipt_review import blocked  # noqa: F401
+from test_transfers import destination_inventory, transfer  # noqa: F401
+
 from app.models import (
     EventoAuditoria,
     LoteInventario,
@@ -10,10 +15,6 @@ from app.models import (
     Rol,
     Transferencia,
 )
-from sqlalchemy import func, select
-from test_auth import login
-from test_receipt_review import blocked  # noqa: F401
-from test_transfers import destination_inventory, transfer  # noqa: F401
 
 
 @pytest.fixture

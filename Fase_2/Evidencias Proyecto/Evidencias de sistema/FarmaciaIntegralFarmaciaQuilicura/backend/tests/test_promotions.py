@@ -4,12 +4,13 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from app.pos.pricing import Promotion, best_price
-from app.promotions import routes
-from app.promotions.schemas import PromotionInput
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+
+from app.pos.pricing import Promotion, best_price
+from app.promotions import routes
+from app.promotions.schemas import PromotionInput
 
 NOW = datetime(2026, 10, 12, 12, tzinfo=timezone.utc)
 PRODUCT = uuid4()

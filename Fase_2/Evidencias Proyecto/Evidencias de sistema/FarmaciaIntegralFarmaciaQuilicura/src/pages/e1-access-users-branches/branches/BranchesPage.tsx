@@ -347,7 +347,7 @@ export default function BranchesPage() {
           role="region"
           aria-label="Listado de sucursales"
         >
-          <table className="branches-table">
+          <table className="branches-table responsive-admin-table">
             <thead>
               <tr>
                 <th scope="col">Sucursal</th>
@@ -359,7 +359,7 @@ export default function BranchesPage() {
               </tr>
             </thead>
 
-            <PaginatedTableBody total={filteredBranches.length} columns={5}>
+            <PaginatedTableBody total={filteredBranches.length} columns={5} labels={["Sucursal", "Código", "Dirección", "Usuarios asignados", "Estado"]}>
               {filteredBranches.map((branch) => (
                 <tr key={branch.id}>
                   <th scope="row">

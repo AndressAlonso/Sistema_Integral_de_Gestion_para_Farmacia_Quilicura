@@ -115,7 +115,7 @@ export default function BranchDialog({
   return (
     <dialog
       ref={dialog}
-      className="s1 s1-dialog branches-dialog app-modal"
+      className="s1 s1-dialog branches-dialog app-modal compact-dialog"
       aria-labelledby="branch-dialog-title"
       aria-busy={busy}
       onCancel={(event) => {

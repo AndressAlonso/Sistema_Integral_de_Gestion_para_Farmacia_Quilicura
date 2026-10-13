@@ -81,9 +81,9 @@ export default function TransferDetail({ transfer, initialAction, onClose, onCha
           : action === 'reject' ? 'Se liberarán las unidades reservadas. La solicitud y su historial se conservarán.'
           : action === 'dispatch' ? `Registra la salida de ${units(current)} unidades de ${current.origin_name} hacia ${current.destination_name}. Se descontarán del stock de ${current.origin_name} y quedarán en tránsito hasta confirmar su llegada.`
           : 'Escribe cuántas unidades llegaron físicamente al destino. Deben coincidir con las enviadas. Si hay diferencias o un lote bloqueado, no se completa la recepción y la transferencia sigue en tránsito.'}</p>
-        {action === 'reject' && <label className="transfer-wide">Motivo *<textarea required maxLength={250} value={reason} onChange={event => setReason(event.target.value)} /></label>}
+        {action === 'reject' && <label className="transfer-wide">Motivo *<textarea required maxLength={250} value={reason} onChange={event => { setReason(event.target.value); setConfirmed(false) }} /></label>}
         {action === 'receive' && current.items.map(item => <label key={item.product_id}>{item.product_name} — esperadas: {item.quantity}
-          <input type="number" required min={0} step={1} max={1000000} placeholder="Cantidad contada" value={counts[item.product_id] ?? ''} onChange={event => setCounts({ ...counts, [item.product_id]: event.target.value })} />
+          <input type="number" required min={0} step={1} max={1000000} placeholder="Cantidad contada" value={counts[item.product_id] ?? ''} onChange={event => { setCounts({ ...counts, [item.product_id]: event.target.value }); setConfirmed(false) }} />
         </label>)}
         <label className="users-checkbox transfer-wide"><input type="checkbox" required checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /> {action === 'dispatch' ? 'Confirmo que los productos ya salieron físicamente y coinciden con las cantidades indicadas.' : 'Confirmo la operación y las cantidades indicadas.'}</label>
       </fieldset>}

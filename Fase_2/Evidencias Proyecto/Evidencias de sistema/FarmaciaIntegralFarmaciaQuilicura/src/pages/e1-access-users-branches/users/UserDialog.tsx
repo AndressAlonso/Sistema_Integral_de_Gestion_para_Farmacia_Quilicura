@@ -80,6 +80,8 @@ export default function UserDialog({
   const deleting = mode === 'delete'
   const activating = mode === 'activate'
   const confirming = deactivating || activating || deleting
+  const accessChanged = mode === 'edit' && !!editor.user && (branchId !== editor.user.branch_id ||
+    JSON.stringify([...selectedRoles].sort()) !== JSON.stringify([...editor.user.role_ids].sort()))
   const emailConfirmed = confirmationEmail.trim().toLowerCase() === editor.user?.email.toLowerCase()
 
   useEffect(() => {
@@ -351,56 +353,6 @@ export default function UserDialog({
               </>
             )}
 
-            <fieldset
-              className="users-role-fields"
-              disabled={!canAssignRoles}
-            >
-              <legend>Roles *</legend>
-
-              <p className="users-role-help">
-                Selecciona uno o más roles. Sus permisos se suman.
-                La descripción indica su responsabilidad; las funciones pendientes aún no están disponibles.
-              </p>
-
-              {roles.map((role) => (
-                <div className={`users-role-card${selectedRoles.includes(role.id) ? ' selected' : ''}`} key={role.id}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={selectedRoles.includes(
-                      role.id,
-                    )}
-                    onChange={(event) => {
-                      setSelectedRoles((current) =>
-                        event.target.checked
-                          ? [...current, role.id]
-                          : current.filter(
-                              (id) => id !== role.id,
-                            ),
-                      )
-
-                      setValidation('')
-                    }}
-                  />
-
-                  <strong>{role.name}</strong>
-                </label>
-                <p>{role.description}</p>
-                <span className="users-role-permissions-title">Permisos configurados</span>
-                {role.permissions.length > 0 ? (
-                  <ul>
-                    {role.permissions.map((permission) => (
-                      <li key={permission.code}>
-                        {permission.description}
-                        <small>{permission.implemented ? 'Disponible' : 'Módulo pendiente'}</small>
-                      </li>
-                    ))}
-                  </ul>
-                ) : <small>Sus permisos operativos se habilitarán al implementar los módulos correspondientes.</small>}
-                </div>
-              ))}
-            </fieldset>
-
             <label>
               Sucursal
 
@@ -444,6 +396,59 @@ export default function UserDialog({
               )}
             </label>
 
+            <fieldset
+              className="users-role-fields"
+              disabled={!canAssignRoles}
+            >
+              <legend>Roles *</legend>
+
+              <p className="users-role-help">
+                Selecciona uno o más roles. Sus permisos se suman.
+                Abre el detalle si necesitas consultar sus permisos.
+              </p>
+
+              {roles.map((role) => (
+                <div className={`users-role-card${selectedRoles.includes(role.id) ? ' selected' : ''}`} key={role.id}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={selectedRoles.includes(
+                      role.id,
+                    )}
+                    onChange={(event) => {
+                      setSelectedRoles((current) =>
+                        event.target.checked
+                          ? [...current, role.id]
+                          : current.filter(
+                              (id) => id !== role.id,
+                            ),
+                      )
+
+                      setValidation('')
+                    }}
+                  />
+
+                  <strong>{role.name}</strong>
+                </label>
+                <p>{role.description}</p>
+                <details className="users-role-details">
+                  <summary>Ver detalle de permisos ({role.permissions.length})</summary>
+                <span className="users-role-permissions-title">Permisos configurados</span>
+                {role.permissions.length > 0 ? (
+                  <ul>
+                    {role.permissions.map((permission) => (
+                      <li key={permission.code}>
+                        {permission.description}
+                        <small>{permission.implemented ? 'Disponible' : 'Módulo pendiente'}</small>
+                      </li>
+                    ))}
+                  </ul>
+                ) : <small>Sus permisos operativos se habilitarán al implementar los módulos correspondientes.</small>}
+                </details>
+                </div>
+              ))}
+            </fieldset>
+
             {creating && (
               <label className="users-checkbox">
                 <input
@@ -460,6 +465,13 @@ export default function UserDialog({
           </fieldset>
         )}
 
+        {accessChanged && <section className="users-delete-summary" aria-label="Revisión de cambios de acceso">
+          <strong>Revisa los cambios de acceso de {editor.user?.name || editor.user?.email}</strong>
+          <p>Roles anteriores: {roles.filter(role => editor.user?.role_ids.includes(role.id)).map(role => role.name).join(', ') || 'Sin roles'}.</p>
+          <p>Roles nuevos: {roles.filter(role => selectedRoles.includes(role.id)).map(role => role.name).join(', ') || 'Sin roles'}.</p>
+          <p>Sucursal: {editor.user?.branch_name} → {branches.find(branch => branch.id === branchId)?.name || 'Sin sucursal'}.</p>
+          <p>Al confirmar se actualizarán sus permisos y la sucursal utilizada para sus operaciones.</p>
+        </section>}
         {confirming && <p className="users-account-note">Esta acción no guarda los cambios pendientes en los datos del formulario.</p>}
 
         {(error || validation) && (
@@ -489,7 +501,7 @@ export default function UserDialog({
               ? 'Guardando...'
               : activating ? 'Activar cuenta' : deleting ? 'Eliminar definitivamente' : deactivating
                 ? 'Desactivar cuenta'
-                : 'Guardar usuario'}
+                : accessChanged ? 'Confirmar cambios de acceso' : creating ? 'Crear usuario' : 'Guardar usuario'}
           </button>
         </div>
       </form>

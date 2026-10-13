@@ -4,7 +4,7 @@ import type { CartDraft, CartValidation } from '../types/cart'
 export interface CartState {
   draft: CartDraft; validation: CartValidation | null; loading: boolean; error: string
   add: (id: string) => Promise<string | null>; change: (id: string, quantity: number) => void
-  remove: (id: string) => void; selectBranch: (id: string) => void; refresh: () => void
+  remove: (id: string) => void; selectBranch: (id: string) => void; clear: () => void; refresh: () => void
 }
 export const CartContext = createContext<CartState | null>(null)
 export function useCart() {

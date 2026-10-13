@@ -1,12 +1,13 @@
+import type { AppliedPromotion } from '../e6-ecommerce/types/promotion'
 import { ApiError, apiRequest } from '../../services/http'
 
-export type Product = { id: string; name: string; sku: string; price: string; available: number; requires_prescription: boolean }
+export type Product = { id: string; name: string; sku: string; price: string; base_price?: string; promotion?: AppliedPromotion | null; available: number; requires_prescription: boolean }
 export type Item = { product_id: string; quantity: number }
 export type SoldLot = { sale_lot_id: string; number: string; expires_at: string; quantity: number; returnable: number }
-export type Line = Item & { name: string; sku: string; base_price: string; price: string; total: string; promotion: { name: string } | null; lots?: SoldLot[] }
+export type Line = Item & { name: string; sku: string; base_price: string; price: string; total: string; promotion: AppliedPromotion | null; lots?: SoldLot[] }
 export type Quote = { items: Line[]; subtotal: string; discount: string; total: string; version: string }
 export type Payment = 'EFECTIVO' | 'DEBITO' | 'CREDITO' | 'TRANSFERENCIA'
-export type Summary = { payments: Record<Payment, string>; refunds: Record<Payment, string>; sales_count: number; total: string; average_ticket: string; expected_cash: string; version: string; counted_cash?: string; difference?: string }
+export type Summary = { payments: Record<Payment, string>; refunds: Record<Payment, string>; sales_count: number; total: string; subtotal?: string; discount?: string; average_ticket: string; expected_cash: string; version: string; counted_cash?: string; difference?: string }
 export type Cash = { id: string; opened_at: string; initial_amount: string; closed_at: string | null; summary: Summary | null }
 export type Receipt = Omit<Quote, 'version'> & { id: string; date: string; branch: string; cashier: string; payment: Payment; notice: string }
 export type SaleRequest = { request_id: string; items: Item[]; payment: Payment; quote_version: string }

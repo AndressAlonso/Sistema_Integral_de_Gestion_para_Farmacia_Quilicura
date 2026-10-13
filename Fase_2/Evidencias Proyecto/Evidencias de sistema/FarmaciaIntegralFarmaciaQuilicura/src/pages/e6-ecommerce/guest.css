@@ -14,3 +14,8 @@
 .guest-back { display: inline-block; margin-top: 24px; }
 .guest-page :is(a, button, input):focus-visible, .guest-continuation a:focus-visible { outline: 3px solid var(--brand-purple); outline-offset: 4px; }
 @media (max-width:600px) { .guest-page { padding: 0 16px 32px; } }
+
+.guest-form:has(.guest-review) { max-width: 760px; }
+.guest-form .guest-review { margin: 0; box-shadow: none; background: #f8f7f9; }
+.guest-form .lot-status-confirm { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; }
+.guest-form .lot-status-confirm input { width: 18px; min-height: 18px; margin-top: 4px; flex-shrink: 0; }

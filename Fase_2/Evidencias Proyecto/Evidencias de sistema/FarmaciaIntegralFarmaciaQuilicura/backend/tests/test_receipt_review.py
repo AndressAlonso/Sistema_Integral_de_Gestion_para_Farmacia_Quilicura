@@ -3,6 +3,15 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import pytest
+from sqlalchemy import func, select
+from test_auth import login
+from test_transfers import (  # noqa: F401
+    change,
+    destination_inventory,
+    transfer,
+    transit,
+)
+
 from app.models import (
     EventoAuditoria,
     InventarioSucursal,
@@ -11,14 +20,6 @@ from app.models import (
     Permiso,
     Rol,
     Transferencia,
-)
-from sqlalchemy import func, select
-from test_auth import login
-from test_transfers import (  # noqa: F401
-    change,
-    destination_inventory,
-    transfer,
-    transit,
 )
 
 

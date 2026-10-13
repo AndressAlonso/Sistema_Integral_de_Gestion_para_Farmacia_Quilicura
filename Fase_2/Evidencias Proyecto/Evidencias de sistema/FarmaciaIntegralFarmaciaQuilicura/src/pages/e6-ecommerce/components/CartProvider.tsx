@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { CartContext } from '../hooks/useCart'
 import { validateCart } from '../services/cart.api'
 import type { CartDraft, CartValidation } from '../types/cart'
@@ -39,10 +39,11 @@ export default function CartProvider({ children }: { children: ReactNode }) {
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [draft, attempt])
-  function update(next: CartDraft) {
+  const update = useCallback((next: CartDraft) => {
     current.current = next
     setDraft(next); setValidation(null); setLoading(true); setError('')
-  }
+  }, [])
+  const clear = useCallback(() => update(empty), [update])
   async function add(id: string): Promise<string | null> {
     if (adding.current) return 'Espera mientras confirmamos el producto.'
     const original = current.current
@@ -65,6 +66,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
     change: (id, quantity) => { if (Number.isInteger(quantity) && quantity >= 1 && quantity <= 99) update({ ...current.current, items: current.current.items.map(i => i.product_id === id ? { ...i, quantity } : i) }) },
     remove: id => update({ ...current.current, items: current.current.items.filter(i => i.product_id !== id) }),
     selectBranch: id => update({ ...current.current, pickup_branch_id: id || null }),
+    clear,
     refresh: () => { setValidation(null); setLoading(true); setError(''); setAttempt(a => a + 1) },
   }}>{children}</CartContext.Provider>
 }

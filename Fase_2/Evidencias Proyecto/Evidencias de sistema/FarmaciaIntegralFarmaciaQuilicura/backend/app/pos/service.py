@@ -103,15 +103,20 @@ class PosService:
                 .order_by(Producto.id)
                 .limit(50)
             ).all()
+            promotions = self.promotions + (self.promotion_provider(db) if self.promotion_provider else ())
+            now = datetime.now(timezone.utc)
             result = []
             for product in rows:
                 _, _, available = self.availability(db, product.id, actor.branch_id)
+                price, promotion = best_price(product.precio_actual, product.id, product.categoria_id, now, promotions)
                 result.append(
                     {
                         "id": str(product.id),
                         "name": product.nombre,
                         "sku": product.sku,
-                        "price": str(product.precio_actual),
+                        "base_price": str(product.precio_actual),
+                        "price": str(price),
+                        "promotion": promotion,
                         "available": available,
                         "requires_prescription": product.requiere_receta,
                     }
@@ -257,6 +262,8 @@ class PosService:
             "payments": {key: str(money(amount)) for key, amount in totals.items()},
             "refunds": {key: str(money(amount)) for key, amount in refunds.items()},
             "sales_count": len(sales),
+            "subtotal": str(money(sum((sale.subtotal for sale in sales), Decimal(0)))),
+            "discount": str(money(sum((sale.descuento for sale in sales), Decimal(0)))),
             "total": str(money(total)),
             "average_ticket": str(money(total / len(sales))) if sales else "0.00",
             "expected_cash": str(
@@ -323,8 +330,6 @@ class PosService:
                         409, "La solicitud ya fue utilizada para otra venta."
                     )
                 return self.receipt_data(db, existing)
-            if data.payment == "TRANSFERENCIA":
-                raise PosError(422, "Selecciona efectivo o tarjeta (débito/crédito).")
             self.branch(db, actor)
             cash = self.repo.current_cash(db, actor)
             if cash is None:

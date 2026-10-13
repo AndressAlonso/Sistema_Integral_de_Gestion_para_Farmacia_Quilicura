@@ -6,7 +6,13 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import InventarioSucursal, SesionCaja, Sucursal, Transferencia, UsuarioInterno
+from app.models import (
+    InventarioSucursal,
+    SesionCaja,
+    Sucursal,
+    Transferencia,
+    UsuarioInterno,
+)
 
 
 class Branch(BaseModel):
@@ -30,6 +36,10 @@ class BranchNotFound(Exception):
 
 
 class BranchInUse(Exception):
+    pass
+
+
+class BranchPendingOrders(Exception):
     pass
 
 
@@ -253,6 +263,18 @@ class PostgresBranchRepository:
             ).limit(1))
             if pending is not None:
                 raise BranchPendingTransfers
+
+            from app.models import LoteInventario
+            from app.orders.models import PedidoOnline, ReservaPedido
+            reserved_origin = select(ReservaPedido.pedido_id).join(
+                LoteInventario, LoteInventario.id == ReservaPedido.lote_id
+            ).join(InventarioSucursal, InventarioSucursal.id == LoteInventario.inventario_sucursal_id).where(
+                InventarioSucursal.sucursal_id == branch_id, ReservaPedido.activa.is_(True))
+            if db.scalar(select(PedidoOnline.id).where(
+                PedidoOnline.estado == "PENDIENTE_PAGO",
+                (PedidoOnline.sucursal_id == branch_id) | PedidoOnline.id.in_(reserved_origin)
+            ).limit(1)) is not None:
+                raise BranchPendingOrders
 
             active_users = db.scalar(
                 select(func.count())

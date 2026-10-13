@@ -76,3 +76,23 @@
   gap: 12px;
   margin: 20px 0;
 }
+.pos-price { min-width: 0; text-align: left; overflow-wrap: anywhere; }
+.pos-price .promotion-price-block { margin: 4px 0; }
+.pos-price .promotion-final { font-size: 1.15rem; }
+.pos-price .promotion-original { font-size: .8rem; }
+.pos-price .promotion-badge { margin: 5px 0 2px; font-size: .75rem; }
+.pos-price .promotion-saving { font-size: .8rem; }
+.pos-promotion-label { display: inline-block; color: #65217c; font-size: .8rem; }
+.pos-promotion-total { background: #f3ebf7; border-radius: 8px; color: #65217c; padding: 10px 12px; }
+.pos-product-pricing { flex: 0 1 210px; min-width: 140px; }
+.pos-product-pricing .pos-price { text-align: right; }
+.pos-cart-row .pos-price { margin-top: 8px; }
+@media (max-width: 600px) { .pos-product-pricing { flex: 1 1 100%; } .pos-product-pricing .pos-price { text-align: left; } }
+
+.pos-discount-section { border-color: #dec9e8; }
+.pos-discount-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.pos-discount-metrics > div:nth-child(2) { color: #65217c; border-color: #b88bc7; }
+.pos-discount-metrics > div:nth-child(2) span { color: #65217c; }
+@media (max-width: 600px) { .pos-discount-metrics { grid-template-columns: 1fr; } }
+
+.pos-close-difference { padding: 16px; border: 1px solid #e5b788; border-radius: 10px; background: #fff5e7; color: #79480e; display: grid; gap: 8px; }

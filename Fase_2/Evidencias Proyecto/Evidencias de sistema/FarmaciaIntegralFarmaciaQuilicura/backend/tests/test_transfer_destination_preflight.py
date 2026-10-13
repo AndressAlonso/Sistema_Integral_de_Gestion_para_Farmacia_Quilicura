@@ -3,14 +3,15 @@ from datetime import timedelta
 from uuid import UUID
 
 import pytest
+from sqlalchemy import func, select
+from test_transfers import change, create, stocks, transfer  # noqa: F401
+
 from app.models import (
     InventarioSucursal,
     LoteInventario,
     MovimientoInventario,
     Transferencia,
 )
-from sqlalchemy import func, select
-from test_transfers import change, create, stocks, transfer  # noqa: F401
 
 
 def add_destination(ctx, active=True, different=False):

@@ -34,6 +34,7 @@ beforeEach(() => {
       if (initialSession) return initialSession
       return authenticated ? json(session) : new Response(null, { status: 401 })
     }
+    if (path.startsWith('/api/customers/orders')) return json({ orders: [], next_cursor: null })
     if (path === '/api/customers/login') { authenticated = true; return json(session) }
     if (path === '/api/customers/logout') { authenticated = false; return new Response(null, { status: 204 }) }
     if (path === '/api/ecommerce/cart/validate') {
@@ -59,9 +60,9 @@ describe('Sesión compartida del ecommerce', () => {
     await screen.findByText(session.customer.name)
     expect(screen.getByRole('link', { name: 'Mis pedidos' })).toBeTruthy()
     expect(requests.filter(path => path === 'GET /api/customers/me')).toHaveLength(1)
-    if (section === 'cart') expect(screen.getByText(/Continuarás con tu cuenta/)).toBeTruthy()
+    if (section === 'cart') expect(screen.getByText(/Confirma los productos y reserva/)).toBeTruthy()
     if (section === 'guest') expect(screen.getByText(/Hay una sesión de cliente activa/)).toBeTruthy()
-    if (section === 'history') expect(screen.getByText(/El historial estará disponible/)).toBeTruthy()
+    if (section === 'history') await screen.findByText(/No se encontraron pedidos/)
     const documentBefore = document.documentElement
     const locationBefore = window.location.href
     const beforeUnload = vi.fn()
@@ -75,7 +76,7 @@ describe('Sesión compartida del ecommerce', () => {
       expect(screen.getByRole('link', { name: 'Acceso interno' })).toBeTruthy()
       if (section === 'cart') {
         expect(screen.getByText('Continuar sin cuenta')).toBeTruthy()
-        expect(screen.queryByText(/Continuarás con tu cuenta/)).toBeNull()
+        expect(screen.queryByText(/Confirma los productos y reserva/)).toBeNull()
       }
       if (section === 'guest') {
         expect(screen.getByRole('textbox', { name: /Nombre/ })).toBeTruthy()
@@ -87,7 +88,7 @@ describe('Sesión compartida del ecommerce', () => {
       }
       expect(requests.filter(path => path.includes('logout'))).toEqual(['POST /api/customers/logout'])
       expect(requests.some(path => path.includes('/api/auth/'))).toBe(false)
-      expect(requests.some(path => path.includes('/orders'))).toBe(false)
+      expect(requests.some(path => path.includes('/orders'))).toBe(section === 'history')
       expect(requests.filter(path => path === 'GET /api/customers/me')).toHaveLength(1)
       expect(document.documentElement).toBe(documentBefore)
       expect(window.location.href).toBe(locationBefore)
