@@ -189,12 +189,41 @@ def test_legacy_lot_cannot_duplicate_received_units(receipt):
         inventory_id = str(inventory(db, receipt).id)
     data = {"inventory_id": inventory_id, "lot_number": "DUPLICADO",
             "expiration_date": receipt.payload["items"][0]["expiration_date"], "quantity": 1}
-    assert receipt.client.post("/api/inventory/lots", json=data).status_code == 409
+    response = receipt.client.post("/api/inventory/lots", json=data)
+    assert response.status_code == 409
+    assert "Recepción de mercadería" in response.json()["detail"]
     with receipt.factory() as db:
+        assert inventory(db, receipt).stock_fisico == 50
         assert db.scalar(select(func.count()).select_from(LoteInventario).where(
             LoteInventario.inventario_sucursal_id == UUID(inventory_id))) == 1
         assert db.scalar(select(func.count()).select_from(MovimientoInventario).where(
             MovimientoInventario.referencia_id == UUID(receipt.payload["request_id"]))) == 1
+
+
+def test_multiple_products_and_lots_keep_independent_quantities(receipt):
+    with receipt.factory.begin() as db:
+        original = db.get(Producto, receipt.product_id)
+        other = Producto(sku="OTHER-" + receipt.suffix, nombre=original.nombre, descripcion="",
+                         categoria_id=original.categoria_id, precio_actual=1000,
+                         activo=True, publicado_online=False, requiere_receta=False)
+        db.add(other)
+        db.flush()
+        other_id = other.id
+    first = receipt.payload["items"][0]
+    items = [first, first | {"lot_number": "OTRO-LOTE", "quantity": 10},
+             first | {"product_id": str(other_id), "quantity": 7}]
+    result = receipt.client.post(URL, json=receipt.payload | {"items": items})
+    assert result.status_code == 201, result.text
+    with receipt.factory() as db:
+        original = inventory(db, receipt)
+        other = db.scalar(select(InventarioSucursal).where(
+            InventarioSucursal.producto_id == other_id,
+            InventarioSucursal.sucursal_id == receipt.ids["branch"]))
+        assert original.stock_fisico == sum(lot.cantidad for lot in original.lotes) == 60
+        assert len(original.lotes) == 2
+        assert other.stock_fisico == other.lotes[0].cantidad == 7
+        assert len(other.lotes) == 1
+        assert len(original.movimientos) + len(other.movimientos) == 3
 
 
 @pytest.mark.parametrize("same_request", [False, True])

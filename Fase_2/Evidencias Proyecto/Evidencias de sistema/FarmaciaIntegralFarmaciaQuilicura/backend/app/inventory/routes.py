@@ -15,6 +15,13 @@ from app.auth.routes import (
     check_origin,
 )
 from app.auth.users import User
+from app.inventory.lot_status import (
+    DisableLot,
+    LotReactivationResult,
+    LotStatusResponse,
+    LotStatusService,
+    ReactivateLot,
+)
 from app.inventory.schemas import (
     CreateInventoryLot,
     ExpirationAlertListResponse,
@@ -29,7 +36,6 @@ from app.inventory.service import (
     AccessDenied,
     InvalidExpirationAlertDays,
     InvalidMovementDateRange,
-    InventoryLotAlreadyExists,
     InventoryNotFound,
     InventoryService,
 )
@@ -321,37 +327,10 @@ def create_lot(
     actor: LotManager,
 ):
     check_origin(request)
-
-    try:
-        return service(request).create_lot(
-            actor,
-            data,
-        )
-    except AccessDenied:
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                "No tienes permiso para gestionar "
-                "lotes de inventario."
-            ),
-        ) from None
-    except InventoryNotFound:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                "No existe el registro de inventario "
-                "seleccionado."
-            ),
-        ) from None
-    except InventoryLotAlreadyExists:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Ya existe un lote con ese número para "
-                "el producto y la sucursal seleccionados."
-            ),
-        ) from None
-
+    raise HTTPException(
+        status_code=409,
+        detail="Registra el lote y sus cantidades desde Recepción de mercadería, con proveedor y documento.",
+    )
 
 @router.get(
     "/{inventory_id}/lots",
@@ -379,3 +358,19 @@ def list_inventory_lots(
     return {
         "lots": lots,
     }
+
+@router.get("/lots/{lot_id}/status", response_model=LotStatusResponse)
+def lot_status(lot_id: UUID, request: Request, actor: Reader):
+    return LotStatusService(request.app.state.inventory.session_factory).get(actor, lot_id)
+
+
+@router.post("/lots/{lot_id}/reactivate", response_model=LotReactivationResult)
+def reactivate_lot(lot_id: UUID, data: ReactivateLot, request: Request, actor: LotManager):
+    check_origin(request)
+    return LotStatusService(request.app.state.inventory.session_factory).reactivate(actor, lot_id, data)
+
+
+@router.post("/lots/{lot_id}/disable", response_model=LotReactivationResult)
+def disable_lot(lot_id: UUID, data: DisableLot, request: Request, actor: LotManager):
+    check_origin(request)
+    return LotStatusService(request.app.state.inventory.session_factory).disable(actor, lot_id, data)

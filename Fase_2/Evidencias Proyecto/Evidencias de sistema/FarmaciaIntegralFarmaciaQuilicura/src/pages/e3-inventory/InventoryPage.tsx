@@ -3,7 +3,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 
 import { ApiError } from '../../services/http'
 import ExpirationAlertsPanel from './ExpirationAlertsPanel'
@@ -14,6 +14,10 @@ import {
 } from './inventory.api'
 import InventoryTable from './InventoryTable'
 import LotPanel from './LotPanel'
+import type { AuthSession } from '../e1-access-users-branches/auth/login.api'
+import StockOperationDialog from '../e4-transfers/StockOperationDialog'
+import '../e1-access-users-branches/users/users.css'
+import '../e4-transfers/transfers.css'
 import './InventoryPage.css'
 
 type InventoryTab =
@@ -31,10 +35,18 @@ function normalize(value: string): string {
 
 export default function InventoryPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const session = useOutletContext<AuthSession>()
+  const [operation, setOperation] = useState<'receipt' | 'adjustment' | null>(null)
+  const [revision, setRevision] = useState(0)
+  const [message, setMessage] = useState('')
+  const canReceive = session.user.permissions.includes('inventario.registrar_entrada')
+  const canAdjust = session.user.permissions.includes('inventario.ajustar')
+    && session.user.roles.some(role => ['ADMINISTRADOR', 'ENCARGADO_INVENTARIO'].includes(role))
 
   const [activeTab, setActiveTab] = useState<
     InventoryTab
-  >('availability')
+  >(() => searchParams.get('tab') === 'lots' ? 'lots' : 'availability')
 
   const [inventoryRecords, setInventoryRecords] =
     useState<InventoryRecord[]>([])
@@ -94,7 +106,7 @@ export default function InventoryPage() {
     return () => {
       active = false
     }
-  }, [navigate])
+  }, [navigate, revision])
 
   const branches = useMemo(() => {
     const uniqueBranches = new Map<
@@ -209,45 +221,18 @@ export default function InventoryPage() {
   return (
     <div className="inventory-app">
       <main className="inventory-main">
-        <div className="inventory-title-row">
+        <header className="inventory-title-row inventory-heading">
           <div>
-            <p className="eyebrow">
-              INVENTARIO
-            </p>
-
-            <h1>
-              Control de productos por sucursal
-            </h1>
-
-            <p className="inventory-description">
-              Consulta las unidades disponibles, administra
-              los lotes y revisa próximos vencimientos e
-              historial de stock.
-            </p>
+            <p className="eyebrow">CONTROL DE EXISTENCIAS</p>
+            <h1>Inventario</h1>
+            <p className="inventory-description">Consulta cantidades por sucursal, revisa lotes y registra entradas o ajustes.</p>
           </div>
-
-          <div className="inventory-statuses">
-            <span className="read-only">
-              Consulta y trazabilidad
-            </span>
-
-            <span className="inventory-updated">
-              Datos actualizados
-            </span>
+          <div className="inventory-heading-actions">
+            {canAdjust && <button type="button" className="users-button" onClick={() => setOperation('adjustment')}>Ajustar inventario</button>}
+            {canReceive && <button type="button" className="users-button primary" onClick={() => setOperation('receipt')}>+ Crear lotes / recibir mercadería</button>}
           </div>
-        </div>
-
-        <div className="inventory-notice">
-          <span aria-hidden="true">
-            ⓘ
-          </span>
-
-          <p>
-            Selecciona una sección para revisar la
-            disponibilidad, administrar lotes, consultar
-            vencimientos o ver el historial del inventario.
-          </p>
-        </div>
+        </header>
+        {message && <p className="users-success" role="status">{message}</p>}
 
         <nav
           className="inventory-tabs"
@@ -322,6 +307,8 @@ export default function InventoryPage() {
             role="tabpanel"
             aria-labelledby="inventory-tab-availability"
           >
+            <details className="inventory-stock-help">
+              <summary>Disponible = físico − reservado <span>Ver explicación</span></summary>
             <section
               className="stock-guide"
               aria-label="Cómo se interpreta el stock"
@@ -368,12 +355,13 @@ export default function InventoryPage() {
                 </h2>
 
                 <p>
-                  Unidades que pueden utilizarse en nuevas
-                  operaciones. Se calcula restando las
-                  unidades reservadas.
+                  Stock físico menos unidades reservadas.
+                  Antes de una salida también se comprueba
+                  que los lotes estén habilitados y no vencidos.
                 </p>
               </div>
             </section>
+            </details>
 
             <section
               className="inventory-panel"
@@ -399,68 +387,13 @@ export default function InventoryPage() {
                 </span>
               </div>
 
-              <div className="inventory-filters">
-                <div className="search-field">
-                  <label htmlFor="product-search">
-                    Buscar en el inventario
-                  </label>
-
-                  <input
-                    id="product-search"
-                    type="search"
-                    placeholder={
-                      'Nombre, SKU, sucursal, '
-                      + 'código o estado'
-                    }
-                    value={query}
-                    onChange={(event) => {
-                      setQuery(event.target.value)
-                    }}
-                  />
-                </div>
-
-                <div className="branch-field">
-                  <label htmlFor="branch">
-                    Sucursal
-                  </label>
-
-                  <select
-                    id="branch"
-                    value={branchId}
-                    onChange={(event) => {
-                      setBranchId(event.target.value)
-                    }}
-                  >
-                    <option value="">
-                      Todas las sucursales
-                    </option>
-
-                    {branches.map((branch) => (
-                      <option
-                        key={branch.id}
-                        value={branch.id}
-                      >
-                        {branch.name} ({branch.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  type="button"
-                  className="clear-button"
-                  disabled={!branchId && !query}
-                  onClick={() => {
-                    setBranchId('')
-                    setQuery('')
-                  }}
-                >
-                  Limpiar filtros
-                </button>
-              </div>
-
               <InventoryTable
                 records={records}
+                productFilter={<input type="search" aria-label="Buscar producto por nombre o SKU" placeholder="Nombre o SKU…" value={query} onChange={event => setQuery(event.target.value)} />}
+                branchFilter={<div className="lot-branch-options" aria-label="Filtrar disponibilidad por sucursal">
+                  <button type="button" aria-pressed={!branchId} onClick={() => setBranchId('')}>Todas</button>
+                  {branches.map(branch => <button type="button" key={branch.id} aria-pressed={branchId === branch.id} onClick={() => setBranchId(branch.id)}>{branch.name}</button>)}
+                </div>}
                 onRecordUpdated={
                   handleRecordUpdated
                 }
@@ -491,6 +424,9 @@ export default function InventoryPage() {
             aria-labelledby="inventory-tab-lots"
           >
             <LotPanel
+              targetLotId={searchParams.get('lot_id') ?? undefined}
+              returnTransferId={searchParams.get('transfer_id') ?? undefined}
+              key={revision}
               inventoryRecords={inventoryRecords}
             />
           </div>
@@ -504,6 +440,7 @@ export default function InventoryPage() {
             aria-labelledby="inventory-tab-expiration"
           >
             <ExpirationAlertsPanel
+              key={revision}
               inventoryRecords={inventoryRecords}
             />
           </div>
@@ -517,6 +454,7 @@ export default function InventoryPage() {
             aria-labelledby="inventory-tab-history"
           >
             <InventoryMovementHistory
+              key={revision}
               inventoryRecords={inventoryRecords}
             />
           </div>
@@ -532,6 +470,9 @@ export default function InventoryPage() {
             Inventario multisucursal y trazabilidad
           </span>
         </footer>
+        {operation && <StockOperationDialog userId={session.user.id} canReceive={canReceive}
+          initialOperation={operation} onClose={() => setOperation(null)}
+          onSaved={text => { setOperation(null); setMessage(text); setLoading(true); setError(''); setRevision(value => value + 1) }} />}
       </main>
     </div>
   )

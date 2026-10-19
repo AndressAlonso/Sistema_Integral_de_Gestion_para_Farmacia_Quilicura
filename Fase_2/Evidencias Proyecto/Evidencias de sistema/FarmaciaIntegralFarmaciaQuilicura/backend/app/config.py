@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Literal
+from uuid import UUID
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -17,7 +18,15 @@ class Settings(BaseSettings):
     jwt_algorithm: Literal["HS256"] = "HS256"
     access_token_expire_minutes: int = Field(default=540, ge=1, le=1440)
     cookie_secure: bool = False
+    app_environment: Literal["development", "production"] = "production"
+    pos_demo_product_id: UUID | None = None
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+    @model_validator(mode="after")
+    def demo_only_in_development(self):
+        if self.pos_demo_product_id is not None and self.app_environment != "development":
+            raise ValueError("Las promociones de demostración requieren APP_ENVIRONMENT=development")
+        return self
 
     @field_validator("jwt_secret_key")
     @classmethod

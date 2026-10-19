@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import ActionIcon from '../ActionIcon'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -140,7 +141,7 @@ export default function UsersPage() {
       <section className="users-panel" aria-labelledby="users-list-title">
         <div className="users-panel-heading"><h2 id="users-list-title">Usuarios internos</h2><p>Pulsa el nombre para gestionar la cuenta.</p><p role="status">{users.length} {users.length === 1 ? 'usuario encontrado' : 'usuarios encontrados'}</p></div>
         <div className="users-table-scroll" tabIndex={0} role="region" aria-label="Listado de usuarios internos">
-          <table className="users-table"><thead><tr><th scope="col">Usuario</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Sucursal</th><th scope="col">Estado</th></tr></thead><tbody>
+          <table className="users-table responsive-admin-table"><thead><tr><th scope="col">Usuario</th><th scope="col">Correo</th><th scope="col">Rol</th><th scope="col">Sucursal</th><th scope="col">Estado</th></tr></thead><PaginatedTableBody total={users.length} columns={5} labels={["Usuario", "Correo", "Rol", "Sucursal", "Estado"]}>
             {users.map(user => <tr key={user.id}>
               <th scope="row"><div className="users-name"><span className="users-initials" aria-hidden="true">{(user.name || user.email).split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</span><div><button type="button" className="users-open-profile" aria-label={`Abrir ficha de ${user.name || user.email}`} onClick={() => openEditor({ mode: 'edit', user })}>{user.name || 'Sin nombre registrado'}<ActionIcon name="edit" /></button><small title={user.id}>{user.id.slice(0, 8)}</small></div></div></th>
               <td>{user.email}</td><td>{user.roles.map(code => data.roles.find(item => item.code === code)?.name ?? code).join(', ') || 'Sin rol asignado'}</td>
@@ -148,7 +149,7 @@ export default function UsersPage() {
 
             </tr>)}
             {users.length === 0 && <tr><td colSpan={5} className="users-empty">No se encontraron usuarios con esos filtros.</td></tr>}
-          </tbody></table>
+          </PaginatedTableBody></table>
         </div>
       </section>
       {editor && <UserDialog key={`${editor.mode}-${editor.user?.id ?? 'new'}`} editor={editor} currentUserId={data.current_user.id} roles={data.roles} branches={data.branches} canAssignRoles={data.current_user.permissions.includes('roles.gestionar')} busy={busy} error={error} onClose={() => { if (!sending.current) setEditor(null) }} onSave={save} onActivate={activate} onDeactivate={deactivate} onDelete={remove} />}

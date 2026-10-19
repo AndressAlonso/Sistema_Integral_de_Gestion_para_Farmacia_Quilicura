@@ -16,6 +16,8 @@ type Props = {
 export default function CatalogDialog({ mode, categories, product, busy, error, onClose, onProduct, onCategory }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [validation, setValidation] = useState('')
+  const [active, setActive] = useState(product?.is_active ?? true)
+  const [published, setPublished] = useState(product?.published_online ?? false)
   const [requiresPrescription, setRequiresPrescription] = useState(product?.requires_prescription ?? false)
   const [selection, setSelection] = useState<{ file: File; url: string } | null>(null)
   const [removeImage, setRemoveImage] = useState(false)
@@ -61,7 +63,7 @@ export default function CatalogDialog({ mode, categories, product, busy, error, 
   }
 
   return (
-    <dialog ref={dialog} className="app-modal users-dialog users-dialog-fullscreen catalog-dialog"
+    <dialog ref={dialog} className={`app-modal users-dialog catalog-dialog ${isProduct ? "users-dialog-fullscreen" : "compact-dialog"}`}
       aria-labelledby="catalog-dialog-title" aria-busy={busy}
       onCancel={event => { event.preventDefault(); if (!busy) onClose() }}>
       <form onSubmit={submit} onChange={event => { if (!(event.target instanceof HTMLInputElement && event.target.type === 'file')) setValidation('') }}>
@@ -107,17 +109,23 @@ export default function CatalogDialog({ mode, categories, product, busy, error, 
             <h3 className="users-form-section">Identificación y disponibilidad</h3>
             <label className="catalog-full">Códigos de barras<textarea name="barcodes" defaultValue={product?.barcodes.join('\n') ?? ''} rows={3} spellCheck={false} autoComplete="off" aria-describedby="barcode-help" />
               <small id="barcode-help">Opcional. Escribe un código por línea; se conservan los ceros iniciales.</small></label>
-            <label className="users-checkbox"><input type="checkbox" name="is_active" defaultChecked={product?.is_active ?? true} />Producto activo</label>
-            <label className="users-checkbox"><input type="checkbox" name="published_online" defaultChecked={product?.published_online ?? false} />Publicado en catálogo online</label>
+            <label className="users-checkbox"><input type="checkbox" name="is_active" checked={active} onChange={event => setActive(event.target.checked)} />Producto activo</label>
+            <label className="users-checkbox"><input type="checkbox" name="published_online" checked={published} onChange={event => setPublished(event.target.checked)} />Publicado en catálogo online</label>
             <label className="users-checkbox"><input type="checkbox" name="requires_prescription" checked={requiresPrescription} onChange={event => setRequiresPrescription(event.target.checked)} />Requiere receta</label>
             {requiresPrescription && <p className="catalog-full catalog-notice">Los productos con receta pueden mostrarse online; su compra es presencial.</p>}
           </>}
           <p className="catalog-full catalog-help">* Campos obligatorios.</p>
         </fieldset>
+        {product && (active !== product.is_active || published !== product.published_online || requiresPrescription !== product.requires_prescription) && <section className="catalog-notice" aria-label="Revisión de disponibilidad del producto">
+          <strong>Revisa antes de confirmar</strong>
+          <p>{active ? 'El producto quedará activo.' : 'El producto quedará inactivo y no podrá utilizarse en ventas nuevas.'}</p>
+          <p>{published ? 'Estará publicado en el catálogo online si está activo.' : 'No estará publicado en el catálogo online.'}</p>
+          <p>{requiresPrescription ? 'Requerirá receta: podrá consultarse online, pero su compra será presencial.' : 'Quedará marcado sin receta.'}</p>
+        </section>}
         {(validation || error) && <p className="users-error" role="alert">{validation || error}</p>}
         <footer className="users-dialog-actions">
           <button type="button" className="users-button" disabled={busy} onClick={onClose}>Cancelar</button>
-          <button type="submit" className="users-button primary" disabled={busy}>{busy ? 'Guardando…' : isProduct ? (product ? 'Guardar cambios' : 'Crear producto') : 'Crear categoría'}</button>
+          <button type="submit" className="users-button primary" disabled={busy}>{busy ? 'Guardando…' : isProduct ? (product ? 'Confirmar cambios del producto' : 'Crear producto') : 'Crear categoría'}</button>
         </footer>
       </form>
     </dialog>

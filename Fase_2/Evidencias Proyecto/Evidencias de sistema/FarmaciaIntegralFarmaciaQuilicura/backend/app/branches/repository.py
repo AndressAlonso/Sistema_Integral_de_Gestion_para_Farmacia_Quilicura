@@ -6,7 +6,13 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import InventarioSucursal, Sucursal, Transferencia, UsuarioInterno
+from app.models import (
+    InventarioSucursal,
+    SesionCaja,
+    Sucursal,
+    Transferencia,
+    UsuarioInterno,
+)
 
 
 class Branch(BaseModel):
@@ -33,7 +39,15 @@ class BranchInUse(Exception):
     pass
 
 
+class BranchPendingOrders(Exception):
+    pass
+
+
 class BranchPendingTransfers(Exception):
+    pass
+
+
+class BranchOpenCash(Exception):
     pass
 
 
@@ -73,7 +87,8 @@ class PostgresBranchRepository:
         transfers = select(Transferencia.id).where(
             (Transferencia.origen_id == branch_id) | (Transferencia.destino_id == branch_id)
         ).exists()
-        return inventory | transfers
+        cash = select(SesionCaja.id).where(SesionCaja.sucursal_id == branch_id).exists()
+        return inventory | transfers | cash
 
     def _can_delete(self, db: Session, branch_id: UUID) -> bool:
         return not db.scalar(select(
@@ -236,12 +251,30 @@ class PostgresBranchRepository:
             if not row.activa:
                 return self._branch(db, row)
 
+            if db.scalar(select(SesionCaja.id).where(
+                SesionCaja.sucursal_id == branch_id,
+                SesionCaja.cierre_en.is_(None),
+            ).limit(1)) is not None:
+                raise BranchOpenCash
+
             pending = db.scalar(select(Transferencia.id).where(
                 ((Transferencia.origen_id == branch_id) | (Transferencia.destino_id == branch_id)),
                 Transferencia.estado.in_(("SOLICITADA", "AUTORIZADA", "EN_TRANSITO")),
             ).limit(1))
             if pending is not None:
                 raise BranchPendingTransfers
+
+            from app.models import LoteInventario
+            from app.orders.models import PedidoOnline, ReservaPedido
+            reserved_origin = select(ReservaPedido.pedido_id).join(
+                LoteInventario, LoteInventario.id == ReservaPedido.lote_id
+            ).join(InventarioSucursal, InventarioSucursal.id == LoteInventario.inventario_sucursal_id).where(
+                InventarioSucursal.sucursal_id == branch_id, ReservaPedido.activa.is_(True))
+            if db.scalar(select(PedidoOnline.id).where(
+                PedidoOnline.estado == "PENDIENTE_PAGO",
+                (PedidoOnline.sucursal_id == branch_id) | PedidoOnline.id.in_(reserved_origin)
+            ).limit(1)) is not None:
+                raise BranchPendingOrders
 
             active_users = db.scalar(
                 select(func.count())

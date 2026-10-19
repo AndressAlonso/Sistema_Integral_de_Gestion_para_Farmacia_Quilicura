@@ -20,11 +20,11 @@ function initial(key: string, kind: Operation): { draft: Draft; pending: boolean
     documentType: 'FACTURA', documentNumber: '', documentDate: new Date().toISOString().slice(0, 10), rows: [] } }
 }
 
-export default function StockOperationDialog({ userId, canReceive, onClose, onSaved }: {
-  userId: string; canReceive: boolean; onClose: () => void; onSaved: (message: string) => void
+export default function StockOperationDialog({ userId, canReceive, initialOperation, onClose, onSaved }: {
+  initialOperation?: Operation; userId: string; canReceive: boolean; onClose: () => void; onSaved: (message: string) => void
 }) {
   const key = `sigfq-stock-operation:${userId}`
-  const [start] = useState(() => initial(key, canReceive ? 'receipt' : 'adjustment'))
+  const [start] = useState(() => initial(key, initialOperation ?? (canReceive ? 'receipt' : 'adjustment')))
   const [draft, setDraft] = useState(start.draft)
   const [pending, setPending] = useState(start.pending)
   const [options, setOptions] = useState<OperationOptions | null>(null)
@@ -53,7 +53,7 @@ export default function StockOperationDialog({ userId, canReceive, onClose, onSa
     return () => { active = false }
   }, [attempt])
   const receipt = draft.kind === 'receipt'
-  const available = options?.lots.filter(lot => lot.branch_id === draft.branchId && (!receipt || lot.expiration_date > today)) ?? []
+  const available = options?.lots.filter(lot => lot.branch_id === draft.branchId && (!receipt || (lot.expiration_date > today && lot.is_active !== false && lot.product_active !== false))) ?? []
   const changed = draft.rows.filter(row => Number(row.quantity) !== row.lot.quantity)
   const count = receipt ? draft.rows.length : changed.length
   const permitted = receipt ? options?.can_receive : options?.can_adjust
@@ -146,7 +146,7 @@ export default function StockOperationDialog({ userId, canReceive, onClose, onSa
         <label className="transfer-wide">{receipt ? 'Producto del catálogo' : 'Producto / lote existente'}<select disabled={!draft.branchId} value={lotId} onChange={event => setLotId(event.target.value)}>
           <option value="">Selecciona para agregar una fila</option>{receipt
             ? products.map(product => <option key={product.id} value={product.id}>{product.name} · {product.sku}</option>)
-            : available.filter(lot => !draft.rows.some(row => row.lot.id === lot.id)).map(lot => <option key={lot.id} value={lot.id}>{lot.product_name} · {lot.sku} · Lote {lot.number} · {lot.quantity} unidades</option>)}
+            : available.filter(lot => !draft.rows.some(row => row.lot.id === lot.id)).map(lot => <option key={lot.id} value={lot.id}>{lot.product_name} · {lot.sku} · Lote {lot.number} · {lot.quantity} unidades{lot.expiration_date <= today ? ' · Vencido' : ''}{lot.is_active === false ? ' · Deshabilitado' : ''}{lot.product_active === false ? ' · Producto inactivo' : ''}</option>)}
         </select></label>
         <button type="button" className="users-button" disabled={!lotId || draft.rows.length >= 100} onClick={() => {
           if (receipt) {

@@ -53,6 +53,8 @@ class BranchOption(BaseModel):
 
 
 class LotOption(BaseModel):
+    is_active: bool
+    product_active: bool
     id: UUID
     product_id: UUID
     product_name: str

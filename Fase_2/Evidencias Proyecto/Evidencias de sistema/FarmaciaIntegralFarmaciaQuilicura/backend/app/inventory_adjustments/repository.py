@@ -48,8 +48,6 @@ class AdjustmentRepository:
             .join(Producto)
             .join(Sucursal, Sucursal.id == InventarioSucursal.sucursal_id)
             .where(
-                LoteInventario.activo.is_(True),
-                Producto.activo.is_(True),
                 Sucursal.activa.is_(True),
             )
         )
@@ -86,6 +84,8 @@ class AdjustmentRepository:
                     "number": row.numero_lote,
                     "expiration_date": row.fecha_vencimiento,
                     "quantity": row.cantidad,
+                    "is_active": row.activo,
+                    "product_active": row.inventario.producto.activo,
                 }
                 for row in db.scalars(
                     query.order_by(

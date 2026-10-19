@@ -4,8 +4,12 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from sqlalchemy.exc import IntegrityError
 
 from app.auth.routes import authenticated_user, check_origin
+from app.transfers.receipt_review import ReceiptReviewService
 from app.transfers.schemas import (
     CreateTransfer,
+    ReactivateDestinationLot,
+    ReactivationResult,
+    ReceiptReview,
     ReceiveTransfer,
     RejectTransfer,
     TransferListResponse,
@@ -87,3 +91,14 @@ def receive(transfer_id: UUID, data: ReceiveTransfer, request: Request):
         request,
         lambda service, actor: service.change(actor, transfer_id, "receive", data),
     )
+
+
+@router.get("/{transfer_id}/receipt-review", response_model=ReceiptReview)
+def receipt_review(transfer_id: UUID, request: Request):
+    return execute(request, lambda service, actor: ReceiptReviewService(service.repo).review(actor, transfer_id))
+
+
+@router.post("/{transfer_id}/destination-lots/{lot_id}/reactivate", response_model=ReactivationResult)
+def reactivate_destination_lot(transfer_id: UUID, lot_id: UUID, data: ReactivateDestinationLot, request: Request):
+    check_origin(request)
+    return execute(request, lambda service, actor: ReceiptReviewService(service.repo).reactivate(actor, transfer_id, lot_id, data))

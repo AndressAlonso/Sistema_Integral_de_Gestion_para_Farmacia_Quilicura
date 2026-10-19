@@ -19,6 +19,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 backend/data/
+*.dump
 
 # Editor directories and files
 .vscode/*

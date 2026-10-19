@@ -15,13 +15,29 @@ from app.branches.routes import router as branches_router
 from app.catalog.repository import PostgresCatalogRepository
 from app.catalog.routes import router as catalog_router
 from app.config import Settings
+from app.customers.repository import CustomerRepository
+from app.customers.routes import router as customers_router
+from app.customers.security import clear_customer_cookie
+from app.customers.sessions import CustomerSessionRepository
 from app.db import create_database_engine, create_session_factory
+from app.ecommerce.cart.repository import CartRepository
+from app.ecommerce.cart.routes import router as cart_router
+from app.ecommerce.guest.routes import router as guest_router
+from app.ecommerce.repository import PublicCatalogRepository
+from app.ecommerce.routes import router as ecommerce_router
 from app.goods_receipts.repository import ReceiptRepository
 from app.goods_receipts.routes import router as receipts_router
 from app.inventory.repository import PostgresInventoryRepository
 from app.inventory.routes import router as inventory_router
 from app.inventory_adjustments.repository import AdjustmentRepository
 from app.inventory_adjustments.routes import router as adjustments_router
+from app.orders.routes import router as orders_router
+from app.pos.repository import PosRepository
+from app.pos.routes import router as pos_router
+from app.promotions.repository import PromotionRepository
+from app.promotions.routes import router as promotions_router
+from app.scanner.routes import router as scanner_router
+from app.scanner.service import ScannerService
 from app.transfers.repository import TransferRepository
 from app.transfers.routes import router as transfers_router
 from app.users.routes import router as users_router
@@ -52,11 +68,19 @@ def create_app(
             app.state.branches = PostgresBranchRepository(factory)
             app.state.catalog = PostgresCatalogRepository(factory)
             app.state.inventory = PostgresInventoryRepository(factory)
+            app.state.ecommerce = PublicCatalogRepository(factory)
+            app.state.cart = CartRepository(factory)
             app.state.goods_receipts = ReceiptRepository(factory)
             app.state.transfers = TransferRepository(factory)
             app.state.adjustments = AdjustmentRepository(factory)
+            app.state.pos = PosRepository(factory)
+            app.state.promotions = PromotionRepository(factory)
+            app.state.scanner = ScannerService(factory)
             app.state.sessions = SessionRepository(factory)
             app.state.auth = AuthState()
+            app.state.customers = CustomerRepository(factory)
+            app.state.customer_sessions = CustomerSessionRepository(factory)
+            app.state.customer_auth = AuthState()
 
             yield
         finally:
@@ -99,33 +123,63 @@ def create_app(
         request: Request,
         exc: RequestValidationError,
     ):
-        if request.url.path.startswith("/api/users"):
+        path = request.url.path
+
+        if path.startswith(("/api/pos", "/api/cash")):
+            detail = (
+                "Revisa los productos, cantidades enteras positivas, "
+                "importes y datos de confirmación."
+            )
+        elif path.startswith("/api/scanner"):
+            detail = (
+                "Revisa el código y los datos de vinculación del escáner."
+            )
+        elif path.startswith("/api/customers/orders"):
+            detail = "Revisa los productos, cantidades, sucursal, nombre y correo, total y confirmación del pedido."
+        elif path.startswith("/api/customers"):
+            detail = "Revisa el nombre, el correo y la contraseña de entre 12 y 128 caracteres."
+        elif path.startswith("/api/ecommerce/guest"):
+            detail = "Revisa el nombre, el correo, los productos y la sucursal de retiro."
+        elif path.startswith("/api/ecommerce/cart"):
+            detail = "Revisa el carrito: máximo 50 productos distintos, de 1 a 99 unidades por producto y una sucursal válida."
+        elif path.startswith("/api/ecommerce"):
+            detail = "Revisa la búsqueda, el producto y la sucursal seleccionada."
+        elif path.startswith("/api/users"):
             detail = (
                 "Revisa los datos, los roles y la sucursal. "
                 "La contraseña inicial requiere al menos 12 caracteres."
             )
-        elif request.url.path.startswith("/api/branches"):
+        elif path.startswith("/api/branches"):
             detail = (
                 "Revisa el código, el nombre y la dirección "
                 "de la sucursal."
             )
-        elif request.url.path.startswith("/api/categories"):
+        elif path.startswith("/api/categories"):
             detail = (
                 "Ingresa un nombre de categoría de entre "
                 "1 y 150 caracteres."
             )
-        elif request.url.path.startswith("/api/products"):
+        elif path.startswith("/api/products"):
             detail = (
                 "Revisa el nombre, SKU, categoría, precio "
                 "y códigos de barras."
             )
-        elif request.url.path.startswith("/api/transfers"):
-            detail = "Revisa las sucursales, productos, cantidades enteras positivas y datos de confirmación."
-        elif request.url.path.startswith("/api/goods-receipts"):
-            detail = "Revisa proveedor, documento, sucursal, productos, lotes y cantidades positivas."
-        elif request.url.path.startswith("/api/inventory-adjustments"):
-            detail = "Revisa la sucursal, el motivo y las cantidades enteras no negativas de los lotes modificados."
-        elif request.url.path.startswith("/api/inventory"):
+        elif path.startswith("/api/transfers"):
+            detail = (
+                "Revisa las sucursales, productos, cantidades "
+                "enteras positivas y datos de confirmación."
+            )
+        elif path.startswith("/api/goods-receipts"):
+            detail = (
+                "Revisa proveedor, documento, sucursal, productos, "
+                "lotes y cantidades positivas."
+            )
+        elif path.startswith("/api/inventory-adjustments"):
+            detail = (
+                "Revisa la sucursal, el motivo y las cantidades "
+                "enteras no negativas de los lotes modificados."
+            )
+        elif path.startswith("/api/inventory"):
             detail = (
                 "Revisa los datos de la consulta de inventario."
             )
@@ -154,7 +208,10 @@ def create_app(
             headers=exc.headers,
         )
 
-        if exc.status_code == 401:
+        is_customer_request = request.url.path == "/api/customers" or request.url.path.startswith("/api/customers/")
+        if exc.status_code == 401 and is_customer_request:
+            clear_customer_cookie(response, settings)
+        elif exc.status_code == 401:
             response.delete_cookie(
                 COOKIE_NAME,
                 path="/api/auth",
@@ -192,5 +249,13 @@ def create_app(
     app.include_router(receipts_router)
     app.include_router(transfers_router)
     app.include_router(adjustments_router)
+    app.include_router(pos_router)
+    app.include_router(orders_router)
+    app.include_router(promotions_router)
+    app.include_router(scanner_router)
+    app.include_router(ecommerce_router)
+    app.include_router(cart_router)
+    app.include_router(guest_router)
+    app.include_router(customers_router)
 
     return app

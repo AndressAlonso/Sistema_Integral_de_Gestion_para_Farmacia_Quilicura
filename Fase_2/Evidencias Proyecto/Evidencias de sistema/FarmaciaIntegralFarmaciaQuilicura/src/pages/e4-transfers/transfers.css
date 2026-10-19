@@ -38,3 +38,20 @@
 .transfers-dialog small { overflow-wrap: anywhere; }
 @media (max-width: 1100px) { .transfer-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .transfer-heading, .transfer-flow { flex-wrap: wrap; } }
 @media (max-width: 650px) { .transfer-summaries { grid-template-columns: repeat(2, minmax(0, 1fr)); } .transfer-filters, .transfer-item { grid-template-columns: 1fr; } }
+
+.transfer-choice { border: 0; padding: 0; margin: 20px 0; }
+.transfer-choice legend { color: #233451; font-weight: 650; margin-bottom: 10px; }
+.transfer-choice-options { display: flex; flex-wrap: wrap; gap: 14px; }
+.transfer-choice-option { display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid #d9dfe9; border-radius: 9px; color: #233451; background: #fff; cursor: pointer; }
+.transfer-choice-option:has(input:checked) { border-color: #702582; background: #f4eafa; }
+.transfer-choice-option input { accent-color: #702582; }
+.transfer-choice-option:focus-within { outline: 2px solid #702582; outline-offset: 3px; }
+
+.receipt-lot-review { border-top: 1px solid #e3e7ee; margin-top: 16px; padding-top: 12px; }
+.receipt-reactivation { padding: 14px; background: #f8f5fa; border-radius: 10px; }
+.receipt-reactivation > label:not(.users-checkbox) { display: grid; gap: 8px; }
+.receipt-reactivation .users-checkbox { margin: 14px 0; }
+.receipt-reactivation textarea { width: 100%; box-sizing: border-box; }
+
+.receipt-review-dialog { width: min(780px, calc(100vw - 32px)); max-height: 90vh; overflow-y: auto; }
+.receipt-review-dialog .receipt-review.users-panel { border: 0; box-shadow: none; padding: 0; margin: 16px 0; }

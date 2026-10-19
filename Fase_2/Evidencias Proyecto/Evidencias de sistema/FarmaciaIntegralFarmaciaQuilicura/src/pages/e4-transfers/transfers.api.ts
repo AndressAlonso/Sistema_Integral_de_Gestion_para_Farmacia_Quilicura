@@ -28,7 +28,7 @@ export const actions: Record<TransferAction, string> = {
 export const transferCode = (id: string) => `TR-${id.slice(0, 8).toUpperCase()}`
 export const units = (transfer: Transfer) => transfer.items.reduce((total, item) => total + item.quantity, 0)
 
-async function request<T>(path: string, body?: unknown): Promise<T> {
+export async function request<T>(path: string, body?: unknown): Promise<T> {
   let response: Response
   try {
     response = await fetch(`/api/transfers${path}`, { credentials: 'include', cache: 'no-store',

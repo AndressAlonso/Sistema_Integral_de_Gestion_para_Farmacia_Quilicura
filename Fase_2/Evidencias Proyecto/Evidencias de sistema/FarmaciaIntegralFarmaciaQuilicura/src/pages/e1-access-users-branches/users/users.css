@@ -155,3 +155,11 @@
 .roles-confirm p { margin: 16px 0; }
 .roles-confirm > div { display: flex; flex-wrap: wrap; gap: 12px; }
 @media (max-width: 850px) { .roles-workspace, .roles-fields { grid-template-columns: 1fr; } .roles-sidebar ul { max-height: 230px; overflow-y: auto; } }
+
+.users-role-card { padding: 14px; }
+.users-role-card label { margin-bottom: 8px; }
+.users-role-card p { margin-bottom: 10px; }
+.users-role-details summary { cursor: pointer; color: #702582; font-size: 13px; font-weight: 600; }
+.users-role-details[open] summary { margin-bottom: 14px; }
+.users-role-details { overflow-wrap: anywhere; }
+.users-role-details summary:focus-visible { outline: 2px solid #702582; outline-offset: 3px; border-radius: 4px; }

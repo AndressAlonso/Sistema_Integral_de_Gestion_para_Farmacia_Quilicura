@@ -92,32 +92,25 @@ class TransferRepository:
         )
 
     @staticmethod
+    def reserved_lots_for(db, inventory_ids):
+        from app.orders.models import ReservaPedido
+        result = dict(db.execute(select(TransferenciaLote.lote_origen_id, func.sum(TransferenciaLote.cantidad))
+            .join(TransferenciaDetalle, TransferenciaDetalle.id == TransferenciaLote.detalle_id)
+            .join(Transferencia, Transferencia.id == TransferenciaDetalle.transferencia_id)
+            .join(LoteInventario, LoteInventario.id == TransferenciaLote.lote_origen_id)
+            .where(Transferencia.estado.in_(RESERVED_STATES), LoteInventario.inventario_sucursal_id.in_(inventory_ids))
+            .group_by(TransferenciaLote.lote_origen_id)).all())
+        online = db.execute(select(ReservaPedido.lote_id, func.sum(ReservaPedido.cantidad))
+            .join(LoteInventario, LoteInventario.id == ReservaPedido.lote_id)
+            .where(ReservaPedido.activa.is_(True), LoteInventario.inventario_sucursal_id.in_(inventory_ids))
+            .group_by(ReservaPedido.lote_id)).all()
+        for lot_id, quantity in online:
+            result[lot_id] = result.get(lot_id, 0) + quantity
+        return result
+
+    @staticmethod
     def reserved_lots(db, inventory_id):
-        return dict(
-            db.execute(
-                select(
-                    TransferenciaLote.lote_origen_id,
-                    func.sum(TransferenciaLote.cantidad),
-                )
-                .join(
-                    TransferenciaDetalle,
-                    TransferenciaDetalle.id == TransferenciaLote.detalle_id,
-                )
-                .join(
-                    Transferencia,
-                    Transferencia.id == TransferenciaDetalle.transferencia_id,
-                )
-                .join(
-                    LoteInventario,
-                    LoteInventario.id == TransferenciaLote.lote_origen_id,
-                )
-                .where(
-                    Transferencia.estado.in_(RESERVED_STATES),
-                    LoteInventario.inventario_sucursal_id == inventory_id,
-                )
-                .group_by(TransferenciaLote.lote_origen_id)
-            ).all()
-        )
+        return TransferRepository.reserved_lots_for(db, [inventory_id])
 
     @staticmethod
     def destination_lot(db, inventory_id, source):

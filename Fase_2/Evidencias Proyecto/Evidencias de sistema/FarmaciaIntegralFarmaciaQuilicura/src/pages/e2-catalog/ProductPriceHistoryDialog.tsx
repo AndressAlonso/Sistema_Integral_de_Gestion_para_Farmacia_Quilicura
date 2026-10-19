@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ApiError } from '../../services/http'
@@ -152,7 +153,7 @@ export default function ProductPriceHistoryDialog({
                       <th scope="col">Responsable</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <PaginatedTableBody total={entries.length} columns={4}>
                     {entries.map(entry => (
                       <tr key={entry.id}>
                         <td>
@@ -169,7 +170,7 @@ export default function ProductPriceHistoryDialog({
                         <td>{entry.user_name}</td>
                       </tr>
                     ))}
-                  </tbody>
+                  </PaginatedTableBody>
                 </table>
               </div>
             )}

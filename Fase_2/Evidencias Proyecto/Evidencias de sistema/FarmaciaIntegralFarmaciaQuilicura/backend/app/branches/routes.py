@@ -9,6 +9,8 @@ from app.branches.repository import (
     BranchDeletionBlocked,
     BranchInUse,
     BranchNotFound,
+    BranchOpenCash,
+    BranchPendingOrders,
     BranchPendingTransfers,
     DuplicateBranchCode,
 )
@@ -54,6 +56,10 @@ def service(request: Request) -> BranchService:
 def handle_conflict(operation):
     try:
         return operation()
+    except BranchOpenCash:
+        raise HTTPException(409, "Cierra las cajas abiertas antes de desactivar la sucursal.") from None
+    except BranchPendingOrders:
+        raise HTTPException(409, "No se puede desactivar la sucursal porque tiene pedidos o reservas online pendientes.") from None
     except BranchPendingTransfers:
         raise HTTPException(409, "No se puede desactivar la sucursal porque tiene transferencias pendientes.") from None
     except InvalidConfirmation:

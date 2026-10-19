@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
 import { ApiError } from '../../../services/http'
 import { listAssignedUsers, type AssignedUser } from './branches.api'
@@ -35,10 +36,10 @@ export default function AssignedUsers({ branchId }: { branchId: string }) {
       </div>
       <p role="status">{visible.length} {visible.length === 1 ? 'resultado' : 'resultados'}</p>
       <div className="branches-table-scroll" tabIndex={0} role="region" aria-label="Usuarios asignados a la sucursal">
-        <table className="branches-table"><thead><tr><th scope="col">Usuario</th><th scope="col">Correo</th><th scope="col">Roles</th><th scope="col">Estado</th></tr></thead><tbody>
+        <table className="branches-table"><thead><tr><th scope="col">Usuario</th><th scope="col">Correo</th><th scope="col">Roles</th><th scope="col">Estado</th></tr></thead><PaginatedTableBody total={visible.length} columns={4}>
           {visible.map(user => <tr key={user.id}><th scope="row">{user.name}</th><td>{user.email}</td><td>{user.roles.join(', ') || 'Sin rol asignado'}</td><td><span className={`branches-status${user.is_active ? '' : ' inactive'}`}>{user.is_active ? 'Activo' : 'Inactivo'}</span></td></tr>)}
           {visible.length === 0 && <tr><td colSpan={4} className="branches-empty">No hay usuarios que coincidan con los filtros.</td></tr>}
-        </tbody></table>
+        </PaginatedTableBody></table>
       </div>
     </> : <p className="s1-muted">Todavía no hay usuarios asignados a esta sucursal.</p>}
   </div>

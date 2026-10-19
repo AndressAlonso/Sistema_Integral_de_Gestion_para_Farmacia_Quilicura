@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 // E2-H1/E2-H2: catálogo y cambio de precio con auditoría.
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
@@ -348,7 +349,7 @@ export default function CatalogPage() {
           aria-label="Listado de productos"
           tabIndex={0}
         >
-          <table className="users-table catalog-table">
+          <table className="users-table catalog-table responsive-admin-table">
             <thead>
               <tr>
                 <th scope="col">Imagen</th>
@@ -362,7 +363,7 @@ export default function CatalogPage() {
                 <th scope="col">Acciones</th>
               </tr>
             </thead>
-            <tbody>
+            <PaginatedTableBody total={visible.length} columns={9} labels={["Imagen", "Producto / SKU", "Categoría", "Precio", "Códigos de barras", "Condición", "Estado", "Publicación online", "Acciones"]}>
               {visible.map(product => (
                 <tr key={product.id}>
                   <td><ProductPhoto src={product.image_url} name={product.name} /></td>
@@ -444,7 +445,7 @@ export default function CatalogPage() {
                   </td>
                 </tr>
               )}
-            </tbody>
+            </PaginatedTableBody>
           </table>
         </div>
       </section>

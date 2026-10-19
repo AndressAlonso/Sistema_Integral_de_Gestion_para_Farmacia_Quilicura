@@ -4,9 +4,6 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import func, select
-from test_auth import login
-
 from app.models import (
     AjusteInventario,
     Categoria,
@@ -19,6 +16,8 @@ from app.models import (
     Sucursal,
     UsuarioInterno,
 )
+from sqlalchemy import func, select
+from test_auth import login
 
 URL = "/api/inventory-adjustments"
 
@@ -219,7 +218,7 @@ def test_validation_no_stock_changes(adjustment, change):
 
 
 @pytest.mark.parametrize(
-    "invalid", ["stale", "inactive_lot", "inactive_product", "foreign_lot", "reserved"]
+    "invalid", ["stale", "foreign_lot", "reserved"]
 )
 def test_invalid_row_rolls_back_batch(adjustment, invalid):
     with adjustment.factory.begin() as db:
@@ -394,14 +393,13 @@ def test_concurrent_adjustments_independent_connections(setup, same_request):
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
 
-    from sqlalchemy import delete
-
     from app.auth.users import PostgresUserRepository
     from app.db import create_database_engine, create_session_factory
     from app.inventory_adjustments.repository import AdjustmentRepository
     from app.inventory_adjustments.schemas import CreateAdjustment
     from app.inventory_adjustments.service import AdjustmentError, AdjustmentService
     from app.models import AjusteInventarioDetalle
+    from sqlalchemy import delete
 
     engine = create_database_engine()
     factory = create_session_factory(engine)
@@ -528,3 +526,56 @@ def test_concurrent_adjustments_independent_connections(setup, same_request):
             db.execute(delete(UsuarioInterno).where(UsuarioInterno.id == user_id))
             db.execute(delete(Sucursal).where(Sucursal.id == branch_id))
         engine.dispose()
+
+
+@pytest.mark.parametrize("product_active", [True, False])
+def test_retire_disabled_expired_lot_preserves_status_and_history(adjustment, product_active):
+    ctx = adjustment
+    with ctx.factory.begin() as db:
+        lot = db.get(LoteInventario, ctx.lot_ids[0])
+        lot.activo = False
+        lot.fecha_vencimiento = datetime.now(timezone.utc).date() - timedelta(days=1)
+        lot.inventario.producto.activo = product_active
+    options = ctx.client.get("/api/stock-operations/options").json()
+    choice = next(row for row in options["lots"] if row["id"] == str(ctx.lot_ids[0]))
+    assert choice["is_active"] is False and choice["product_active"] is product_active
+    payload = dict(ctx.payload, reason="Retiro de productos vencidos", items=[{
+        "lot_id": str(ctx.lot_ids[0]), "expected_quantity": 20, "new_quantity": 0}])
+    response = ctx.client.post(URL, json=payload)
+    assert response.status_code == 201, response.text
+    assert ctx.client.post(URL, json=payload).status_code == 200
+    with ctx.factory() as db:
+        lot = db.get(LoteInventario, ctx.lot_ids[0])
+        assert lot.cantidad == 0 and lot.activo is False
+        assert lot.inventario.stock_fisico == 0 and lot.inventario.stock_reservado == 0
+        assert lot.inventario.producto.activo is product_active
+        movement = db.scalar(select(MovimientoInventario).where(
+            MovimientoInventario.inventario_sucursal_id == ctx.inventory_ids[0]))
+        assert movement.cantidad_fisica == -20 and movement.motivo == payload["reason"]
+        assert db.get(AjusteInventario, UUID(payload["request_id"])) is not None
+
+
+def test_disabled_lot_adjustment_still_protects_reserved_stock(adjustment):
+    ctx = adjustment
+    with ctx.factory.begin() as db:
+        db.get(LoteInventario, ctx.lot_ids[0]).activo = False
+        db.get(InventarioSucursal, ctx.inventory_ids[0]).stock_reservado = 5
+    response = ctx.client.post(URL, json=dict(ctx.payload, items=[{
+        "lot_id": str(ctx.lot_ids[0]), "expected_quantity": 20, "new_quantity": 0}]))
+    assert response.status_code == 409
+    assert quantities(ctx) == [(20, 20), (20, 20)]
+
+
+@pytest.mark.parametrize("inactive", ["lot", "product"])
+def test_disabled_stock_cannot_be_increased(adjustment, inactive):
+    ctx = adjustment
+    with ctx.factory.begin() as db:
+        lot = db.get(LoteInventario, ctx.lot_ids[0])
+        if inactive == "lot":
+            lot.activo = False
+        else:
+            lot.inventario.producto.activo = False
+    response = ctx.client.post(URL, json=dict(ctx.payload, items=[{
+        "lot_id": str(ctx.lot_ids[0]), "expected_quantity": 20, "new_quantity": 25}]))
+    assert response.status_code == 409
+    assert quantities(ctx) == [(20, 20), (20, 20)]

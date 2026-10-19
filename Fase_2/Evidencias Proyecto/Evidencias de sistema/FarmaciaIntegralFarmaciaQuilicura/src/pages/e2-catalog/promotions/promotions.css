@@ -1,0 +1,31 @@
+.promotions-page{max-width:1200px;margin:auto;padding:32px;color:#183653}.promotions-page h1{font-size:2rem;margin:.4rem 0}.promotions-kicker{color:#76238b;font-size:.75rem;font-weight:700;letter-spacing:.12em}.promotions-panel{background:#fff;border:1px solid #ded7e7;border-radius:14px;padding:24px;margin-top:22px}.promotions-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.promotions-page label{display:flex;flex-direction:column;gap:8px}.promotions-page input,.promotions-page select,.promotions-page button{font:inherit;border:1px solid #cec3da;border-radius:7px;padding:10px;background:#fff;color:inherit;min-width:0}.promotions-page fieldset{border:0;padding:0;margin:0}.promotions-page .promotions-check{flex-direction:row;align-items:center}.promotions-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}.promotions-page .promotions-primary{background:#76238b;color:#fff;border-color:#76238b;font-weight:600}.promotions-alert{background:#f4edf8;padding:14px;border-radius:8px;line-height:1.5}.promotions-error{color:#8e182e;background:#fff0f2;padding:14px;border:1px solid #e5b3bc;border-radius:8px}.promotions-table{overflow-x:auto}.promotions-page table{width:100%;border-collapse:collapse;text-align:left}.promotions-page th,.promotions-page td{padding:14px;border-bottom:1px solid #e5e1e9}.promotions-page th{background:#f6f2f8}.promotions-page small{display:block;margin-top:6px}.promotions-page :focus-visible{outline:3px solid #76238b;outline-offset:3px}.promotions-page button{cursor:pointer}.promotions-page button:disabled{opacity:.6;cursor:wait}@media(max-width:900px){.promotions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.promotions-page{padding:18px}.promotions-panel{padding:16px}.promotions-grid{grid-template-columns:1fr}}
+
+/* Forms must fit their panel, including narrow screens and long options. */
+.promotions-page, .promotions-panel, .promotions-page form, .promotions-page fieldset, .promotions-grid > label { min-width: 0; }
+.promotions-page input:not([type="checkbox"]), .promotions-page select { width: 100%; max-width: 100%; box-sizing: border-box; }
+.promotions-page .table-pagination label { flex-direction: row; align-items: center; flex-wrap: wrap; }
+.promotions-page .table-pagination select { width: auto; }
+.promotions-page button { min-height: 44px; }
+.promotions-page button:disabled { cursor: not-allowed; }
+@media (max-width:600px) {
+  .promotions-grid { grid-template-columns: minmax(0, 1fr); }
+  .promotions-page { padding: 16px 12px; }
+  .promotions-panel { padding: 16px 12px; }
+  .promotions-actions > button { width: 100%; }
+}
+
+.promotions-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+dialog.app-modal.promotions-dialog { width: min(900px, calc(100vw - 32px)); height: fit-content; max-height: calc(100dvh - 32px); padding: 24px; background: white; color: #183653; }
+.promotions-dialog::backdrop { background: #17243b65; }
+.promotions-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.promotions-dialog-heading h2 { font-size: 24px; margin: 0 0 6px; }
+.promotions-dialog-heading p { font-size: 13px; color: #65748e; }
+.promotions-dialog-heading > button { flex-shrink: 0; width: 44px; font-size: 24px; }
+.promotions-dialog .promotions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 18px 0; }
+.promotions-dialog .promotions-actions { justify-content: flex-end; position: sticky; bottom: -24px; padding: 16px 0; background: white; border-top: 1px solid #e5e1e9; }
+@media (max-width: 600px) {
+  dialog.app-modal.promotions-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); padding: 20px; }
+  .promotions-dialog .promotions-grid { grid-template-columns: minmax(0, 1fr); }
+  .promotions-dialog .promotions-actions { bottom: -20px; }
+  .promotions-heading > button { width: 100%; }
+}

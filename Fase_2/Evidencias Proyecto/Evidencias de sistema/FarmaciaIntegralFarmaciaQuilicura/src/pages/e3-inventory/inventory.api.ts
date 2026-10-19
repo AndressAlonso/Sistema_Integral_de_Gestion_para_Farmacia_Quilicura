@@ -50,12 +50,6 @@ interface InventoryLotListResponse {
   lots: InventoryLot[]
 }
 
-export interface CreateInventoryLot {
-  inventory_id: string
-  lot_number: string
-  expiration_date: string
-  quantity: number
-}
 
 export interface InventoryMovement {
   id: string
@@ -217,26 +211,6 @@ export async function listInventoryLots(
     await response.json()
 
   return data.lots
-}
-
-export async function createInventoryLot(
-  input: CreateInventoryLot,
-): Promise<InventoryLot> {
-  const response = await apiRequest(
-    '/api/inventory/lots',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(input),
-    },
-  )
-
-  const data: InventoryLot =
-    await response.json()
-
-  return data
 }
 
 export async function listInventoryMovements(

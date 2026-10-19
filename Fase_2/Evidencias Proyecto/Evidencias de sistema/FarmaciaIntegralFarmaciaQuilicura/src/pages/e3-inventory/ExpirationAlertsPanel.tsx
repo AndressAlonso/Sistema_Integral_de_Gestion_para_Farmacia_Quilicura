@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   type FormEvent,
   useEffect,
@@ -112,15 +113,15 @@ function calculateDaysRemaining(
 function classifyExpiration(
   daysRemaining: number,
 ): AlertLevel {
-  if (daysRemaining < 0) {
+  if (daysRemaining <= 0) {
     return 'VENCIDO'
   }
 
-  if (daysRemaining <= 30) {
+  if (daysRemaining <= 15) {
     return 'CRITICO'
   }
 
-  if (daysRemaining <= 60) {
+  if (daysRemaining <= 30) {
     return 'PROXIMO'
   }
 
@@ -133,14 +134,14 @@ function alertLabel(level: AlertLevel): string {
   }
 
   if (level === 'CRITICO') {
-    return 'Vence muy pronto'
+    return 'Crítico'
   }
 
   if (level === 'PROXIMO') {
     return 'Próximo a vencer'
   }
 
-  return 'Vencimiento lejano'
+  return 'Sin alerta'
 }
 
 function alertClass(level: AlertLevel): string {
@@ -160,7 +161,7 @@ function daysRemainingLabel(days: number): string {
   }
 
   if (days === 0) {
-    return 'Vence hoy'
+    return 'Vencido hoy'
   }
 
   return (
@@ -210,13 +211,13 @@ function matchesPeriod(
   }
 
   if (period === 'EXPIRED') {
-    return daysRemaining < 0
+    return daysRemaining <= 0
   }
 
   const maximumDays = Number(period)
 
   return (
-    daysRemaining >= 0
+    daysRemaining > 0
     && daysRemaining <= maximumDays
   )
 }
@@ -382,23 +383,14 @@ export default function ExpirationAlertsPanel({
     ],
   )
 
-  async function loadLots(): Promise<void> {
-    setLoading(true)
-    setError('')
-
-    try {
-      const records = await listInventoryLots()
-
-      setLots(records)
-    } catch (cause: unknown) {
-      setError(getErrorMessage(cause))
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    void loadLots()
+    let active = true
+    listInventoryLots().then(records => {
+      if (active) { setLots(records); setLoading(false) }
+    }).catch((cause: unknown) => {
+      if (active) { setError(getErrorMessage(cause)); setLoading(false) }
+    })
+    return () => { active = false }
   }, [])
 
   function handleSubmit(
@@ -607,15 +599,15 @@ export default function ExpirationAlertsPanel({
             </option>
 
             <option value="CRITICO">
-              Vencen muy pronto (0 a 30 días)
+              Críticos (1 a 15 días)
             </option>
 
             <option value="PROXIMO">
-              Próximos a vencer (31 a 60 días)
+              Próximos a vencer (16 a 30 días)
             </option>
 
             <option value="SEGUIMIENTO">
-              Vencimiento lejano (más de 60 días)
+              Sin alerta (más de 30 días)
             </option>
           </select>
         </div>
@@ -670,17 +662,8 @@ export default function ExpirationAlertsPanel({
 
             <thead>
               <tr>
-                <th scope="col">
-                  Producto
-                </th>
-
-                <th scope="col">
-                  Sucursal
-                </th>
-
-                <th scope="col">
-                  Lote
-                </th>
+                <th scope="col">Lote / Sucursal</th>
+                <th scope="col">Producto</th>
 
                 <th scope="col">
                   Fecha de vencimiento
@@ -703,30 +686,16 @@ export default function ExpirationAlertsPanel({
               </tr>
             </thead>
 
-            <tbody>
+            <PaginatedTableBody total={filteredLots.length} columns={6}>
               {filteredLots.map((item) => (
                 <tr key={item.lot.id}>
                   <th scope="row">
-                    <span className="product-name">
-                      {item.lot.product_name}
-                    </span>
-
-                    <span className="product-detail">
-                      SKU: {item.lot.product_sku}
-                    </span>
+                    <span className="lot-code-primary">{item.lot.lot_number}</span>
+                    <span className="lot-cell-detail">{item.lot.branch_name} · {item.lot.branch_code}</span>
                   </th>
-
                   <td>
-                    <span className="branch-label">
-                      {item.lot.branch_name}{' '}
-                      ({item.lot.branch_code})
-                    </span>
-                  </td>
-
-                  <td>
-                    <span className="lot-number">
-                      {item.lot.lot_number}
-                    </span>
+                    <span className="product-name">{item.lot.product_name}</span>
+                    <span className="product-detail">SKU: {item.lot.product_sku}</span>
                   </td>
 
                   <td>
@@ -762,7 +731,7 @@ export default function ExpirationAlertsPanel({
               {filteredLots.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={6}
                     className="empty-state"
                   >
                     <span
@@ -798,7 +767,7 @@ export default function ExpirationAlertsPanel({
                   </td>
                 </tr>
               )}
-            </tbody>
+            </PaginatedTableBody>
           </table>
         </div>
       )}

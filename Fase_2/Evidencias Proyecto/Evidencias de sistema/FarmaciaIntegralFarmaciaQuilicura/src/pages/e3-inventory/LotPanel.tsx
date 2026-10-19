@@ -1,13 +1,16 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
-  type FormEvent,
+  useDeferredValue,
   useEffect,
   useMemo,
   useState,
 } from 'react'
 
+import { Link } from 'react-router-dom'
+import LotStatusDialog from './LotStatusDialog'
+
 import { ApiError } from '../../services/http'
 import {
-  createInventoryLot,
   listInventoryLots,
   type InventoryLot,
   type InventoryRecord,
@@ -15,6 +18,8 @@ import {
 
 interface LotPanelProps {
   inventoryRecords: InventoryRecord[]
+  targetLotId?: string
+  returnTransferId?: string
 }
 
 function formatDate(value: string): string {
@@ -25,14 +30,17 @@ function formatDate(value: string): string {
   }).format(new Date(`${value}T00:00:00`))
 }
 
-function minimumExpirationDate(): string {
-  const tomorrow = new Date()
-
-  tomorrow.setDate(tomorrow.getDate() + 1)
-
-  return tomorrow.toISOString().slice(0, 10)
+function creationLabel(value: string): string {
+  const created = new Date(value)
+  if (!Number.isFinite(created.getTime())) return 'Fecha no disponible'
+  const now = new Date()
+  const day = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+  const days = Math.max(0, Math.round((day(now) - day(created)) / 86_400_000))
+  if (days === 0) return 'Creado hoy'
+  if (days === 1) return 'Creado ayer'
+  if (days < 7) return 'Creado recientemente'
+  return 'Creado hace ' + days + ' días'
 }
-
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 401) {
@@ -47,17 +55,6 @@ function getErrorMessage(error: unknown): string {
       return 'No existe el registro de inventario seleccionado.'
     }
 
-    if (error.status === 409) {
-      return (
-        'Ya existe un lote con ese número para el producto '
-        + 'y la sucursal seleccionados.'
-      )
-    }
-
-    if (error.status === 422) {
-      return 'Revisa el número, vencimiento y cantidad del lote.'
-    }
-
     return error.message
   }
 
@@ -65,64 +62,40 @@ function getErrorMessage(error: unknown): string {
 }
 
 export default function LotPanel({
-  inventoryRecords,
+  inventoryRecords, targetLotId, returnTransferId,
 }: LotPanelProps) {
   const [lots, setLots] = useState<InventoryLot[]>([])
+  const [statusLot, setStatusLot] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
 
-  const [inventoryId, setInventoryId] = useState(
-    inventoryRecords[0]?.id ?? '',
-  )
-
-  const [lotNumber, setLotNumber] = useState('')
-  const [expirationDate, setExpirationDate] = useState('')
-  const [quantity, setQuantity] = useState('')
+  const [branchId, setBranchId] = useState('')
+  const [priorityFirst, setPriorityFirst] = useState(true)
+  const [productSearch, setProductSearch] = useState('')
+  const search = useDeferredValue(productSearch)
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+  const branches = useMemo(() => {
+    const values = new Map<string, string>()
+    inventoryRecords.forEach(row => values.set(row.branch_id, row.branch_name))
+    lots.forEach(row => values.set(row.branch_id, row.branch_name))
+    return [...values].sort((a, b) => a[1].localeCompare(b[1]))
+  }, [inventoryRecords, lots])
 
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-
-  async function loadLots(): Promise<void> {
-    setLoading(true)
-    setError('')
-
-    try {
-      const records = await listInventoryLots()
-      setLots(records)
-    } catch (cause: unknown) {
-      setError(getErrorMessage(cause))
-    } finally {
-      setLoading(false)
-    }
-  }
 
   useEffect(() => {
-    void loadLots()
+    let active = true
+    listInventoryLots()
+      .then(records => { if (active) setLots(records) })
+      .catch(cause => { if (active) setError(getErrorMessage(cause)) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
   }, [])
-
-  useEffect(() => {
-    if (!inventoryId && inventoryRecords.length > 0) {
-      setInventoryId(inventoryRecords[0].id)
-    }
-  }, [inventoryId, inventoryRecords])
-
-  const selectedInventory = useMemo(
-    () => inventoryRecords.find(
-      (record) => record.id === inventoryId,
-    ),
-    [inventoryId, inventoryRecords],
-  )
-
-  const totalLotQuantity = useMemo(
-    () => lots
-      .filter((lot) => lot.inventory_id === inventoryId)
-      .reduce(
-        (total, lot) => total + lot.quantity,
-        0,
-      ),
-    [inventoryId, lots],
-  )
-
+  // FEFO visual: la fecha alcanzada tampoco es vendible. Usar el día local.
+  const today = new Date()
+  const localToday = [today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0')].join('-')
   const firstFefoLotIds = useMemo(() => {
     const firstLotByInventory = new Map<string, string>()
 
@@ -130,6 +103,7 @@ export default function LotPanel({
       if (
         lot.is_active
         && lot.quantity > 0
+        && lot.expiration_date > localToday
         && !firstLotByInventory.has(lot.inventory_id)
       ) {
         firstLotByInventory.set(
@@ -140,66 +114,22 @@ export default function LotPanel({
     })
 
     return new Set(firstLotByInventory.values())
-  }, [lots])
+  }, [lots, localToday])
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ): Promise<void> {
-    event.preventDefault()
-
-    const numericQuantity = Number(quantity)
-
-    if (!inventoryId) {
-      setError('Selecciona un producto y una sucursal.')
-      return
-    }
-
-    if (!lotNumber.trim()) {
-      setError('Ingresa el número de lote.')
-      return
-    }
-
-    if (!expirationDate) {
-      setError('Selecciona la fecha de vencimiento.')
-      return
-    }
-
-    if (
-      !Number.isInteger(numericQuantity)
-      || numericQuantity <= 0
-    ) {
-      setError(
-        'La cantidad debe ser un número entero mayor que cero.',
-      )
-      return
-    }
-
-    setSubmitting(true)
-    setError('')
-    setSuccess('')
-
-    try {
-      await createInventoryLot({
-        inventory_id: inventoryId,
-        lot_number: lotNumber.trim(),
-        expiration_date: expirationDate,
-        quantity: numericQuantity,
-      })
-
-      setLotNumber('')
-      setExpirationDate('')
-      setQuantity('')
-
-      await loadLots()
-
-      setSuccess('Lote registrado correctamente.')
-    } catch (cause: unknown) {
-      setError(getErrorMessage(cause))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
+  const visibleLots = useMemo(
+    () => lots
+      .filter(lot => (!targetLotId || lot.id === targetLotId) && (!branchId || lot.branch_id === branchId) && normalize(lot.product_name + ' ' + lot.product_sku).includes(normalize(search)))
+      .sort((a, b) =>
+        (Number(firstFefoLotIds.has(b.id)) - Number(firstFefoLotIds.has(a.id))) * (priorityFirst ? 1 : -1)
+        || a.expiration_date.localeCompare(b.expiration_date)
+        || a.lot_number.localeCompare(b.lot_number)
+        || a.id.localeCompare(b.id)),
+    [lots, branchId, search, firstFefoLotIds, priorityFirst, targetLotId],
+  )
+  const inventoryIds = new Set(visibleLots.map(lot => lot.inventory_id))
+  const selectedInventory = inventoryIds.size === 1
+    ? inventoryRecords.find(record => inventoryIds.has(record.id)) : undefined
+  const totalLotQuantity = (selectedInventory ? lots.filter(lot => lot.inventory_id === selectedInventory.id) : visibleLots).reduce((total, lot) => total + lot.quantity, 0)
   return (
     <section
       className="lot-panel"
@@ -216,123 +146,24 @@ export default function LotPanel({
           </h2>
 
           <p>
-            Los registros se presentan según FEFO:
-            primero en vencer, primero en salir.
+            Cada fila es un lote de un producto en una sucursal; por eso un producto puede aparecer varias veces.
+            Primero en salir identifica el lote habilitado con unidades que vence antes, por producto y sucursal.
           </p>
         </div>
 
         <span className="inventory-result-count">
-          {lots.length}{' '}
-          {lots.length === 1 ? 'lote' : 'lotes'}
+          {visibleLots.length}{' '}
+          {visibleLots.length === 1 ? 'lote' : 'lotes'}
         </span>
       </div>
 
-      <form
-        className="lot-form"
-        onSubmit={(event) => {
-          void handleSubmit(event)
-        }}
-      >
-        <div className="lot-field lot-inventory-field">
-          <label htmlFor="lot-inventory">
-            Producto y sucursal
-          </label>
-
-          <select
-            id="lot-inventory"
-            value={inventoryId}
-            onChange={(event) => {
-              setInventoryId(event.target.value)
-              setError('')
-              setSuccess('')
-            }}
-            required
-          >
-            {inventoryRecords.length === 0 && (
-              <option value="">
-                No hay inventario disponible
-              </option>
-            )}
-
-            {inventoryRecords.map((record) => (
-              <option
-                key={record.id}
-                value={record.id}
-              >
-                {record.product_name} · {record.branch_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="lot-field">
-          <label htmlFor="lot-number">
-            Número de lote
-          </label>
-
-          <input
-            id="lot-number"
-            type="text"
-            maxLength={80}
-            placeholder="Ej.: PAR-2028-001"
-            value={lotNumber}
-            onChange={(event) => {
-              setLotNumber(event.target.value)
-            }}
-            required
-          />
-        </div>
-
-        <div className="lot-field">
-          <label htmlFor="expiration-date">
-            Fecha de vencimiento
-          </label>
-
-          <input
-            id="expiration-date"
-            type="date"
-            min={minimumExpirationDate()}
-            value={expirationDate}
-            onChange={(event) => {
-              setExpirationDate(event.target.value)
-            }}
-            required
-          />
-        </div>
-
-        <div className="lot-field lot-quantity-field">
-          <label htmlFor="lot-quantity">
-            Cantidad
-          </label>
-
-          <input
-            id="lot-quantity"
-            type="number"
-            min={1}
-            step={1}
-            placeholder="0"
-            value={quantity}
-            onChange={(event) => {
-              setQuantity(event.target.value)
-            }}
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="lot-submit-button"
-          disabled={
-            submitting
-            || inventoryRecords.length === 0
-          }
-        >
-          {submitting
-            ? 'Registrando…'
-            : 'Registrar lote'}
-        </button>
-      </form>
-
+      <div className="lot-toolbar"><div className="lot-entry-note"><p>Registra los lotes al recibir mercadería, con proveedor y documento de respaldo.</p>
+      <span className="lot-cell-detail">Usa «Crear lotes / recibir mercadería» en la cabecera de Inventario.</span></div>
+      </div>
+      <div className="lot-entry-note" aria-label="Cómo interpretar los lotes"><p><strong>Deshabilitado:</strong> bloqueado para salidas. <strong>Vencido:</strong> no vendible, aunque esté habilitado. <strong>Sin unidades:</strong> cantidad 0; conserva su historial.</p><p>Reactivar quita el bloqueo: no agrega unidades ni cambia el vencimiento. Recibir mercadería aumenta cantidades; ajustar inventario corrige cantidades con un motivo.</p></div>
+      {notice && <p className="lot-message" role="status">{notice}</p>}
+      {targetLotId && <div className="lot-navigation"><p>Mostrando el lote seleccionado desde la transferencia.</p><Link to="/admin/inventory?tab=lots">Ver todos los lotes</Link>
+        {returnTransferId && <Link to={`/admin/transfers?transfer_id=${encodeURIComponent(returnTransferId)}`}>Volver a la transferencia</Link>}</div>}
       {error && (
         <p
           className="lot-message lot-error"
@@ -342,14 +173,6 @@ export default function LotPanel({
         </p>
       )}
 
-      {success && (
-        <p
-          className="lot-message lot-success"
-          role="status"
-        >
-          {success}
-        </p>
-      )}
 
       {selectedInventory && (
         <div className="lot-consistency">
@@ -395,9 +218,8 @@ export default function LotPanel({
 
             <thead>
               <tr>
-                <th scope="col">Producto</th>
-                <th scope="col">Sucursal</th>
-                <th scope="col">Lote</th>
+                <th scope="col"><span>Código de lote / sucursal</span><div className="lot-branch-options" role="group" aria-label="Filtrar por sucursal"><button type="button" aria-pressed={!branchId} onClick={() => setBranchId('')}>Todas</button>{branches.map(([id, name]) => <button type="button" key={id} aria-pressed={branchId === id} onClick={() => setBranchId(id)}>{name}</button>)}</div></th>
+                <th scope="col"><span>Producto</span><div className="lot-column-filter"><label className="sr-only" htmlFor="lot-product-search">Buscar lotes por nombre o SKU de producto</label><input id="lot-product-search" type="search" value={productSearch} onChange={event => setProductSearch(event.target.value)} placeholder="Buscar nombre o SKU…" autoComplete="off" maxLength={150} /></div></th>
                 <th scope="col">Vencimiento</th>
 
                 <th
@@ -407,41 +229,34 @@ export default function LotPanel({
                   Cantidad
                 </th>
 
-                <th scope="col">Estado</th>
+                <th scope="col">Estado del lote</th>
+                <th scope="col" aria-sort="other"><button type="button" className="lot-state-sort" onClick={() => setPriorityFirst(value => !value)} aria-label={priorityFirst ? 'Prioridad de salida: Primero en salir arriba. Pulsa para colocarlos abajo.' : 'Prioridad de salida: Primero en salir abajo. Pulsa para colocarlos arriba.'}>Prioridad de salida <span className="lot-sort-indicator" aria-hidden="true">{priorityFirst ? '↑' : '↓'}</span></button><span className="lot-cell-detail">{priorityFirst ? 'Prioritarios arriba' : 'Prioritarios abajo'}</span></th>
+                <th scope="col">Acción</th>
               </tr>
             </thead>
 
-            <tbody>
-              {lots.map((lot) => {
+            <PaginatedTableBody total={visibleLots.length} columns={7}>
+              {visibleLots.map((lot) => {
                 const isNextFefo = (
                   firstFefoLotIds.has(lot.id)
                 )
 
+                const expired = lot.expiration_date <= localToday
+                const eligible = !expired && lot.is_active && lot.quantity > 0
                 return (
                   <tr key={lot.id}>
                     <th scope="row">
-                      <span className="product-name">
-                        {lot.product_name}
-                      </span>
-
-                      <span className="product-detail">
-                        SKU: {lot.product_sku}
+                      <span className="lot-code-primary">{lot.lot_number}</span>
+                      <span className="lot-cell-detail">{lot.branch_name} · {lot.branch_code}</span>
+                      <span className="lot-created">
+                        <span className="lot-created-label">{creationLabel(lot.created_at)}</span>
+                        {Number.isFinite(Date.parse(lot.created_at)) && <time dateTime={lot.created_at}>{new Date(lot.created_at).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</time>}
                       </span>
                     </th>
-
                     <td>
-                      <span className="branch-label">
-                        {lot.branch_name}{' '}
-                        ({lot.branch_code})
-                      </span>
+                      <span className="product-name">{lot.product_name}</span>
+                      <span className="lot-cell-detail">SKU: {lot.product_sku}</span>
                     </td>
-
-                    <td>
-                      <span className="lot-number">
-                        {lot.lot_number}
-                      </span>
-                    </td>
-
                     <td>
                       {formatDate(lot.expiration_date)}
                     </td>
@@ -451,36 +266,42 @@ export default function LotPanel({
                     </td>
 
                     <td>
-                      {isNextFefo ? (
-                        <span className="lot-status lot-fefo">
-                          Próximo por FEFO
-                        </span>
-                      ) : (
-                        <span className="lot-status">
-                          {lot.is_active
-                            ? 'Activo'
-                            : 'Inactivo'}
-                        </span>
-                      )}
+                      <div className="lot-state-tags">
+                        {expired && <span className="lot-status lot-expired">Vencido · No vendible</span>}
+                        {!expired && !lot.is_active && <span className="lot-status">Deshabilitado</span>}
+                        {lot.quantity === 0 && <span className="lot-status">Sin unidades</span>}
+                        {eligible && <span className="lot-status">Vigente</span>}
+                      </div>
                     </td>
+                    <td>
+                      {isNextFefo ? <span className="lot-status lot-fefo">Primero en salir</span>
+                        : <span className="lot-cell-detail">{eligible ? 'Después' : 'No aplica'}</span>}
+                    </td>
+                    <td><button type="button" className="users-button" onClick={() => setStatusLot(lot.id)}>Revisar lote</button></td>
                   </tr>
                 )
               })}
 
-              {lots.length === 0 && (
+              {visibleLots.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="empty-state"
                   >
-                    No hay lotes registrados.
+                    {branchId || productSearch ? 'No hay lotes que coincidan con los filtros.' : 'No hay lotes registrados.'}
                   </td>
                 </tr>
               )}
-            </tbody>
+            </PaginatedTableBody>
           </table>
         </div>
       )}
+      {statusLot && <LotStatusDialog lotId={statusLot} onClose={() => setStatusLot(null)} onChanged={value => {
+        setLots(previous => previous.map(lot => lot.id === value.lot_id ? { ...lot, is_active: value.is_active } : lot))
+        setStatusLot(null); setNotice(value.is_active
+          ? 'Lote habilitado. Cantidades y fechas conservadas. Si hay una transferencia pendiente, vuelve a ella y confirma su recepción.'
+          : 'Lote deshabilitado. Bloqueado para salidas; cantidades y fechas conservadas.')
+      }} />}
     </section>
   )
 }

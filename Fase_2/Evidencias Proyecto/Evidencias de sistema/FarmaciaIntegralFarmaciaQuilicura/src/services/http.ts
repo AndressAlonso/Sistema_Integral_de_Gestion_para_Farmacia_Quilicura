@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest(path: string, init: RequestInit = {}, messages: Record<number, string> = {}): Promise<Response> {
+export async function apiRequest(path: string, init: RequestInit = {}, messages: Record<number, string> = {}, businessErrors = false): Promise<Response> {
   let response: Response
   try {
     response = await fetch(path, { ...init, credentials: 'include', signal: AbortSignal.timeout(10_000), cache: 'no-store' })
@@ -16,6 +16,12 @@ export async function apiRequest(path: string, init: RequestInit = {}, messages:
     throw new ApiError('No pudimos conectar con el servidor. Revisa tu conexión e intenta nuevamente.')
   }
   if (!response.ok) {
+    if (businessErrors && [400, 409, 422].includes(response.status)) {
+      const body: unknown = await response.json().catch(() => null)
+      if (typeof body === 'object' && body !== null && 'detail' in body && typeof body.detail === 'string' && body.detail.length <= 500) {
+        throw new ApiError(body.detail, response.status)
+      }
+    }
     if (response.status === 429) {
       const seconds = Number(response.headers.get('Retry-After'))
       const minutes = Number.isFinite(seconds) && seconds > 0 ? Math.ceil(seconds / 60) : 15

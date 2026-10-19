@@ -4,12 +4,10 @@ from uuid import UUID
 
 from app.auth.users import User
 from app.inventory.repository import (
-    InventoryLotAlreadyExists,
     InventoryNotFound,
     PostgresInventoryRepository,
 )
 from app.inventory.schemas import (
-    CreateInventoryLot,
     UpdateInventoryMinimum,
 )
 
@@ -115,20 +113,6 @@ class InventoryService:
             inventory_id=inventory_id,
         )
 
-    def create_lot(
-        self,
-        actor: User,
-        data: CreateInventoryLot,
-    ) -> dict[str, Any]:
-        self.authorize_lot_management(actor)
-
-        return self.repository.create_lot(
-            inventory_id=data.inventory_id,
-            lot_number=data.lot_number,
-            expiration_date=data.expiration_date,
-            quantity=data.quantity,
-        )
-
     def list_movements(
         self,
         actor: User,
@@ -187,7 +171,6 @@ __all__ = [
     "AccessDenied",
     "InvalidExpirationAlertDays",
     "InvalidMovementDateRange",
-    "InventoryLotAlreadyExists",
     "InventoryNotFound",
     "InventoryService",
 ]

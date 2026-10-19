@@ -1,3 +1,4 @@
+import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import ActionIcon from '../ActionIcon'
 // HU: E1-H5 - Crear, actualizar y desactivar sucursales
 import { useEffect, useRef, useState } from 'react'
@@ -346,7 +347,7 @@ export default function BranchesPage() {
           role="region"
           aria-label="Listado de sucursales"
         >
-          <table className="branches-table">
+          <table className="branches-table responsive-admin-table">
             <thead>
               <tr>
                 <th scope="col">Sucursal</th>
@@ -358,7 +359,7 @@ export default function BranchesPage() {
               </tr>
             </thead>
 
-            <tbody>
+            <PaginatedTableBody total={filteredBranches.length} columns={5} labels={["Sucursal", "Código", "Dirección", "Usuarios asignados", "Estado"]}>
               {filteredBranches.map((branch) => (
                 <tr key={branch.id}>
                   <th scope="row">
@@ -401,7 +402,7 @@ export default function BranchesPage() {
                   </td>
                 </tr>
               )}
-            </tbody>
+            </PaginatedTableBody>
           </table>
         </div>
       </section>

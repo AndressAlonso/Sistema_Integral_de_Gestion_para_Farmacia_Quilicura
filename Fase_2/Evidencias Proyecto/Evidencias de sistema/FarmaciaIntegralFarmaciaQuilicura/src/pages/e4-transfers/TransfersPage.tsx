@@ -1,10 +1,10 @@
+import PaginatedTableBody from '../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import type { AuthSession } from '../e1-access-users-branches/auth/login.api'
 import { ApiError } from '../../services/http'
 import TransferDetail from './TransferDetail'
 import TransferForm from './TransferForm'
-import StockOperationDialog from './StockOperationDialog'
 import { actions, listTransfers, states, transferCode, transferOptions, units, type Transfer, type TransferAction, type TransferOptions } from './transfers.api'
 import '../e1-access-users-branches/users/users.css'
 import './transfers.css'
@@ -12,6 +12,8 @@ import './transfers.css'
 export default function TransfersPage() {
   const session = useOutletContext<AuthSession>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const returnTransferId = searchParams.get('transfer_id')
   const [transfers, setTransfers] = useState<Transfer[]>([])
   const [options, setOptions] = useState<TransferOptions | null>(null)
   const [loading, setLoading] = useState(true)
@@ -19,24 +21,29 @@ export default function TransfersPage() {
   const [message, setMessage] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [creating, setCreating] = useState(false)
-  const [movementOpen, setMovementOpen] = useState(false)
   const [selected, setSelected] = useState<{ transfer: Transfer; action?: TransferAction } | null>(null)
   const [filters, setFilters] = useState({ query: '', state: '', origin: '', destination: '', date: '' })
   useEffect(() => {
     let active = true
     Promise.all([listTransfers(), transferOptions()]).then(([data, choices]) => {
-      if (active) { setTransfers(data.transfers); setOptions(choices); setLoading(false); setError('') }
+      if (active) { setTransfers(data.transfers); setOptions(choices); setLoading(false); setError('')
+        if (returnTransferId) {
+          const target = data.transfers.find(row => row.id === returnTransferId)
+          if (target) setSelected({ transfer: target, action: target.actions.includes('receive') ? 'receive' : undefined })
+        }
+      }
     }).catch((cause: unknown) => {
       if (!active) return
       if (cause instanceof ApiError && cause.status === 401) navigate('/login', { replace: true })
       setError(cause instanceof Error ? cause.message : 'No se pudieron cargar las transferencias.'); setLoading(false)
     })
     return () => { active = false }
-  }, [attempt, navigate])
+  }, [attempt, navigate, returnTransferId])
 
+  function clearReturn() { if (returnTransferId) setSearchParams(previous => { previous.delete('transfer_id'); return previous }, { replace: true }) }
   function refresh() { setLoading(true); setAttempt(value => value + 1) }
   function saved(transfer: Transfer) {
-    setCreating(false); setSelected(null)
+    setCreating(false); setSelected(null); clearReturn()
     setMessage(`${transferCode(transfer.id)}: ${states[transfer.state]}. Operación confirmada.`)
     refresh()
   }
@@ -61,10 +68,6 @@ export default function TransfersPage() {
   return <div className="users-page transfers-page">
     <header className="users-heading transfer-heading"><div><h1>Transferencias</h1><p>Gestiona solicitudes, autorizaciones, despachos y recepciones entre sucursales.</p></div>
       <div className="transfer-actions">
-        {(session.user.permissions.includes('inventario.registrar_entrada') || (
-          session.user.permissions.includes('inventario.ajustar')
-          && session.user.roles.some(role => ['ADMINISTRADOR', 'ENCARGADO_INVENTARIO'].includes(role))
-        )) && <button type="button" className="users-button" onClick={() => { setMessage(''); setMovementOpen(true) }}>Registrar movimiento</button>}
         {options?.can_create && <button type="button" className="users-button primary" disabled={loading} onClick={() => { setMessage(''); setCreating(true) }}>+ Nueva transferencia</button>}
       </div></header>
     <section className="users-panel transfer-flow" aria-label="Flujo de transferencia"><div><strong>Flujo de transferencia</strong><p>Se reserva al solicitar; el stock físico sale al confirmar el despacho.</p></div>
@@ -82,8 +85,8 @@ export default function TransfersPage() {
       </div><div className="transfer-actions"><button type="button" className="users-button" disabled={!Object.values(filters).some(Boolean)} onClick={() => setFilters({ query: '', state: '', origin: '', destination: '', date: '' })}>Limpiar filtros</button><button type="button" className="users-button" disabled={loading} onClick={refresh}>{loading ? 'Actualizando…' : 'Actualizar listado'}</button></div>
     </section>
     <section className="users-panel" aria-busy={loading}><header className="users-panel-heading"><h2>Listado de transferencias</h2><p>{filtered.length} resultados · Las acciones dependen del estado, permisos y sucursal asignada.</p></header>
-      <div className="users-table-scroll"><table className="users-table transfer-table"><thead><tr>{['ID', 'Fecha', 'Ruta', 'Productos', 'Unidades', 'Reserva', 'Responsable', 'Estado', 'Acciones'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
-        <tbody>{!filtered.length && <tr><td colSpan={9} className="users-empty">{loading ? 'Cargando transferencias…' : error ? 'No se pudo actualizar el listado.' : 'No hay transferencias que coincidan con los filtros.'}</td></tr>}
+      <div className="users-table-scroll"><table className="users-table transfer-table responsive-admin-table"><thead><tr>{['ID', 'Fecha', 'Ruta', 'Productos', 'Unidades', 'Reserva', 'Responsable', 'Estado', 'Acciones'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
+        <PaginatedTableBody total={filtered.length} columns={9} labels={["ID", "Fecha", "Ruta", "Productos", "Unidades", "Reserva", "Responsable", "Estado", "Acciones"]}>{!filtered.length && <tr><td colSpan={9} className="users-empty">{loading ? 'Cargando transferencias…' : error ? 'No se pudo actualizar el listado.' : 'No hay transferencias que coincidan con los filtros.'}</td></tr>}
           {filtered.map(transfer => <tr key={transfer.id}>
             <td><button type="button" className="transfer-link" onClick={() => setSelected({ transfer })}>{transferCode(transfer.id)}</button></td>
             <td>{new Date(transfer.created_at).toLocaleDateString('es-CL')}<small>{new Date(transfer.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</small></td>
@@ -91,10 +94,9 @@ export default function TransfersPage() {
             <td>{['SOLICITADA', 'AUTORIZADA'].includes(transfer.state) ? `${units(transfer)} reservadas` : transfer.state === 'RECHAZADA' ? 'Liberada al rechazar' : 'Liberada al despachar'}</td>
             <td>{transfer.requested_by}</td><td><span className={`transfer-state ${transfer.state.toLowerCase()}`}>{states[transfer.state]}</span></td>
             <td><div className="users-row-actions">{transfer.actions.map(action => <button type="button" key={action} onClick={() => setSelected({ transfer, action })}>{actions[action]}</button>)}<button type="button" aria-label={`Ver detalle ${transferCode(transfer.id)}`} onClick={() => setSelected({ transfer })}>Ver detalle</button></div></td>
-          </tr>)}</tbody></table></div></section>
+          </tr>)}</PaginatedTableBody></table></div></section>
     {creating && options && <TransferForm options={options} userId={session.user.id} onClose={() => { setCreating(false); refresh() }} onSaved={saved} />}
-    {selected && <TransferDetail transfer={selected.transfer} initialAction={selected.action} onClose={() => { setSelected(null); refresh() }} onChanged={saved} />}
-    {movementOpen && <StockOperationDialog userId={session.user.id} canReceive={session.user.permissions.includes('inventario.registrar_entrada')} onClose={() => setMovementOpen(false)} onSaved={text => { setMovementOpen(false); setMessage(text); refresh() }} />}
+    {selected && <TransferDetail transfer={selected.transfer} initialAction={selected.action} onClose={() => { setSelected(null); clearReturn(); refresh() }} onChanged={saved} />}
   </div>
 }
 
