@@ -1,6 +1,7 @@
 import { ApiError, apiRequest } from '../../services/http'
 
 export interface StockLot {
+  available?: number
   id: string; product_id: string; product_name: string; sku: string; branch_id: string
   number: string; expiration_date: string; quantity: number; is_active?: boolean; product_active?: boolean
 }
@@ -10,7 +11,7 @@ export interface OperationOptions {
 }
 export interface AdjustmentInput {
   request_id: string; branch_id: string; reason: string
-  items: { lot_id: string; expected_quantity: number; new_quantity: number }[]
+  items: { lot_id: string; expected_quantity: number; new_quantity: number; expected_reserved?: number }[]
 }
 export interface Adjustment {
   id: string; branch_id: string; user_id: string; reason: string; created_at: string

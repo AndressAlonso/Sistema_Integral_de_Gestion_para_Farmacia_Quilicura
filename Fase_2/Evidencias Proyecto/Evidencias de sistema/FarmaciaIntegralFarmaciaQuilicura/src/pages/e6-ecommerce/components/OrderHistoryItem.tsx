@@ -1,3 +1,4 @@
+import { orderStateLabel } from '../../e7-orders/orders.api'
 import type { OnlineOrderSummary } from '../types/order-history'
 
 export default function OrderHistoryItem({ order }: { order: OnlineOrderSummary }) {
@@ -6,7 +7,7 @@ export default function OrderHistoryItem({ order }: { order: OnlineOrderSummary 
   const total = new Intl.NumberFormat('es-CL', { style: 'currency', currency: order.currency, maximumFractionDigits: 2 }).format(Number(order.total))
   return <li className="order-history-item"><h2>Pedido {order.number}</h2><dl>
     <div><dt>Fecha</dt><dd><time dateTime={order.created_at}>{formattedDate}</time></dd></div>
-    <div><dt>Estado</dt><dd>{order.status === 'PENDIENTE_PAGO' ? 'Pendiente de pago' : order.status === 'CANCELADO' ? 'Cancelado' : order.status}</dd></div>
+    <div><dt>Estado</dt><dd>{orderStateLabel(order.status)}</dd></div>
     <div><dt>Total</dt><dd>{total}</dd></div>
     <div><dt>Sucursal de retiro</dt><dd>{order.pickup_branch.name}</dd></div>
   </dl></li>

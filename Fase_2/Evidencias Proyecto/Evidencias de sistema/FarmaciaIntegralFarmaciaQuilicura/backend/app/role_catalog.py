@@ -27,6 +27,7 @@ ROLE_CATALOG = {
         "catálogo, precios, promociones, configuraciones, autorizaciones, auditoría e indicadores.",
         (
             "usuarios.gestionar",
+            "pedidos.consultar", "pedidos.preparar",
             "pos.operar", "caja.operar", "ventas.reversar",
             "roles.gestionar",
             "sucursales.gestionar",
@@ -54,6 +55,7 @@ ROLE_CATALOG = {
     "ENCARGADO_PEDIDOS": RoleDefinition(
         "Encargado de pedidos",
         "Preparación de pedidos online, seguimiento, cambio de estados y entrega mediante QR.",
+        ("transferencias.consultar", "pedidos.consultar", "pedidos.preparar"),
     ),
     "QUIMICO_FARMACEUTICO": RoleDefinition(
         "Químico farmacéutico",
@@ -66,6 +68,8 @@ ROLE_CATALOG = {
 
 # Solo permisos existentes. El alcance futuro no habilita módulos por adelantado.
 PERMISSIONS = {
+    "pedidos.consultar": ("Consultar pedidos e historial de la sucursal autorizada", True),
+    "pedidos.preparar": ("Iniciar preparación y marcar pedidos listos para retiro", True),
     "ventas.reversar": ("Registrar anulaciones y devoluciones como administrador", True),
     "pos.operar": ("Buscar productos, cobrar ventas y consultar comprobantes POS", True),
     "caja.operar": ("Abrir, consultar y cerrar la caja propia de la sucursal asignada", True),
@@ -182,6 +186,30 @@ def reconcile_e4_permissions(db: Session) -> dict:
     return {"permissions_created": created, "links_added": added}
 
 
+def reconcile_e7_permissions(db: Session) -> None:
+    """E7-H3/H4: seguimiento y preparación sin conceder despacho ni aprobación."""
+    db.execute(text("SELECT pg_advisory_xact_lock(184701)"))
+    db.execute(text("SELECT pg_advisory_xact_lock(73412002)"))
+    role = db.scalar(select(Rol).where(Rol.codigo == "ENCARGADO_PEDIDOS"))
+    permission = db.scalar(select(Permiso).where(Permiso.codigo == "transferencias.consultar"))
+    if role is None or permission is None:
+        raise ValueError("Carga primero el catálogo existente de roles y permisos.")
+    if permission not in role.permisos:
+        role.permisos.append(permission)
+    for code in ("pedidos.consultar", "pedidos.preparar"):
+        item = db.scalar(select(Permiso).where(Permiso.codigo == code))
+        if item is None:
+            item = Permiso(codigo=code, descripcion=PERMISSIONS[code][0])
+            db.add(item)
+        for role_code in ("ADMINISTRADOR", "ENCARGADO_PEDIDOS"):
+            target = db.scalar(select(Rol).where(Rol.codigo == role_code))
+            if target is None:
+                raise ValueError(f"Falta el rol {role_code}.")
+            if item not in target.permisos:
+                target.permisos.append(item)
+    db.flush()
+
+
 def _snapshot(db: Session) -> tuple[set[str], dict[str, set[str]]]:
     permissions = {p.codigo for p in db.scalars(select(Permiso))}
     links = {code: set() for code in E4_ROLE_PERMISSIONS}
@@ -199,6 +227,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Configuración de roles SIGFQ")
     parser.add_argument("--reconcile-e4", action="store_true",
                         help="Completar aditivamente los permisos obligatorios de E4")
+    parser.add_argument("--reconcile-e7", action="store_true",
+                        help="Completar permisos de seguimiento y preparación de pedidos E7")
     args = parser.parse_args(argv)
     engine = create_database_engine()
     try:
@@ -207,7 +237,10 @@ def main(argv: list[str] | None = None) -> int:
                 db.execute(text("SELECT pg_advisory_xact_lock(184701)"))
                 db.execute(text("SELECT pg_advisory_xact_lock(73412002)"))
                 before_permissions, before_links = _snapshot(db)
-            sync_roles(db)
+            if args.reconcile_e7:
+                reconcile_e7_permissions(db)
+            else:
+                sync_roles(db)
             if args.reconcile_e4:
                 reconcile_e4_permissions(db)
                 after_permissions, after_links = _snapshot(db)
@@ -225,7 +258,7 @@ def main(argv: list[str] | None = None) -> int:
                 print("Idempotencia confirmada: sin incorporaciones de permisos o vínculos E4.")
             print("Commit confirmado: catálogo y matriz E4 verificados en una única transacción.")
         else:
-            print("Seis roles configurados. UUID y asignaciones existentes conservados.")
+            print("Permisos E7-H3/H4 sincronizados." if args.reconcile_e7 else "Seis roles configurados. UUID y asignaciones existentes conservados.")
         return 0
     except (ValueError, SQLAlchemyError) as exc:
         message = str(exc) if isinstance(exc, ValueError) else "No se pudo completar la configuración."

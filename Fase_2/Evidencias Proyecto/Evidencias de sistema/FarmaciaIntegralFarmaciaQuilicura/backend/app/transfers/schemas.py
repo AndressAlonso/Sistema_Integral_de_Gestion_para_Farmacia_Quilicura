@@ -61,6 +61,8 @@ class TransferEventResponse(BaseModel):
 
 
 class TransferResponse(BaseModel):
+    order_id: UUID | None = None
+    order_number: str | None = None
     id: UUID
     origin_id: UUID
     origin_name: str

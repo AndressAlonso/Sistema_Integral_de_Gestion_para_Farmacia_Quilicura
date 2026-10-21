@@ -19,11 +19,14 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(default=540, ge=1, le=1440)
     cookie_secure: bool = False
     app_environment: Literal["development", "production"] = "production"
+    order_payment_simulation: bool = False
     pos_demo_product_id: UUID | None = None
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     @model_validator(mode="after")
     def demo_only_in_development(self):
+        if self.order_payment_simulation and self.app_environment != "development":
+            raise ValueError("El simulador de pedidos solo puede habilitarse en desarrollo")
         if self.pos_demo_product_id is not None and self.app_environment != "development":
             raise ValueError("Las promociones de demostración requieren APP_ENVIRONMENT=development")
         return self

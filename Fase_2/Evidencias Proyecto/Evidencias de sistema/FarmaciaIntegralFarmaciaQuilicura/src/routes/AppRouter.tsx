@@ -5,6 +5,7 @@ import {
   Routes,
 } from 'react-router-dom'
 
+import OrdersPage from '../pages/e7-orders/OrdersPage'
 import AdminLayout from '../layouts/AdminLayout'
 import { adminNavigation } from '../layouts/adminNavigation'
 import LoginPage from '../pages/e1-access-users-branches/auth/LoginPage'
@@ -27,6 +28,7 @@ import OrderConfirmationPage from '../pages/e6-ecommerce/pages/OrderConfirmation
 import OrderHistoryPage from '../pages/e6-ecommerce/pages/OrderHistoryPage'
 
 function getAdminPage(path: string) {
+  if (path === '/admin/orders') return <OrdersPage />
   if (path === '/admin/promotions') return <PromotionsPage />
   if (path === '/admin/pos') return <PosPage />
   if (path === '/admin/cash') return <CashPage />

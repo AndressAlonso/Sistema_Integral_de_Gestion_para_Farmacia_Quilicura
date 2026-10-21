@@ -7,6 +7,7 @@ export interface TransferInput {
   items: { product_id: string; quantity: number }[]
 }
 export interface Transfer {
+  order_id?: string | null; order_number?: string | null
   id: string; origin_id: string; origin_name: string; destination_id: string; destination_name: string
   state: TransferState; created_at: string; requested_by: string; rejection_reason: string | null
   actions: TransferAction[]

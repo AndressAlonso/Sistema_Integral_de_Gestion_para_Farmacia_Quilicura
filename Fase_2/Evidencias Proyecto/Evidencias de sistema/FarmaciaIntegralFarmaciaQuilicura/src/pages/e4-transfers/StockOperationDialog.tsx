@@ -107,7 +107,7 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
         id = result.id
       } else {
         const result = await createAdjustment({ request_id: draft.requestId, branch_id: draft.branchId, reason: draft.reason,
-          items: changed.map(row => ({ lot_id: row.lot.id, expected_quantity: row.lot.quantity, new_quantity: Number(row.quantity) })) })
+          items: changed.map(row => ({ lot_id: row.lot.id, expected_quantity: row.lot.quantity, new_quantity: Number(row.quantity), expected_reserved: row.lot.available === undefined ? undefined : row.lot.quantity - row.lot.available })) })
         id = result.id
       }
       sessionStorage.removeItem(key)
@@ -142,11 +142,11 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
           <label>Número de documento *<input required maxLength={80} value={draft.documentNumber} onChange={event => update({ documentNumber: event.target.value })} /></label>
           <label>Fecha del documento *<input type="date" required max={today} value={draft.documentDate} onChange={event => update({ documentDate: event.target.value })} /></label>
         </> : <label className="transfer-wide">Motivo del ajuste *<textarea required maxLength={250} placeholder="Explica la diferencia detectada en el inventario" value={draft.reason} onChange={event => update({ reason: event.target.value })} /></label>}
-        <p className="transfer-wide">{receipt ? 'Selecciona productos del catálogo, aunque no tengan existencias. Ingresa las unidades recibidas y el lote y vencimiento del envase. Al confirmar se registrarán los lotes y se sumarán las cantidades; no necesitas crearlos antes en Inventario.' : 'Escribe la cantidad final de cada lote: se registrarán el valor anterior, el nuevo y su diferencia.'}</p>
-        <label className="transfer-wide">{receipt ? 'Producto del catálogo' : 'Producto / lote existente'}<select disabled={!draft.branchId} value={lotId} onChange={event => setLotId(event.target.value)}>
-          <option value="">Selecciona para agregar una fila</option>{receipt
+        {receipt && <p className="transfer-wide">Selecciona productos del catálogo, aunque no tengan existencias. Ingresa las unidades recibidas y el lote y vencimiento del envase. Al confirmar se registrarán los lotes y se sumarán las cantidades; no necesitas crearlos antes en Inventario.</p>}
+        <label className="transfer-wide">{receipt ? 'Producto del catálogo' : 'Producto y lote que quieres ajustar'}<select disabled={!draft.branchId} value={lotId} onChange={event => setLotId(event.target.value)}>
+          <option value="">{draft.branchId ? 'Selecciona un producto' : 'Primero selecciona una sucursal'}</option>{receipt
             ? products.map(product => <option key={product.id} value={product.id}>{product.name} · {product.sku}</option>)
-            : available.filter(lot => !draft.rows.some(row => row.lot.id === lot.id)).map(lot => <option key={lot.id} value={lot.id}>{lot.product_name} · {lot.sku} · Lote {lot.number} · {lot.quantity} unidades{lot.expiration_date <= today ? ' · Vencido' : ''}{lot.is_active === false ? ' · Deshabilitado' : ''}{lot.product_active === false ? ' · Producto inactivo' : ''}</option>)}
+            : available.filter(lot => !draft.rows.some(row => row.lot.id === lot.id)).map(lot => <option key={lot.id} value={lot.id}>{lot.product_name} · {lot.sku} · Lote {lot.number} · {lot.available ?? lot.quantity} disponibles{lot.expiration_date <= today ? ' · Vencido' : ''}{lot.is_active === false ? ' · Deshabilitado' : ''}{lot.product_active === false ? ' · Producto inactivo' : ''}</option>)}
         </select></label>
         <button type="button" className="users-button" disabled={!lotId || draft.rows.length >= 100} onClick={() => {
           if (receipt) {
@@ -158,10 +158,10 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
           }
           const lot = available.find(item => item.id === lotId)
           if (lot) { update({ rows: [...draft.rows, { lot, quantity: receipt ? '1' : String(lot.quantity) }] }); setLotId('') }
-        }}>{receipt ? '+ Agregar producto' : '+ Agregar producto / lote'}</button>
+        }}>{receipt ? '+ Agregar producto' : '+ Añadir al ajuste'}</button>
         {receipt && !products.length && <p className="transfer-notice transfer-wide">No hay productos activos en el catálogo.</p>}
         {!receipt && draft.branchId && !available.length && <p className="transfer-notice transfer-wide">No hay lotes disponibles para ajustar en esta sucursal.</p>}
-        <div className="users-table-scroll transfer-wide"><table className="users-table stock-operation-table"><thead><tr><th>Producto</th><th>Lote / vencimiento</th><th>Cantidad actual del lote</th><th>{receipt ? 'Unidades recibidas' : 'Cantidad final'}</th><th>{receipt ? 'Quedarán en el lote' : 'Diferencia'}</th><th>Fila</th></tr></thead>
+        <div className="users-table-scroll transfer-wide"><table className="users-table stock-operation-table"><thead><tr><th>Producto</th><th>Lote / vencimiento</th><th>{receipt ? 'Unidades actuales' : 'Disponibles actuales'}</th><th>{receipt ? 'Unidades recibidas' : 'Disponibles después del ajuste'}</th><th>{receipt ? 'Quedarán en el lote' : 'Cambio'}</th><th><span className="sr-only">Quitar del formulario</span></th></tr></thead>
           <tbody>{!draft.rows.length && <tr><td className="users-empty" colSpan={6}>Agrega los productos que necesitas modificar.</td></tr>}{draft.rows.map((row, index) => <tr key={row.lot.id}>
             <td>{row.lot.product_name}<small>{row.lot.sku}</small></td><td>{receipt ? <>
               <label>Lote del envase<input required maxLength={80} list={`receipt-lots-${index}`} aria-label={`Lote de ${row.lot.product_name}, fila ${index + 1}`} value={row.lot.number}
@@ -169,18 +169,22 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
               <datalist id={`receipt-lots-${index}`}>{available.filter(lot => lot.product_id === row.lot.product_id).map(lot => <option key={lot.id} value={lot.number}>{lot.expiration_date}</option>)}</datalist>
               <label>Vencimiento<input required type="date" min={new Date(new Date(`${today}T00:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10)} aria-label={`Vencimiento de ${row.lot.product_name}, fila ${index + 1}`} value={row.lot.expiration_date}
                 onChange={event => update({ rows: draft.rows.map((value, i) => i === index ? { ...value, lot: { ...value.lot, expiration_date: event.target.value } } : value) })} /></label>
-            </> : <>{row.lot.number}<small>{row.lot.expiration_date}</small></>}</td><td>{receipt ? (available.find(lot => lot.product_id === row.lot.product_id && lot.number === row.lot.number.trim())?.quantity ?? 0) : row.lot.quantity}</td>
-            <td><input aria-label={`${receipt ? 'Unidades recibidas' : 'Cantidad final'} de ${row.lot.product_name}, lote ${row.lot.number}`} type="number" required min={receipt ? 1 : 0} max={receipt ? 1000000 : 2147483647} step={1} value={row.quantity} onChange={event => update({ rows: draft.rows.map((value, i) => i === index ? { ...value, quantity: event.target.value } : value) })} /></td>
-            <td>{row.quantity === '' ? '—' : receipt ? (available.find(lot => lot.product_id === row.lot.product_id && lot.number === row.lot.number.trim())?.quantity ?? 0) + Number(row.quantity) : Number(row.quantity) - row.lot.quantity}</td>
+            </> : <>{row.lot.number}<small>{row.lot.expiration_date}</small></>}</td><td>{receipt ? (available.find(lot => lot.product_id === row.lot.product_id && lot.number === row.lot.number.trim())?.quantity ?? 0) : (row.lot.available ?? row.lot.quantity)}</td>
+            <td><input aria-label={`${receipt ? 'Unidades recibidas' : 'Disponibles después del ajuste'} de ${row.lot.product_name}, lote ${row.lot.number}`} type="number" required min={receipt ? 1 : 0} max={receipt ? 1000000 : 2147483647} step={1} value={receipt || row.quantity === '' ? row.quantity : Number(row.quantity) - (row.lot.quantity - (row.lot.available ?? row.lot.quantity))} onChange={event => update({ rows: draft.rows.map((value, i) => i === index ? { ...value, quantity: receipt || event.target.value === '' ? event.target.value : String(Number(event.target.value) + row.lot.quantity - (row.lot.available ?? row.lot.quantity)) } : value) })} /></td>
+            <td>{row.quantity === '' ? '—' : receipt ? (available.find(lot => lot.product_id === row.lot.product_id && lot.number === row.lot.number.trim())?.quantity ?? 0) + Number(row.quantity) : <span className={`stock-change ${Number(row.quantity) < row.lot.quantity ? 'stock-change-decrease' : ''}`}>{Number(row.quantity) === row.lot.quantity ? 'Sin cambios' : `${Number(row.quantity) > row.lot.quantity ? 'Aumenta' : 'Disminuye'} ${Math.abs(Number(row.quantity) - row.lot.quantity)} ud.`}</span>}</td>
             <td><button type="button" className="users-button" aria-label={`Quitar ${row.lot.product_name}, lote ${row.lot.number}`} onClick={() => update({ rows: draft.rows.filter((_, i) => i !== index) })}>Quitar</button></td>
           </tr>)}</tbody></table></div>
-        <button type="button" className="users-button" onClick={reload}>Actualizar cantidades actuales</button>
+        <button type="button" className="users-button" onClick={reload}>↻ Actualizar existencias</button>
       </fieldset>
       {error && <p className="users-error" role="alert">{error}</p>}
       {!options && !loading && <button type="button" className="users-button" onClick={() => { setLoading(true); setAttempt(value => value + 1) }}>Reintentar carga</button>}
-      <label className="stock-confirmation"><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)} />Confirmo {count} {count === 1 ? 'fila' : 'filas'} y los datos de respaldo. Se guardarán juntos.</label>
-      <footer className="users-dialog-actions"><button type="button" className="users-button" disabled={busy} onClick={onClose}>{pending ? 'Cerrar y conservar pendiente' : 'Cancelar'}</button>
-        <button type="submit" className="users-button primary" disabled={busy || !confirmed || !count || (!pending && (loading || !permitted))}>{busy ? 'Guardando…' : pending ? 'Reintentar confirmación' : 'Guardar movimiento'}</button></footer>
+      <footer className="users-dialog-actions stock-operation-actions">
+        <div className="stock-review">
+          {count > 0 ? <label className="stock-confirmation"><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)} />{receipt ? 'Revisé las cantidades y el documento.' : `Revisé los cambios de ${count} ${count === 1 ? 'lote' : 'lotes'} y el motivo.`}</label> : <p>{draft.rows.length ? 'Modifica una cantidad para guardar el ajuste.' : 'Añade un producto para continuar.'}</p>}
+          {count > 0 && !confirmed && <small>Marca la confirmación para habilitar el guardado.</small>}
+        </div>
+        <button type="button" className="users-button" disabled={busy} onClick={onClose}>{pending ? 'Cerrar y conservar pendiente' : 'Cancelar'}</button>
+        <button type="submit" className="users-button primary" disabled={busy || !confirmed || !count || (!pending && (loading || !permitted))}>{busy ? 'Guardando…' : pending ? 'Reintentar confirmación' : receipt ? 'Guardar recepción' : 'Guardar ajuste'}</button></footer>
     </form>
   </dialog>
 }

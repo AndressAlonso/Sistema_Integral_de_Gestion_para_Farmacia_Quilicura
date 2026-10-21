@@ -5,6 +5,7 @@ import type { AuthSession } from '../e1-access-users-branches/auth/login.api'
 import { ApiError } from '../../services/http'
 import TransferDetail from './TransferDetail'
 import TransferForm from './TransferForm'
+import PaymentSimulation from './PaymentSimulation'
 import { actions, listTransfers, states, transferCode, transferOptions, units, type Transfer, type TransferAction, type TransferOptions } from './transfers.api'
 import '../e1-access-users-branches/users/users.css'
 import './transfers.css'
@@ -56,7 +57,7 @@ export default function TransfersPage() {
     (!filters.state || transfer.state === filters.state) && (!filters.origin || transfer.origin_id === filters.origin) &&
     (!filters.destination || transfer.destination_id === filters.destination) &&
     (!filters.date || localDate(transfer.created_at) === filters.date) &&
-    (!query || [transfer.id, transferCode(transfer.id), transfer.requested_by, ...transfer.items.map(item => `${item.product_name} ${item.sku}`)].join(' ').toLocaleLowerCase('es').includes(query)))
+    (!query || [transfer.id, transferCode(transfer.id), transfer.order_number ?? '', transfer.requested_by, ...transfer.items.map(item => `${item.product_name} ${item.sku}`)].join(' ').toLocaleLowerCase('es').includes(query)))
   const today = localDate(new Date().toISOString())
   const summaries = [
     ['Solicitadas', transfers.filter(t => t.state === 'SOLICITADA').length, 'Pendientes de autorización'],
@@ -70,6 +71,7 @@ export default function TransfersPage() {
       <div className="transfer-actions">
         {options?.can_create && <button type="button" className="users-button primary" disabled={loading} onClick={() => { setMessage(''); setCreating(true) }}>+ Nueva transferencia</button>}
       </div></header>
+    {session.user.roles.includes("ADMINISTRADOR") && <PaymentSimulation onChanged={refresh} />}
     <section className="users-panel transfer-flow" aria-label="Flujo de transferencia"><div><strong>Flujo de transferencia</strong><p>Se reserva al solicitar; el stock físico sale al confirmar el despacho.</p></div>
       <div>{(['SOLICITADA', 'AUTORIZADA', 'EN_TRANSITO', 'RECIBIDA'] as const).map((state, index) => <span key={state}>{index > 0 && <span aria-hidden="true"> → </span>}<span className={`transfer-state ${state.toLowerCase()}`}>{states[state]}</span></span>)}</div></section>
     <div className="transfer-summaries" aria-label="Resumen de las transferencias visibles">{summaries.map(([label, count, help]) => <div key={label}><span>{label}</span><strong>{loading ? '—' : count}</strong><small>{help}</small></div>)}</div>
@@ -88,10 +90,10 @@ export default function TransfersPage() {
       <div className="users-table-scroll"><table className="users-table transfer-table responsive-admin-table"><thead><tr>{['ID', 'Fecha', 'Ruta', 'Productos', 'Unidades', 'Reserva', 'Responsable', 'Estado', 'Acciones'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
         <PaginatedTableBody total={filtered.length} columns={9} labels={["ID", "Fecha", "Ruta", "Productos", "Unidades", "Reserva", "Responsable", "Estado", "Acciones"]}>{!filtered.length && <tr><td colSpan={9} className="users-empty">{loading ? 'Cargando transferencias…' : error ? 'No se pudo actualizar el listado.' : 'No hay transferencias que coincidan con los filtros.'}</td></tr>}
           {filtered.map(transfer => <tr key={transfer.id}>
-            <td><button type="button" className="transfer-link" onClick={() => setSelected({ transfer })}>{transferCode(transfer.id)}</button></td>
+            <td><button type="button" className="transfer-link" onClick={() => setSelected({ transfer })}>{transferCode(transfer.id)}</button>{transfer.order_id && <><span className="transfer-online-badge">Pedido online</span><small>{transfer.order_number}</small></>}</td>
             <td>{new Date(transfer.created_at).toLocaleDateString('es-CL')}<small>{new Date(transfer.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</small></td>
             <td>{transfer.origin_name}<span className="transfer-route-arrow">→</span>{transfer.destination_name}</td><td>{transfer.items.length}</td><td>{units(transfer)}</td>
-            <td>{['SOLICITADA', 'AUTORIZADA'].includes(transfer.state) ? `${units(transfer)} reservadas` : transfer.state === 'RECHAZADA' ? 'Liberada al rechazar' : 'Liberada al despachar'}</td>
+            <td>{['SOLICITADA', 'AUTORIZADA'].includes(transfer.state) ? `${units(transfer)} reservadas` : transfer.order_id ? (transfer.state === 'RECIBIDA' ? 'Reservadas para el pedido en destino' : 'En tránsito para el pedido') : transfer.state === 'RECHAZADA' ? 'Liberada al rechazar' : 'Liberada al despachar'}</td>
             <td>{transfer.requested_by}</td><td><span className={`transfer-state ${transfer.state.toLowerCase()}`}>{states[transfer.state]}</span></td>
             <td><div className="users-row-actions">{transfer.actions.map(action => <button type="button" key={action} onClick={() => setSelected({ transfer, action })}>{actions[action]}</button>)}<button type="button" aria-label={`Ver detalle ${transferCode(transfer.id)}`} onClick={() => setSelected({ transfer })}>Ver detalle</button></div></td>
           </tr>)}</PaginatedTableBody></table></div></section>

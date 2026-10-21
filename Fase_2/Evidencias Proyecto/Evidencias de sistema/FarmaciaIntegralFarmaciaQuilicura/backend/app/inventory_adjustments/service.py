@@ -67,7 +67,7 @@ class AdjustmentService:
 
     def create(self, actor, data):
         self.authorize(actor, data.branch_id)
-        fingerprint = sha256(data.model_dump_json().encode()).hexdigest()
+        fingerprint = sha256(data.model_dump_json(exclude_none=True).encode()).hexdigest()
         with self.repo.factory.begin() as db:
             self.repo.lock_request(db, data.request_id)
             existing = self.repo.get(db, data.request_id)
@@ -111,6 +111,8 @@ class AdjustmentService:
                 for old in group:
                     lot = self.repo.refresh_lot(db, old.id)
                     item = items[lot.id]
+                    if item.expected_reserved is not None and item.expected_reserved != reserved.get(lot.id, 0):
+                        raise AdjustmentError(409, "Las unidades disponibles cambiaron. Actualiza las existencias y revisa el ajuste.")
                     if lot.cantidad != item.expected_quantity:
                         raise AdjustmentError(
                             409,
@@ -120,7 +122,11 @@ class AdjustmentService:
                         raise AdjustmentError(409, "Un lote o producto deshabilitado solo admite reducir sus unidades mediante un ajuste.")
                     if item.new_quantity < reserved.get(lot.id, 0):
                         raise AdjustmentError(
-                            409, "El ajuste afectaría unidades reservadas del lote."
+                            409,
+                            f"El lote {lot.numero_lote} tiene {reserved[lot.id]} unidades "
+                            "reservadas para pedidos o transferencias. "
+                            f"La cantidad final no puede ser menor que {reserved[lot.id]}. "
+                            "El ajuste no se guardó.",
                         )
                     changes.append((lot, item))
                 final = inv.stock_fisico + sum(
@@ -129,7 +135,9 @@ class AdjustmentService:
                 if final < inv.stock_reservado or final < 0 or final > 2_147_483_647:
                     raise AdjustmentError(
                         409,
-                        "El ajuste deja stock insuficiente para las reservas o supera el límite admitido.",
+                        "El ajuste deja stock insuficiente para las reservas o supera el límite admitido. "
+                        f"Este producto tiene {inv.stock_reservado} unidades reservadas en la sucursal; "
+                        "el stock físico total debe cubrirlas. El ajuste no se guardó.",
                     )
                 # Aumentos primero para respetar reservas durante cada movimiento.
                 changes.sort(

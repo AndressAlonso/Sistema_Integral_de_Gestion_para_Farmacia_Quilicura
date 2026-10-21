@@ -271,7 +271,7 @@ class PostgresBranchRepository:
             ).join(InventarioSucursal, InventarioSucursal.id == LoteInventario.inventario_sucursal_id).where(
                 InventarioSucursal.sucursal_id == branch_id, ReservaPedido.activa.is_(True))
             if db.scalar(select(PedidoOnline.id).where(
-                PedidoOnline.estado == "PENDIENTE_PAGO",
+                PedidoOnline.estado.in_(("PENDIENTE_PAGO", "PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO")),
                 (PedidoOnline.sucursal_id == branch_id) | PedidoOnline.id.in_(reserved_origin)
             ).limit(1)) is not None:
                 raise BranchPendingOrders

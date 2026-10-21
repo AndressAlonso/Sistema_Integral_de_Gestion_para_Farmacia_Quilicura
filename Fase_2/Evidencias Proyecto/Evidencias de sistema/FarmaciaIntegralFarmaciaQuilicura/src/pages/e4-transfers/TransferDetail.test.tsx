@@ -13,6 +13,17 @@ vi.mock('./transfers.api', async () => {
 vi.mock('./receipt-review.api', () => ({ reviewReceipt: vi.fn(), reactivateDestinationLot: vi.fn() }))
 const transfer: Transfer = { id: 'qa-transfer', origin_id: 'origin', origin_name: 'Sucursal Centro', destination_id: 'destination', destination_name: 'Sucursal de prueba', state: 'SOLICITADA', created_at: '2026-10-12T12:00:00Z', requested_by: 'Usuario QA', rejection_reason: null, actions: ['approve', 'reject'], items: [{ product_id: 'product', product_name: 'Producto QA', sku: 'QA', quantity: 18, lots: [] }], timeline: [] }
 const originalShowModal = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal')
+it('distingue pedidos online sin ofrecer aprobación ni rechazo manual', async () => {
+  const online: Transfer = { ...transfer, order_id: 'pedido', order_number: 'WEB-PEDIDO', requested_by: 'Sistema', state: 'AUTORIZADA', actions: ['dispatch'] }
+  vi.mocked(getTransfer).mockResolvedValue(online)
+  render(<MemoryRouter><TransferDetail transfer={online} onClose={vi.fn()} onChanged={vi.fn()} /></MemoryRouter>)
+  await screen.findByRole('radio', { name: 'Registrar salida de productos' })
+  expect(screen.getByText('Pedido online')).toBeTruthy()
+  expect(screen.getByText(/WEB-PEDIDO/)).toBeTruthy()
+  expect(screen.queryByRole('radio', { name: 'Autorizar transferencia' })).toBeNull()
+  expect(screen.queryByRole('radio', { name: 'Rechazar transferencia' })).toBeNull()
+  expect(screen.queryByText(/Puedes rechazar antes/)).toBeNull()
+})
 const originalClose = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'close')
 beforeEach(() => {
   vi.resetAllMocks()

@@ -906,15 +906,18 @@ class AjusteInventarioDetalle(Base):
 class Transferencia(Base):
     __tablename__ = "transferencia"
     __table_args__ = (
+        UniqueConstraint("pedido_id", "origen_id", name="uq_transferencia_pedido_origen"),
+        CheckConstraint("solicitante_id IS NOT NULL OR pedido_id IS NOT NULL", name="ck_transferencia_solicitante"),
         CheckConstraint("origen_id <> destino_id", name="ck_transferencia_sucursales"),
         CheckConstraint("estado IN ('SOLICITADA','AUTORIZADA','EN_TRANSITO','RECIBIDA','RECHAZADA')", name="ck_transferencia_estado"),
     )
     id: Mapped[UUID] = mapped_column(primary_key=True)
+    pedido_id: Mapped[UUID | None] = mapped_column(ForeignKey("pedido_online.id", ondelete="RESTRICT"))
     solicitud_hash: Mapped[str] = mapped_column(String(64))
     origen_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True)
     destino_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True)
     estado: Mapped[str] = mapped_column(String(20), index=True)
-    solicitante_id: Mapped[UUID] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    solicitante_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
     autorizador_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
     despachador_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
     receptor_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
@@ -927,7 +930,7 @@ class Transferencia(Base):
     motivo_rechazo: Mapped[str | None] = mapped_column(String(250))
     origen: Mapped["Sucursal"] = relationship(foreign_keys=[origen_id])
     destino: Mapped["Sucursal"] = relationship(foreign_keys=[destino_id])
-    solicitante: Mapped["UsuarioInterno"] = relationship(foreign_keys=[solicitante_id])
+    solicitante: Mapped["UsuarioInterno | None"] = relationship(foreign_keys=[solicitante_id])
     detalles: Mapped[list["TransferenciaDetalle"]] = relationship(passive_deletes="all", order_by="TransferenciaDetalle.producto_id")
 
 
@@ -948,10 +951,12 @@ class TransferenciaDetalle(Base):
 class TransferenciaLote(Base):
     __tablename__ = "transferencia_lote"
     __table_args__ = (
+        UniqueConstraint("reserva_pedido_id", name="uq_transferencia_lote_reserva"),
         UniqueConstraint("detalle_id", "lote_origen_id", name="uq_transferencia_detalle_lote"),
         CheckConstraint("cantidad > 0", name="ck_transferencia_lote_cantidad"),
     )
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    reserva_pedido_id: Mapped[UUID | None] = mapped_column(ForeignKey("reserva_pedido.id", ondelete="RESTRICT"))
     detalle_id: Mapped[UUID] = mapped_column(ForeignKey("transferencia_detalle.id", ondelete="RESTRICT"), index=True)
     lote_origen_id: Mapped[UUID] = mapped_column(ForeignKey("lote_inventario.id", ondelete="RESTRICT"), index=True)
     lote_destino_id: Mapped[UUID | None] = mapped_column(ForeignKey("lote_inventario.id", ondelete="RESTRICT"), index=True)

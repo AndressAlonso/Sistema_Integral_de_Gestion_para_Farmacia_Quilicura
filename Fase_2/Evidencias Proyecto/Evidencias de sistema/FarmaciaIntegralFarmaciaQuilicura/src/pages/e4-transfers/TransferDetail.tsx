@@ -51,12 +51,13 @@ export default function TransferDetail({ transfer, initialAction, onClose, onCha
       <header className="users-dialog-heading"><div><h2 id="transfer-detail-title">{transferCode(current.id)}</h2><p>{current.origin_name} → {current.destination_name}</p>
         <small>ID completo: {current.id}</small></div><button type="button" className="users-close" aria-label="Cerrar detalle" disabled={busy} onClick={onClose}>×</button></header>
       <p><span className={`transfer-state ${current.state.toLowerCase()}`}>{states[current.state]}</span> · Solicitada por {current.requested_by}</p>
+      {current.order_id && <p className="transfer-online-note"><span className="transfer-online-badge">Pedido online</span> {current.order_number}<br />Generada y autorizada automáticamente tras confirmar el pago. Las unidades recibidas siguen reservadas para este pedido.</p>}
       {loading && <p role="status">Comprobando estado y permisos actuales…</p>}
       <section className="users-panel" aria-label="Cómo funciona la transferencia">
-        <h3>Solicitar → Autorizar → Enviar → Recibir</h3>
-        <p>Solicitar aparta unidades en origen. Autorizar permite enviarlas. Confirmar salida registra que salieron físicamente. Confirmar recepción las incorpora al destino.</p>
+        <h3>{current.order_id ? "Pago aceptado → Autorizada → Enviar → Recibir" : "Solicitar → Autorizar → Enviar → Recibir"}</h3>
+        <p>{current.order_id ? "Utiliza las reservas del pedido. El personal confirma la salida y la llegada física; no requiere aprobación manual." : "Solicitar aparta unidades en origen. Autorizar permite enviarlas. Confirmar salida registra que salieron físicamente. Confirmar recepción las incorpora al destino."}</p>
         {current.state === 'EN_TRANSITO' && <p><strong>Los productos ya salieron del origen.</strong> No se puede rechazar esta transferencia. Si la recepción está bloqueada, revisa el lote destino en Inventario; no lo reactives sin comprobar que corresponde.</p>}
-        {(current.state === 'SOLICITADA' || current.state === 'AUTORIZADA') && <p>Puedes rechazar antes de confirmar la salida: se liberan las unidades reservadas y se conserva el historial.</p>}
+        {!current.order_id && (current.state === 'SOLICITADA' || current.state === 'AUTORIZADA') && <p>Puedes rechazar antes de confirmar la salida: se liberan las unidades reservadas y se conserva el historial.</p>}
       </section>
       <section className="users-panel"><h3>Productos y lotes</h3>
         {current.items.map(item => <div className="transfer-detail-item" key={item.product_id}>
