@@ -108,7 +108,7 @@ describe('E2-H3', () => {
   it('muestra errores de carga sin inventar promociones', async () => {
     vi.mocked(listPromotions).mockRejectedValue(new Error('No disponible'))
     render(<PromotionsPage />)
-    expect((await screen.findByRole('alert')).textContent).toBe('No disponible')
+    expect((await screen.findByRole('alert')).textContent).toContain('No disponible')
   })
 })
 

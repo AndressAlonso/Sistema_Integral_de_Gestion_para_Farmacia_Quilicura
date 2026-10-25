@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { disableLot, getLotStatus, reactivateLot } from './lot-status.api'
@@ -40,7 +41,7 @@ export default function LotStatusDialog({ lotId, onClose, onChanged }: { lotId: 
     onCancel={event => { event.preventDefault(); if (!sending.current) onClose() }}>
     <form onSubmit={event => void submit(event)}>
       <header><h2 id={title}>Estado del lote</h2><button type="button" className="lot-status-close" disabled={busy} aria-label="Cerrar revisión del lote" onClick={onClose}>×</button></header>
-      {error && <p role="alert" className="lot-status-error">{error}</p>}
+      {error && <Notification message={error} kind="error" />}
       {!lot && !error && <p role="status">Consultando lote…</p>}
       {lot && <><h3>{lot.product_name}</h3><dl className="lot-status-summary">
         <div><dt>Lote</dt><dd>{lot.number}</dd></div><div><dt>Sucursal</dt><dd>{lot.branch_name}</dd></div>

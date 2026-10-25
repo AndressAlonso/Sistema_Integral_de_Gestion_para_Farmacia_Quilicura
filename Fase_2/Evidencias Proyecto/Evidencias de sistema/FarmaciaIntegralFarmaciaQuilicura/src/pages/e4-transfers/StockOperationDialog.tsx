@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../../services/http'
 import { createReceipt, receiptProducts, type ReceiptProduct } from './receipts.api'
@@ -176,7 +177,7 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
           </tr>)}</tbody></table></div>
         <button type="button" className="users-button" onClick={reload}>↻ Actualizar existencias</button>
       </fieldset>
-      {error && <p className="users-error" role="alert">{error}</p>}
+      {error && <Notification message={error} kind="error" />}
       {!options && !loading && <button type="button" className="users-button" onClick={() => { setLoading(true); setAttempt(value => value + 1) }}>Reintentar carga</button>}
       <footer className="users-dialog-actions stock-operation-actions">
         <div className="stock-review">

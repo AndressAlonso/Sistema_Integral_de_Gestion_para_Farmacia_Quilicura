@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import ActionIcon from '../ActionIcon'
 // HU: E1-H5 - Crear, actualizar y desactivar sucursales
@@ -315,9 +316,7 @@ export default function BranchesPage() {
       </div>
 
       {message && (
-        <p className="branches-message" role="status">
-          {message}
-        </p>
+        <Notification message={message} kind="success" />
       )}
 
       <section

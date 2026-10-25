@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   useDeferredValue,
@@ -161,16 +162,11 @@ export default function LotPanel({
       <span className="lot-cell-detail">Usa «Crear lotes / recibir mercadería» en la cabecera de Inventario.</span></div>
       </div>
       <div className="lot-entry-note" aria-label="Cómo interpretar los lotes"><p><strong>Deshabilitado:</strong> bloqueado para salidas. <strong>Vencido:</strong> no vendible, aunque esté habilitado. <strong>Sin unidades:</strong> cantidad 0; conserva su historial.</p><p>Reactivar quita el bloqueo: no agrega unidades ni cambia el vencimiento. Recibir mercadería aumenta cantidades; ajustar inventario corrige cantidades con un motivo.</p></div>
-      {notice && <p className="lot-message" role="status">{notice}</p>}
+      {notice && <Notification message={notice} kind="info" />}
       {targetLotId && <div className="lot-navigation"><p>Mostrando el lote seleccionado desde la transferencia.</p><Link to="/admin/inventory?tab=lots">Ver todos los lotes</Link>
         {returnTransferId && <Link to={`/admin/transfers?transfer_id=${encodeURIComponent(returnTransferId)}`}>Volver a la transferencia</Link>}</div>}
       {error && (
-        <p
-          className="lot-message lot-error"
-          role="alert"
-        >
-          {error}
-        </p>
+        <Notification message={error} kind="error" />
       )}
 
 

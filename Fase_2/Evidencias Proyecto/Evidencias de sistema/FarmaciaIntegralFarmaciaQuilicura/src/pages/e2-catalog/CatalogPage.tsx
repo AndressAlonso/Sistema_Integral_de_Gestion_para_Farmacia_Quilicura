@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 // E2-H1/E2-H2: catálogo y cambio de precio con auditoría.
 import { useEffect, useRef, useState } from 'react'
@@ -274,8 +275,8 @@ export default function CatalogPage() {
         </div>
       </header>
 
-      {message && <p className="users-success" role="status">{message}</p>}
-      {notice && <p className="catalog-notice" role="status">{notice}</p>}
+      {message && <Notification message={message} kind="success" />}
+      {notice && <Notification message={notice} kind="info" />}
       {!categories.length && (
         <p className="catalog-notice" role="status">
           Crea una categoría para comenzar a registrar productos.

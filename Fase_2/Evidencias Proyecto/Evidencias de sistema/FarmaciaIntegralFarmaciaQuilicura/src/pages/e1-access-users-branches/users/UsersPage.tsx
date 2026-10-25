@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import ActionIcon from '../ActionIcon'
 import { useEffect, useRef, useState } from 'react'
@@ -136,7 +137,7 @@ export default function UsersPage() {
         {data.current_user.permissions.includes('roles.gestionar') && <button type="button" className="users-button" onClick={() => setShowRoles(true)}><ActionIcon name="edit" />Gestionar roles</button>}
         <button className="users-button primary" disabled={!data.current_user.permissions.includes('roles.gestionar')} title={!data.current_user.permissions.includes('roles.gestionar') ? 'Se requiere permiso para asignar roles' : undefined} onClick={() => openEditor({ mode: 'create', user: null })}><ActionIcon name="add" />Nuevo usuario</button>
       </div>
-      {message && <p className="users-success" role="status">{message}</p>}
+      {message && <Notification message={message} kind="success" />}
       {showRoles && data.current_user.permissions.includes('roles.gestionar') && <RoleDialog onClose={() => setShowRoles(false)} onSaved={() => setAttempt(value => value + 1)} />}
       <section className="users-panel" aria-labelledby="users-list-title">
         <div className="users-panel-heading"><h2 id="users-list-title">Usuarios internos</h2><p>Pulsa el nombre para gestionar la cuenta.</p><p role="status">{users.length} {users.length === 1 ? 'usuario encontrado' : 'usuarios encontrados'}</p></div>

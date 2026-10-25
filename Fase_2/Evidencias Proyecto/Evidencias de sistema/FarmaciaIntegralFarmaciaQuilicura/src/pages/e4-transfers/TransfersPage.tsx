@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
@@ -75,8 +76,8 @@ export default function TransfersPage() {
     <section className="users-panel transfer-flow" aria-label="Flujo de transferencia"><div><strong>Flujo de transferencia</strong><p>Se reserva al solicitar; el stock físico sale al confirmar el despacho.</p></div>
       <div>{(['SOLICITADA', 'AUTORIZADA', 'EN_TRANSITO', 'RECIBIDA'] as const).map((state, index) => <span key={state}>{index > 0 && <span aria-hidden="true"> → </span>}<span className={`transfer-state ${state.toLowerCase()}`}>{states[state]}</span></span>)}</div></section>
     <div className="transfer-summaries" aria-label="Resumen de las transferencias visibles">{summaries.map(([label, count, help]) => <div key={label}><span>{label}</span><strong>{loading ? '—' : count}</strong><small>{help}</small></div>)}</div>
-    {message && <p className="users-success" role="status">{message}</p>}
-    {error && <p className="users-error" role="alert">{error}</p>}
+    {message && <Notification message={message} kind="success" />}
+    {error && <Notification message={error} kind="error" />}
     <section className="users-panel transfer-filter-panel" aria-label="Filtros de transferencias"><h2>Transferencias entre sucursales</h2><p>Filtra por producto, responsable, estado, ruta o fecha de solicitud.</p>
       <div className="transfer-filters">
         <label>Buscar<input type="search" placeholder="ID, producto o responsable…" value={filters.query} onChange={event => setFilters({ ...filters, query: event.target.value })} /></label>

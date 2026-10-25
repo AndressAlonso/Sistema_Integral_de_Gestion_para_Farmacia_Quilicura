@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import { useEffect, useRef, type Dispatch, type FormEvent, type SetStateAction } from 'react'
 import type { Category, Product } from '../catalog.api'
 import type { PromotionInput } from './promotions.api'
@@ -18,7 +19,7 @@ export default function PromotionDialog({ form, setForm, products, categories, e
       <div><h2 id="promotion-dialog-title">{editing ? 'Editar promoción' : 'Crear promoción'}</h2><p>Completa los datos y revisa el efecto antes de confirmar.</p></div>
       <button type="button" aria-label="Cerrar promoción" disabled={busy} onClick={onClose}>×</button>
     </header>
-    {error && <p role="alert" className="promotions-error">{error}</p>}
+    {error && <Notification message={error} kind="error" />}
     <form onSubmit={event => void onSubmit(event)}><fieldset disabled={busy}>
           <p id="promotion-target-help" className="promotions-alert">
             {form.target === 'category'

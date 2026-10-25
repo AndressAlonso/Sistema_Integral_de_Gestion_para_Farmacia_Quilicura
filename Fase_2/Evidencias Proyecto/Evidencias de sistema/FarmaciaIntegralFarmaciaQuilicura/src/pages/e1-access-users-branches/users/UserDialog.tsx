@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import ActionIcon from '../ActionIcon'
 import {
   useEffect,
@@ -474,11 +475,7 @@ export default function UserDialog({
         </section>}
         {confirming && <p className="users-account-note">Esta acción no guarda los cambios pendientes en los datos del formulario.</p>}
 
-        {(error || validation) && (
-          <p className="users-error" role="alert">
-            {error || validation}
-          </p>
-        )}
+        {error && <Notification message={error} kind="error" />}{validation && <p className="users-error" role="alert">{validation}</p>}
 
         <div className="users-dialog-actions">
           <button

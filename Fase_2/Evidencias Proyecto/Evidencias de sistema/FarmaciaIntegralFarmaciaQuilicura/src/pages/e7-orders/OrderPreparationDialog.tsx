@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { changeOrder, getOrder, orderStateLabel, type OrderAction, type OrderDetail } from './orders.api'
@@ -34,7 +35,7 @@ export default function OrderPreparationDialog({ id, onClose, onChanged }: {
   return <dialog className="app-modal users-dialog users-dialog-fullscreen orders-dialog" ref={dialog} aria-labelledby="order-detail-title" onCancel={event => { event.preventDefault(); if (!sending.current) onClose() }}>
     <header className="users-dialog-heading"><div><span className="orders-eyebrow">PEDIDOS ONLINE</span><h2 id="order-detail-title">Detalle y preparación</h2><p className="order-code">{order?.number}</p></div><button className="users-close" disabled={busy} onClick={onClose} aria-label="Cerrar pedido">×</button></header>
     {loading && <p role="status">Cargando pedido…</p>}
-    {error && <p className="users-error" role="alert">{error}</p>}
+    {error && <Notification message={error} kind="error" />}
     {order && <div className="orders-detail-content">
       <section className="orders-overview" aria-label="Resumen del pedido">
         <div><span className="orders-field-label">Estado actual</span><span className={`order-state order-state-${order.status}`}>{orderStateLabel(order.status)}</span></div>

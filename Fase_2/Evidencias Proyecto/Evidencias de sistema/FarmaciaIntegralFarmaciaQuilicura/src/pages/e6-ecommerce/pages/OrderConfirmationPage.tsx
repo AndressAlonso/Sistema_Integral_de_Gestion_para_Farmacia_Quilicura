@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import { orderStateLabel } from '../../e7-orders/orders.api'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -58,8 +59,8 @@ export default function OrderConfirmationPage() {
       }
     } finally { sending.current = false; setBusy(false) }
   }
-  return <main className="guest-page"><PublicHeader /><h1>{result ? 'Tu pedido' : 'Confirmar pedido'}</h1>
-    {error && <p className="guest-error" role="alert">{error}</p>}
+  return <main className="guest-page"><PublicHeader /><header className="store-page-heading"><div><p className="store-page-eyebrow">{result ? 'SEGUIMIENTO DE TU COMPRA' : 'REVISA TU SELECCIÓN'}</p><h1>{result ? 'Tu pedido' : 'Confirmar pedido'}</h1><p>{result ? 'Consulta el estado y los detalles de tu pedido.' : 'Comprueba tus datos, productos y sucursal antes de confirmar.'}</p></div></header>
+    {error && <Notification message={error} kind="error" />}
     {result ? <section className="guest-review"><h2>Pedido {result.number}</h2>
       <p>Estado: <strong>{orderStateLabel(result.status)}</strong></p>
       <p>Sucursal de retiro: {result.pickup_branch.name}</p>

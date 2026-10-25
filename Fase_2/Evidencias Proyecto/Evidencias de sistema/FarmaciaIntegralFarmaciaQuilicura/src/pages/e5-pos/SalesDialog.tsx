@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../../services/http'
@@ -56,7 +57,7 @@ export default function SalesDialog({ userId, canReverse, onClose, onReceipt }: 
     } finally { locked.current = false; setBusy(false) }
   }
   return <dialog ref={dialog} className="pos-dialog" onCancel={event => { event.preventDefault(); if (!busy) onClose() }}><div className="pos-dialog-body"><div className="pos-section-title"><div><h2>Ventas y comprobantes</h2><p>Consulta las últimas 50 ventas o busca por ID exacto.</p></div><button disabled={busy} onClick={onClose}>Cerrar</button></div>
-    {error && <p className="pos-error" role="alert">{error}</p>}{success && <p className="pos-notice" role="status">{success}</p>}
+    {error && <Notification message={error} kind="error" />}{success && <Notification message={success} kind="success" />}
     {receipt && canReverse && <p className="pos-notice">Reembolso de las unidades seleccionadas: <strong>{currency(refundTotal)}</strong> · {paymentNames[receipt.payment]}. El backend verificará el importe antes de registrarlo.</p>}
     {pending ? <div className="pos-notice">Hay una devolución pendiente de confirmar.<button disabled={busy} onClick={() => void reverse()}>Recuperar resultado / reintentar</button></div> : <form className="pos-search" onSubmit={event => { event.preventDefault(); void select(saleId) }}><input aria-label="ID de venta" value={saleId} onChange={event => setSaleId(event.target.value)} placeholder="ID de venta" required /><button disabled={busy}>Buscar venta</button></form>}
     {!receipt && !pending && <table><thead><tr><th>Venta</th><th>Fecha</th><th>Total</th><th>Consulta</th></tr></thead><PaginatedTableBody total={sales.length} columns={4}>{sales.map(sale => <tr key={sale.id}><td>{sale.id.slice(0, 8)}</td><td>{new Date(sale.date).toLocaleString('es-CL')}</td><td>{currency(sale.total)}</td><td><button disabled={busy} onClick={() => void select(sale.id)}>Ver venta</button></td></tr>)}</PaginatedTableBody></table>}

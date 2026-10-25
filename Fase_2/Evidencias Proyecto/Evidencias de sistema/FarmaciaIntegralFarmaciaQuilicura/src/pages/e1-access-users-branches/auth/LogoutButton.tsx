@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthError, logout } from './login.api'
@@ -29,7 +30,7 @@ export default function LogoutButton() {
       <button type="button" className="auth-logout-button" disabled={loading} onClick={closeSession}>
         {loading ? 'Cerrando sesión…' : 'Cerrar sesión'}
       </button>
-      {error && <p className="auth-logout-error" role="alert">{error}</p>}
+      {error && <Notification message={error} kind="error" />}
     </div>
   )
 }

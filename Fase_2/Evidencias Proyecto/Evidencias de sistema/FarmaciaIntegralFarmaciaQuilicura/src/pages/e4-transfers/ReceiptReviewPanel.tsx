@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { reviewReceipt } from './receipt-review.api'
@@ -32,7 +33,7 @@ export default function ReceiptReviewPanel({ transferId, disabled, onBusyChange,
     {!autoReview && <h3>Revisar lote destino</h3>}
     <p>El estado del lote se gestiona en Inventario. Esta revisión no cambia cantidades ni fechas.</p>
     <button type="button" className="users-button" disabled={disabled || busy} onClick={() => void inspect()}>{busy ? 'Consultando…' : autoReview ? 'Actualizar revisión' : 'Revisar lotes destino'}</button>
-    {error && <p role="alert" className="users-error">{error}</p>}
+    {error && <Notification message={error} kind="error" />}
     {review && <><p>Destino: <strong>{review.destination_name}</strong></p>{review.items.map((lot, index) => <article key={`${lot.number}-${index}`} className="receipt-lot-review">
       <h4>{lot.product_name} · Lote {lot.number}</h4>
       <p>Enviado: {lot.incoming_quantity} unidades · Vence: {date(lot.source_expiration)}</p>

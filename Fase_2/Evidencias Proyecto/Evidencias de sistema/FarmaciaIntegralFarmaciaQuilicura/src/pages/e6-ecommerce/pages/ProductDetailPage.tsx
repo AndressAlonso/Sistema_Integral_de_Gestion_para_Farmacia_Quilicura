@@ -20,10 +20,10 @@ export default function ProductDetailPage() {
     return () => { active = false }
   }, [productId, attempt])
   const current = result?.id === productId ? result : null
-  return <main className="online-store">
+  return <main className="online-store store-product-page">
     <PublicHeader />
     <nav className="online-breadcrumb" aria-label="Ubicación"><Link className="online-link" to="/tienda">← Volver al catálogo</Link><span aria-hidden="true">/</span><span>Ficha del producto</span></nav>
-    <div className="online-notice"><span className="online-info-mark" aria-hidden="true">i</span><p><strong>Disponibilidad informativa.</strong> No confirma unidades comprables online; los lotes y unidades vendibles se validarán antes de comprar.</p></div>
+    <p className="store-product-help">Conoce el producto y consulta sus existencias por sucursal. Verificaremos las unidades aptas para venta antes de confirmar tu pedido.</p>
     {current?.error ? <div className="online-feedback" role="alert"><p>{current.error}</p><button onClick={() => { setResult(null); setAttempt(value => value + 1) }}>Reintentar</button></div>
       : current?.product ? <ProductCard product={current.product} detail /> : <p className="online-feedback" role="status">Consultando producto…</p>}
   </main>

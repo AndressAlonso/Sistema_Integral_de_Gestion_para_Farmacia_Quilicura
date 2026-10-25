@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useRef, useState } from 'react'
 import { apiRequest } from '../../services/http'
 
@@ -59,8 +60,8 @@ export default function PaymentSimulation({ onChanged }: { onChanged: () => void
   return <details className="users-panel payment-simulation">
     <summary>Simulación de pago — desarrollo</summary>
     <p>Solo para pruebas de E7-H3. No procesa pagos con Flow ni registra una venta. Aceptar crea los traslados necesarios; fallar cancela el pedido y libera sus reservas.</p>
-    {error && <p className="users-error" role="alert">{error}</p>}
-    {message && <p className="users-success" role="status">{message}</p>}
+    {error && <Notification message={error} kind="error" />}
+    {message && <Notification message={message} kind="success" />}
     <label>Pedido pendiente<select value={selected} disabled={busy} onChange={event => { setSelected(event.target.value); setConfirmed(false); setMessage('') }}>
       <option value="">Selecciona un pedido</option>
       {orders.map(row => <option key={row.id} value={row.id}>{row.number} · {row.pickup_branch.name}</option>)}

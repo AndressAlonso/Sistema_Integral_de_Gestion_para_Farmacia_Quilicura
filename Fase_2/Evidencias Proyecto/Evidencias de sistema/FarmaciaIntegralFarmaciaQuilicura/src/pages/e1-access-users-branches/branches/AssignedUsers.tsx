@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
 import { ApiError } from '../../../services/http'
@@ -20,7 +21,7 @@ export default function AssignedUsers({ branchId }: { branchId: string }) {
     return () => { active = false }
   }, [branchId, attempt])
 
-  if (error) return <div><p className="s1-error" role="alert">{error}</p><button type="button" className="branches-button" onClick={() => { setError(''); setUsers(null); setAttempt(value => value + 1) }}>Reintentar</button></div>
+  if (error) return <div><Notification message={error} kind="error" /><button type="button" className="branches-button" onClick={() => { setError(''); setUsers(null); setAttempt(value => value + 1) }}>Reintentar</button></div>
   if (!users) return <p role="status">Cargando usuarios asignados…</p>
   const normalized = query.trim().toLocaleLowerCase('es')
   const visible = users.filter(user =>

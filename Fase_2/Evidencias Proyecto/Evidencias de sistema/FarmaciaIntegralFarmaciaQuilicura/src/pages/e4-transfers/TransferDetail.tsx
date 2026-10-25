@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { actions, changeTransfer, getTransfer, states, transferCode, units, type Transfer, type TransferAction } from './transfers.api'
 import ReceiptReviewDialog from './ReceiptReviewDialog'
@@ -45,13 +46,19 @@ export default function TransferDetail({ transfer, initialAction, onClose, onCha
     finally { sending.current = false; setBusy(false) }
   }
 
-  return <dialog ref={dialog} className="app-modal users-dialog users-dialog-fullscreen transfers-dialog" aria-labelledby="transfer-detail-title" aria-busy={busy}
+  return <dialog ref={dialog} className="app-modal users-dialog users-dialog-fullscreen transfers-dialog transfer-detail-dialog" aria-labelledby="transfer-detail-title" aria-busy={busy}
     onCancel={event => { event.preventDefault(); if (!sending.current && !busy) onClose() }}>
     <form onSubmit={event => { void submit(event) }}>
-      <header className="users-dialog-heading"><div><h2 id="transfer-detail-title">{transferCode(current.id)}</h2><p>{current.origin_name} → {current.destination_name}</p>
-        <small>ID completo: {current.id}</small></div><button type="button" className="users-close" aria-label="Cerrar detalle" disabled={busy} onClick={onClose}>×</button></header>
-      <p><span className={`transfer-state ${current.state.toLowerCase()}`}>{states[current.state]}</span> · Solicitada por {current.requested_by}</p>
-      {current.order_id && <p className="transfer-online-note"><span className="transfer-online-badge">Pedido online</span> {current.order_number}<br />Generada y autorizada automáticamente tras confirmar el pago. Las unidades recibidas siguen reservadas para este pedido.</p>}
+      <header className="users-dialog-heading"><div><p className="transfer-detail-eyebrow">DETALLE DE TRANSFERENCIA</p><h2 id="transfer-detail-title">{transferCode(current.id)}</h2></div><button type="button" className="users-close" aria-label="Cerrar detalle" disabled={busy} onClick={onClose}>×</button></header>
+      <div className="transfer-detail-body"><div className="transfer-detail-content">
+      <section className="transfer-detail-overview" aria-label="Resumen de la transferencia">
+        <div><span>Origen</span><strong>{current.origin_name}</strong></div>
+        <span className="transfer-detail-route-arrow" aria-hidden="true">→</span>
+        <div><span>Destino</span><strong>{current.destination_name}</strong></div>
+        <div><span>Estado actual</span><strong><span className={`transfer-state ${current.state.toLowerCase()}`}>{states[current.state]}</span></strong></div>
+        <div><span>Solicitada por</span><strong>{current.requested_by}</strong></div>
+      </section>
+      {current.order_id && <section className="transfer-online-note"><div><span className="transfer-online-badge">Pedido online</span><strong>{current.order_number}</strong></div><p>Generada y autorizada automáticamente tras confirmar el pago. Las unidades recibidas siguen reservadas para este pedido.</p></section>}
       {loading && <p role="status">Comprobando estado y permisos actuales…</p>}
       <section className="users-panel" aria-label="Cómo funciona la transferencia">
         <h3>{current.order_id ? "Pago aceptado → Autorizada → Enviar → Recibir" : "Solicitar → Autorizar → Enviar → Recibir"}</h3>
@@ -59,15 +66,15 @@ export default function TransferDetail({ transfer, initialAction, onClose, onCha
         {current.state === 'EN_TRANSITO' && <p><strong>Los productos ya salieron del origen.</strong> No se puede rechazar esta transferencia. Si la recepción está bloqueada, revisa el lote destino en Inventario; no lo reactives sin comprobar que corresponde.</p>}
         {!current.order_id && (current.state === 'SOLICITADA' || current.state === 'AUTORIZADA') && <p>Puedes rechazar antes de confirmar la salida: se liberan las unidades reservadas y se conserva el historial.</p>}
       </section>
-      <section className="users-panel"><h3>Productos y lotes</h3>
+      <div className="transfer-detail-columns"><section className="users-panel"><div className="transfer-detail-section-heading"><h3>Productos y lotes</h3><span>{units(current)} unidades</span></div>
         {current.items.map(item => <div className="transfer-detail-item" key={item.product_id}>
-          <strong>{item.product_name}</strong><span>{item.sku} · {item.quantity} unidades</span>
-          <ul>{item.lots.map(lot => <li key={lot.number}>Lote {lot.number} · {lot.quantity} unidades · vence {lot.expiration_date}</li>)}</ul>
+          <div className="transfer-detail-product-heading"><div><strong>{item.product_name}</strong><small>SKU: {item.sku}</small></div><span>{item.quantity} unidades</span></div>
+          <ul>{item.lots.map(lot => <li key={`${lot.number}-${lot.expiration_date}`}><strong>Lote {lot.number}</strong><span>{lot.quantity} unidades</span><span>Vence {lot.expiration_date.split('-').reverse().join('/')}</span></li>)}</ul>
         </div>)}
       </section>
       <section className="users-panel transfer-timeline"><h3>Trazabilidad</h3><ol>{current.timeline.map(event => <li key={event.event}>
-        <strong>{event.event}</strong> · {event.user} · {new Date(event.at).toLocaleString('es-CL')}
-      </li>)}</ol>{current.rejection_reason && <p>Motivo de rechazo: {current.rejection_reason}</p>}</section>
+        <strong>{event.event}</strong><span>{event.user}</span><time dateTime={event.at}>{new Date(event.at).toLocaleString('es-CL')}</time>
+      </li>)}</ol>{current.rejection_reason && <p>Motivo de rechazo: {current.rejection_reason}</p>}<details className="transfer-detail-reference"><summary>Identificador completo</summary><small>{current.id}</small></details></section></div>
       {!loading && current.actions.length > 0 && <fieldset className="transfer-choice" disabled={busy}>
         <legend>¿Qué deseas hacer?</legend>
         <div className="transfer-choice-options">{current.actions.map(name => <label key={name} className="transfer-choice-option">
@@ -88,11 +95,12 @@ export default function TransferDetail({ transfer, initialAction, onClose, onCha
         </label>)}
         <label className="users-checkbox transfer-wide"><input type="checkbox" required checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /> {action === 'dispatch' ? 'Confirmo que los productos ya salieron físicamente y coinciden con las cantidades indicadas.' : 'Confirmo la operación y las cantidades indicadas.'}</label>
       </fieldset>}
-      {error && <p className="users-error" role="alert">{error}</p>}
+      {error && <Notification message={error} kind="error" />}
       {error && action === 'receive' && !loading && current.actions.includes('receive') && <div className="transfer-actions">
         <button type="button" className="users-button" disabled={busy} onClick={() => setReviewOpen(true)}>Revisar lote</button>
       </div>}
       {reviewOpen && <ReceiptReviewDialog key={current.id} transferId={current.id} onClose={() => setReviewOpen(false)} />}
+      </div></div>
       <footer className="users-dialog-actions"><button type="button" className="users-button" disabled={busy} onClick={() => { setLoading(true); setAttempt(a => a + 1) }}>Actualizar detalle</button>
         <button type="button" className="users-button" disabled={busy} onClick={onClose}>Cerrar</button>
         {action && current.actions.includes(action) && <button className={`users-button ${action === 'reject' ? 'danger' : 'primary'}`} type="submit" disabled={busy || loading || !confirmed}>{busy ? 'Procesando…' : confirmationLabels[action]}</button>}

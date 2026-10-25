@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
@@ -70,8 +71,8 @@ export default function PromotionsPage() {
   return <main className="promotions-page">
     <header className="promotions-heading"><div><p className="promotions-kicker">CATÁLOGO</p><h1>Promociones</h1><p>Configura descuentos por producto o categoría.</p></div><button type="button" className="promotions-primary" disabled={loading || busy} onClick={create}>Nueva promoción</button></header>
     <p className="promotions-alert">Los descuentos no se acumulan. Se aplica únicamente la promoción vigente que deje el menor precio final. Un precio fijo es el precio final del producto.</p>
-    {error && !editorOpen && <p role="alert" className="promotions-error">{error}</p>}
-    {notice && <p role="status" className="promotions-alert">{notice}</p>}
+    {error && !editorOpen && <Notification message={error} kind="error" />}
+    {notice && <Notification message={notice} kind="info" />}
     {loading ? <p role="status">Cargando promociones…</p> : <>
       {editorOpen && <PromotionDialog form={form} setForm={setForm} products={products} categories={categories} editing={!!editing} busy={busy} error={error} onSubmit={submit} onClose={closeEditor} />}
       <section className="promotions-panel"><h2>Promociones registradas</h2>{rows.length === 0 ? <p>No hay promociones registradas.</p> : <div className="promotions-table"><table className="responsive-admin-table"><thead><tr><th>Nombre y destino</th><th>Descuento</th><th>Vigencia</th><th>Estado</th><th>Acción</th></tr></thead><PaginatedTableBody total={rows.length} columns={5} labels={["Nombre y destino", "Descuento", "Vigencia", "Estado", "Acción"]}>{rows.map(row => <tr key={row.id}>
