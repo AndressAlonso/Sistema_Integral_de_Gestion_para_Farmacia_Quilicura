@@ -74,8 +74,7 @@ const pagePermissions: Readonly<Record<string, string>> = {
   '/admin/orders': 'pedidos.consultar',
 }
 
-// Visibilidad de pantallas en blanco según las responsabilidades acordadas.
-// No concede permisos para operaciones futuras.
+// Acceso por rol; cada API valida también la autorización en el backend.
 const placeholderRoles: Readonly<Record<string, readonly string[]>> = {
 
   '/admin/promotions': ['ADMINISTRADOR'],

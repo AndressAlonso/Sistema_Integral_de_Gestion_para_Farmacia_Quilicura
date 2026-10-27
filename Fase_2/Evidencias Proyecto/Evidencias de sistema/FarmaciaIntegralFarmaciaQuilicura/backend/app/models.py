@@ -1018,7 +1018,6 @@ class EventoAuditoria(Base):
     datos_cambio: Mapped[dict[str, object]] = mapped_column(JSONB)
 
     usuario_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("usuario_interno.id", ondelete="RESTRICT"),
         nullable=True,
     )
 

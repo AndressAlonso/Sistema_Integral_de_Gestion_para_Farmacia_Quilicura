@@ -4,8 +4,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import event
 from starlette.exceptions import HTTPException
 
+from app.audit.recording import record_changes, request_audit
+from app.audit.routes import router as audit_router
 from app.auth.routes import COOKIE_NAME, COOKIE_PATH, router
 from app.auth.sessions import SessionRepository
 from app.auth.state import AuthState
@@ -31,9 +34,9 @@ from app.inventory.repository import PostgresInventoryRepository
 from app.inventory.routes import router as inventory_router
 from app.inventory_adjustments.repository import AdjustmentRepository
 from app.inventory_adjustments.routes import router as adjustments_router
+from app.orders.admin_routes import router as order_admin_router
 from app.orders.development import router as order_development_router
 from app.orders.routes import router as orders_router
-from app.orders.admin_routes import router as order_admin_router
 from app.pos.repository import PosRepository
 from app.pos.routes import router as pos_router
 from app.promotions.repository import PromotionRepository
@@ -83,8 +86,11 @@ def create_app(
             app.state.customers = CustomerRepository(factory)
             app.state.customer_sessions = CustomerSessionRepository(factory)
             app.state.customer_auth = AuthState()
-
-            yield
+            event.listen(factory, "before_flush", record_changes)
+            try:
+                yield
+            finally:
+                event.remove(factory, "before_flush", record_changes)
         finally:
             if engine is not None:
                 engine.dispose()
@@ -114,7 +120,11 @@ def create_app(
         request: Request,
         call_next,
     ):
-        response = await call_next(request)
+        context_token = request_audit.set({"method": request.method, "actor": None})
+        try:
+            response = await call_next(request)
+        finally:
+            request_audit.reset(context_token)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
 
@@ -127,7 +137,9 @@ def create_app(
     ):
         path = request.url.path
 
-        if path.startswith(("/api/pos", "/api/cash")):
+        if path.startswith("/api/audit"):
+            detail = "Revisa la sucursal, las fechas y la página de auditoría."
+        elif path.startswith(("/api/pos", "/api/cash")):
             detail = (
                 "Revisa los productos, cantidades enteras positivas, "
                 "importes y datos de confirmación."
@@ -244,6 +256,7 @@ def create_app(
         )
 
     app.include_router(router)
+    app.include_router(audit_router)
     app.include_router(users_router)
     app.include_router(branches_router)
     app.include_router(catalog_router)
