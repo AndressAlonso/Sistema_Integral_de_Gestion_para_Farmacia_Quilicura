@@ -96,3 +96,60 @@
 @media (max-width: 600px) { .pos-discount-metrics { grid-template-columns: 1fr; } }
 
 .pos-close-difference { padding: 16px; border: 1px solid #e5b788; border-radius: 10px; background: #fff5e7; color: #79480e; display: grid; gap: 8px; }
+
+/* E5: distribución del espacio de venta, independiente de Caja y sus diálogos. */
+.pos-sales-page { gap: 20px; }
+.pos-sales-page > .pos-heading { gap: 16px; }
+.pos-sales-page > .pos-heading p { margin: 0; }
+.pos-sales-page > .pos-heading h1 { margin: 3px 0 6px; font-size: clamp(25px, 2.5vw, 32px); }
+.pos-header-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pos-sales-page .pos-header-actions > button,
+.pos-sales-page .pos-header-actions > a { font-size: 13px; padding: 10px 13px; }
+.pos-sales-page .pos-cash-link.is-open { color: #38652d; background: #f0f7ea; border-color: #d9e8cc; }
+.pos-sales-page .pos-workspace { grid-template-columns: minmax(0, 1.35fr) minmax(370px, 1fr); gap: 20px; }
+.pos-sales-page .pos-workspace > .pos-panel { min-width: 0; padding: 22px; }
+.pos-sales-page .pos-workspace .pos-section-title { gap: 10px; margin-bottom: 18px; }
+.pos-sales-page .pos-workspace h2 { margin: 0; font-size: 18px; }
+.pos-section-caption { color: #68758b; font-size: 12px; }
+.pos-sales-page .pos-search input { width: 0; }
+.pos-sales-page .pos-catalog-panel > .pos-muted { margin: 10px 0 0; font-size: 12px; }
+.pos-sales-page .pos-products { margin-top: 20px; }
+.pos-sales-page .pos-product { padding: 16px; gap: 12px; border-radius: 12px; transition: background .15s, border-color .15s; }
+.pos-sales-page .pos-product .catalog-photo { width: 60px; height: 60px; flex-shrink: 0; }
+.pos-sales-page .pos-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 36px 20px; min-height: 190px; box-sizing: border-box; background: #faf9fc; border: 1px dashed #e4dce9; }
+.pos-sales-page .pos-empty svg { width: 30px; height: 30px; padding: 13px; box-sizing: content-box; color: #814894; background: #f0e8f4; border-radius: 16px; margin-bottom: 4px; }
+.pos-sales-page .pos-empty strong { color: #46516a; font-size: 15px; }
+.pos-sales-page .pos-empty span { max-width: 290px; font-size: 13px; line-height: 1.6; color: #69758a; }
+.pos-sales-page .pos-cart { position: sticky; top: 20px; gap: 0; overflow: hidden; }
+.pos-unit-count { font-size: 12px; font-weight: 600; color: #702283; background: #f3edf7; border-radius: 20px; padding: 6px 10px; }
+.pos-cart-items { display: grid; gap: 16px; max-height: 48dvh; overflow-y: auto; scrollbar-width: thin; }
+.pos-sales-page .pos-cart-row { grid-template-columns: minmax(0, 1fr) 65px; gap: 10px; padding-bottom: 14px; }
+.pos-sales-page .pos-cart-row .pos-text-button { grid-column: 2; padding: 5px 2px; font-size: 12px; border: 0; }
+.pos-sales-page .pos-cart-row label { font-size: 11px; gap: 5px; }
+.pos-sales-page .pos-cart-row input { width: 100%; box-sizing: border-box; padding: 9px 6px; }
+.pos-sales-page .pos-cart-row .pos-price .promotion-final { font-size: 14px; }
+.pos-cart-checkout { margin-top: 20px; padding-top: 18px; border-top: 1px solid #e9e5ed; display: grid; gap: 16px; }
+.pos-summary { display: grid; gap: 10px; font-size: 13px; color: #657087; }
+.pos-summary > div { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.pos-summary .pos-summary-saving { color: #467333; }
+.pos-summary .pos-summary-total { font-size: 15px; color: #202a44; }
+.pos-summary-total > strong:last-child { font-size: clamp(21px, 2vw, 28px); }
+.pos-sales-page .pos-cart-checkout .pos-primary { width: 100%; padding: 14px; }
+.pos-sales-page .pos-checkout-caption { margin: -5px 0 0; text-align: center; font-size: 11px; color: #69758a; }
+@media (max-width: 1100px) {
+  .pos-sales-page .pos-workspace { grid-template-columns: minmax(0, 1fr) minmax(340px, .95fr); }
+  .pos-sales-page .pos-product { flex-wrap: wrap; }
+  .pos-sales-page .pos-product-pricing { flex: 1 1 100%; min-width: 0; }
+  .pos-sales-page .pos-product-pricing .pos-price { text-align: left; }
+}
+@media (max-width: 850px) {
+  .pos-sales-page .pos-workspace { grid-template-columns: minmax(0, 1fr); }
+  .pos-sales-page .pos-cart { position: static; }
+  .pos-cart-items { max-height: none; }
+}
+@media (max-width: 480px) {
+  .pos-sales-page .pos-workspace > .pos-panel { padding: 16px; }
+  .pos-sales-page .pos-search { flex-wrap: nowrap; gap: 6px; }
+  .pos-sales-page .pos-search button { padding-inline: 12px; }
+  .pos-sales-page .pos-empty { min-height: 160px; padding: 24px 14px; }
+}

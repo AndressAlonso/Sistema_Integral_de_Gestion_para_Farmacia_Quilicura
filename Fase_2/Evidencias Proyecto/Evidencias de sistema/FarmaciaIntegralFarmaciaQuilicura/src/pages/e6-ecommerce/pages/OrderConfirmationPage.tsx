@@ -1,3 +1,5 @@
+import Notification from '../../../components/Notification'
+import { orderStateLabel } from '../../e7-orders/orders.api'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError } from '../../../services/http'
@@ -57,14 +59,14 @@ export default function OrderConfirmationPage() {
       }
     } finally { sending.current = false; setBusy(false) }
   }
-  return <main className="guest-page"><PublicHeader /><h1>{result ? 'Tu pedido' : 'Confirmar pedido'}</h1>
-    {error && <p className="guest-error" role="alert">{error}</p>}
+  return <main className="guest-page"><PublicHeader /><header className="store-page-heading"><div><p className="store-page-eyebrow">{result ? 'SEGUIMIENTO DE TU COMPRA' : 'REVISA TU SELECCIÓN'}</p><h1>{result ? 'Tu pedido' : 'Confirmar pedido'}</h1><p>{result ? 'Consulta el estado y los detalles de tu pedido.' : 'Comprueba tus datos, productos y sucursal antes de confirmar.'}</p></div></header>
+    {error && <Notification message={error} kind="error" />}
     {result ? <section className="guest-review"><h2>Pedido {result.number}</h2>
-      <p>Estado: <strong>{result.status === 'CANCELADO' ? 'Cancelado' : 'Pendiente de pago'}</strong></p>
+      <p>Estado: <strong>{orderStateLabel(result.status)}</strong></p>
       <p>Sucursal de retiro: {result.pickup_branch.name}</p>
       <ul>{result.items.map(item => <li key={item.product_id}>{item.name} · {item.quantity} unidades · {money(item.subtotal)}</li>)}</ul>
       <p>Total: <strong>{money(result.total)}</strong></p>
-      <p>Las unidades están reservadas. El pedido todavía no está pagado ni listo para retiro. El pago se habilitará en una próxima etapa.</p>
+      <p>{result.status === "LISTO_PARA_RETIRO" ? "Tu pedido está listo para retiro." : result.status === "EN_PREPARACION" ? "Estamos preparando tu pedido." : result.status === "PAGADO" ? "El pedido está pagado. Todavía no está listo para retiro." : result.status === "CANCELADO" ? "El pedido fue cancelado." : "Las unidades están reservadas. El pedido todavía no está pagado ni listo para retiro. El pago se habilitará en una próxima etapa."}</p>
       {customer && <Link className="guest-link" to="/tienda/mis-pedidos">Ver mis pedidos</Link>}
     </section> : sessionLoading || cartLoading || recovering ? <p role="status">Revisando la confirmación…</p>
       : sessionError ? <p role="alert">{sessionError}</p> : !validation?.valid ? <p>El carrito necesita revisión. Selecciona una sucursal y valida las cantidades antes de confirmar.</p> : <>

@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../../../services/http'
 import ActionIcon from '../ActionIcon'
@@ -121,7 +122,7 @@ export default function RoleDialog({ onClose, onSaved }: Props) {
   return <dialog ref={dialog} className="users-dialog users-dialog-fullscreen roles-dialog app-modal" aria-labelledby="roles-title" onCancel={event => { event.preventDefault(); choose('close') }}>
     <div className="roles-dialog-content">
       <header className="users-dialog-heading"><div><h2 id="roles-title">Gestionar roles</h2><p>Define las responsabilidades y los permisos del personal.</p></div><button type="button" className="users-close" aria-label="Cerrar gestor de roles" disabled={busy} onClick={() => choose('close')}>×</button></header>
-      {message && <p className="users-success" role="status">{message}</p>}
+      {message && <Notification message={message} kind="success" />}
       {error && <div role="alert"><p className="users-error">{error}</p><button type="button" className="users-button" disabled={busy} onClick={() => choose('reload')}>Recargar lista</button></div>}
       {discard ? <section className="roles-confirm" aria-labelledby="role-discard-title"><h3 id="role-discard-title">Cambios sin guardar</h3><p>Si continúas, se descartarán los cambios del rol que estás editando.</p><div><button type="button" className="users-button" onClick={() => setDiscard(null)}>Seguir editando</button><button type="button" className="users-button danger" onClick={() => applyChoice(discard)}>Descartar y continuar</button></div></section>
         : confirming ? <section className="roles-confirm" aria-labelledby="role-confirm-title"><h3 id="role-confirm-title">Confirmar cambios en {target?.name}</h3><p>Este cambio afectará a los <strong>{target?.users_count} usuarios</strong> que tienen este rol. Se aplicará también a sus sesiones actuales. Los permisos de sus otros roles se conservarán.</p><div><button type="button" className="users-button" disabled={busy} onClick={() => setConfirming(false)}>Volver a editar</button><button type="button" className="users-button primary" disabled={busy} onClick={() => void persist()}>{busy ? 'Guardando…' : 'Confirmar cambios'}</button></div></section>

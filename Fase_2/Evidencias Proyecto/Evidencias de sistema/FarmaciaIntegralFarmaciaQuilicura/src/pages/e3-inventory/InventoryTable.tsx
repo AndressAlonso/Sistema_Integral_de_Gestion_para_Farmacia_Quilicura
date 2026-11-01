@@ -209,11 +209,7 @@ export default function InventoryTable({
             <th scope="col" className="numeric">
               Físico
             </th>
-
-            <th scope="col" className="numeric">
-              Reservado
-            </th>
-
+            <th scope="col" className="numeric">Reservado</th>
             <th scope="col" className="numeric">
               Disponible
             </th>
@@ -259,14 +255,8 @@ export default function InventoryTable({
                   </td>
                 ) : (
                   <>
-                    <td className="numeric">
-                      {record.physical}
-                    </td>
-
-                    <td className="numeric reserved">
-                      {record.reserved}
-                    </td>
-
+                    <td className="numeric">{record.physical}</td>
+                    <td className="numeric reserved">{record.reserved}</td>
                     <td className="numeric">
                       <span
                         className={

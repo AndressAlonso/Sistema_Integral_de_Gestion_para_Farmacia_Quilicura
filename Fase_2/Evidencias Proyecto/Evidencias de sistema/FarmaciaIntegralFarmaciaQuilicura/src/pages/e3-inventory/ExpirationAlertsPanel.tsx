@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   type FormEvent,
@@ -631,12 +632,7 @@ export default function ExpirationAlertsPanel({
       </form>
 
       {error && (
-        <p
-          className="lot-message lot-error"
-          role="alert"
-        >
-          {error}
-        </p>
+        <Notification message={error} kind="error" />
       )}
 
       {loading ? (

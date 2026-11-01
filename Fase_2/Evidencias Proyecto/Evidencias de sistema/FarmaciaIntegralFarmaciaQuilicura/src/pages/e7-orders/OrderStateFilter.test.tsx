@@ -1,0 +1,51 @@
+import { afterEach, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import OrderColumnFilter from './OrderColumnFilter'
+import { orderStates } from './orders.api'
+
+afterEach(cleanup)
+it('selecciona varias sucursales y orden alfabético inverso', () => {
+  const apply = vi.fn()
+  render(<OrderColumnFilter column="branch" options={{ centro: 'Centro', valle: 'Valle', norte: 'Norte' }} states={['centro', 'valle', 'norte']} sort="newest" onApply={apply} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Filtrar y ordenar por sucursal' }))
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Norte' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Ordenar' }), { target: { value: 'branch_desc' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+  expect(apply).toHaveBeenCalledWith(['centro', 'valle'], 'branch_desc')
+})
+const all = Object.keys(orderStates)
+it('conserva el orden de estado al filtrar sucursales', () => {
+  const apply = vi.fn()
+  render(<OrderColumnFilter column="branch" options={{ centro: 'Centro', valle: 'Valle' }} states={['centro', 'valle']} sort="state_desc" onApply={apply} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Filtrar y ordenar por sucursal' }))
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Valle' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+  expect(apply).toHaveBeenCalledWith(['centro'], 'state_desc')
+})
+it('aplica varios estados y orden descendente solo al confirmar', () => {
+  const apply = vi.fn()
+  render(<OrderColumnFilter states={all} sort="newest" onApply={apply} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Filtrar y ordenar por estado' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Desmarcar todos' }))
+  expect(screen.getByRole('button', { name: 'Aplicar' }).hasAttribute('disabled')).toBe(true)
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Pagado' }))
+  fireEvent.click(screen.getByRole('checkbox', { name: 'En preparación' }))
+  fireEvent.change(screen.getByRole('combobox', { name: 'Ordenar' }), { target: { value: 'state_desc' } })
+  expect(apply).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Aplicar' }))
+  expect(apply).toHaveBeenCalledWith(['PAGADO', 'EN_PREPARACION'], 'state_desc')
+  expect(screen.queryByRole('dialog')).toBeNull()
+})
+it('cancelar o Escape conserva los filtros aplicados', () => {
+  const apply = vi.fn()
+  render(<OrderColumnFilter states={['PAGADO']} sort="state_asc" onApply={apply} />)
+  const trigger = screen.getByRole('button', { name: 'Filtrar y ordenar por estado' })
+  fireEvent.click(trigger)
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Cancelado' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+  fireEvent.click(trigger)
+  expect((screen.getByRole('checkbox', { name: 'Cancelado' }) as HTMLInputElement).checked).toBe(false)
+  fireEvent.keyDown(document, { key: 'Escape' })
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(apply).not.toHaveBeenCalled()
+})

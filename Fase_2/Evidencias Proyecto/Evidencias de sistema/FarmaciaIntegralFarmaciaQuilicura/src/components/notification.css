@@ -1,0 +1,27 @@
+.app-notification.app-notification {
+  position: fixed; inset: auto 20px auto auto; margin: 0; z-index: 10000;
+  display: flex; align-items: flex-start; gap: 12px; box-sizing: border-box;
+  width: min(420px, calc(100vw - 32px)); max-height: min(260px, calc((100dvh - 80px) / 3)); overflow: auto;
+  padding: 18px; border: 1px solid #e4dce9; border-left: 4px solid var(--notification-color);
+  border-radius: 14px; background: #fff; color: #24344b;
+  box-shadow: 0 12px 40px #24344b26; font-family: inherit; text-align: left;
+  animation: notification-arrive .28s cubic-bezier(.2,.8,.2,1) both;
+  transition: top .25s cubic-bezier(.2,.8,.2,1);
+}
+.app-notification.app-notification.is-closing { animation: notification-leave .2s ease-in both; pointer-events: none; }
+.app-notification-success { --notification-color: #3c7638; --notification-background: #edf6e9; }
+.app-notification-error { --notification-color: #b33c48; --notification-background: #fff0f1; }
+.app-notification-info { --notification-color: #702582; --notification-background: #f4edf7; }
+.app-notification .app-notification-icon { flex: 0 0 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--notification-color); background: var(--notification-background); }
+.app-notification svg { width: 20px; height: 20px; }
+.app-notification .app-notification-copy { flex: 1; min-width: 0; }
+.app-notification .app-notification-copy strong { font-size: 13px; line-height: 1.5; }
+.app-notification .app-notification-copy p { margin: 5px 0 0; color: #526077; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.app-notification .app-notification-close { display: grid; place-items: center; flex: 0 0 28px; width: 28px; height: 28px; padding: 4px; margin: -4px -5px 0 0; border: 0; border-radius: 7px; background: transparent; color: #69758a; cursor: pointer; }
+.app-notification .app-notification-close:hover { background: #f1eef4; color: #702582; }
+.app-notification .app-notification-close:focus-visible { outline: 2px solid #702582; outline-offset: 2px; }
+@keyframes notification-arrive { from { opacity: 0; transform: translateX(24px) scale(.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
+@keyframes notification-leave { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(20px); } }
+@media (prefers-reduced-motion: reduce) { .app-notification.app-notification { animation: none; transition: none; } }
+@media (max-width: 600px) { .app-notification.app-notification { right: 16px; } }
+@media print { .app-notification.app-notification { display: none !important; } }

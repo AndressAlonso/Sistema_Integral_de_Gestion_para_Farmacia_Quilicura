@@ -9,6 +9,7 @@ class AdjustmentItem(BaseModel):
     lot_id: UUID
     expected_quantity: int = Field(strict=True, ge=0, le=2_147_483_647)
     new_quantity: int = Field(strict=True, ge=0, le=2_147_483_647)
+    expected_reserved: int | None = Field(default=None, strict=True, ge=0)
 
 
 class CreateAdjustment(BaseModel):
@@ -53,6 +54,7 @@ class BranchOption(BaseModel):
 
 
 class LotOption(BaseModel):
+    available: int
     is_active: bool
     product_active: bool
     id: UUID

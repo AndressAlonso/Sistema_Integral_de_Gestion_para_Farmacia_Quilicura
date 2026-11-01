@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import ProductPhoto from './ProductPhoto'
 import type { Category, Product, ProductInput } from './catalog.api'
@@ -122,7 +123,7 @@ export default function CatalogDialog({ mode, categories, product, busy, error, 
           <p>{published ? 'Estará publicado en el catálogo online si está activo.' : 'No estará publicado en el catálogo online.'}</p>
           <p>{requiresPrescription ? 'Requerirá receta: podrá consultarse online, pero su compra será presencial.' : 'Quedará marcado sin receta.'}</p>
         </section>}
-        {(validation || error) && <p className="users-error" role="alert">{validation || error}</p>}
+        {error && <Notification message={error} kind="error" />}{validation && <p className="users-error" role="alert">{validation}</p>}
         <footer className="users-dialog-actions">
           <button type="button" className="users-button" disabled={busy} onClick={onClose}>Cancelar</button>
           <button type="submit" className="users-button primary" disabled={busy}>{busy ? 'Guardando…' : isProduct ? (product ? 'Confirmar cambios del producto' : 'Crear producto') : 'Crear categoría'}</button>

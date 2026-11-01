@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 // HU: E1-H1 — Iniciar sesión en la plataforma
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -77,7 +78,7 @@ export default function LoginPage() {
           <p className="s1-kicker">Bienvenido al equipo</p>
           <h1>Iniciar sesión</h1>
           <p className="s1-muted">Ingresa tus credenciales para acceder a tu espacio de trabajo.</p>
-          {error && <p className="s1-error" role="alert">{error}</p>}
+          {error && <Notification message={error} kind="error" />}
           <form onSubmit={submit} aria-busy={loading}>
             <div className="s1-field"><label htmlFor="login-email">Correo electrónico</label><input id="login-email" name="email" type="email" placeholder="nombre@farmacia.cl" autoComplete="username" required onChange={() => setError('')} /></div>
             <div className="s1-field"><label htmlFor="login-password">Contraseña</label><div className="s1-password"><input id="login-password" name="password" type={visible ? 'text' : 'password'} placeholder="Ingresa tu contraseña" autoComplete="current-password" required onChange={() => setError('')} /><button type="button" aria-pressed={visible} aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setVisible(!visible)}>{visible ? 'Ocultar' : 'Mostrar'}</button></div></div>

@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import { useEffect, useState } from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { AuthError, getSession, type AuthSession } from './login.api'
@@ -56,7 +57,7 @@ export default function RequireAuth() {
   }, [attempt])
 
   if (invalid) return <Navigate to="/login" replace state={{ sessionExpired: true }} />
-  if (error) return <main className="s1 s1-content"><p className="s1-error" role="alert">{error}</p><button className="s1-button" onClick={() => { setError(''); setAttempt(value => value + 1) }}>Reintentar</button></main>
+  if (error) return <main className="s1 s1-content"><Notification message={error} kind="error" /><button className="s1-button" onClick={() => { setError(''); setAttempt(value => value + 1) }}>Reintentar</button></main>
   if (!session) return <main className="s1 s1-content"><p role="status">Verificando sesión…</p></main>
   return <><p className="sr-only" role="status">Sesión iniciada como {session.user.email}.</p><Outlet context={session} /></>
 }

@@ -279,6 +279,15 @@ def test_transfer_reservation_protected_by_lot_even_with_other_stock(adjustment)
         "items": [{"product_id": str(product_id), "quantity": 10}],
     }
     assert adjustment.client.post("/api/transfers", json=transfer).status_code == 201
+    options = adjustment.client.get("/api/stock-operations/options").json()
+    option = next(lot for lot in options["lots"] if lot["id"] == str(adjustment.lot_ids[0]))
+    assert option["quantity"] == 20
+    assert option["available"] == 10
+    adjustment.payload["items"][0]["expected_reserved"] = 0
+    stale = adjustment.client.post(URL, json=adjustment.payload)
+    assert stale.status_code == 409
+    assert "disponibles cambiaron" in stale.json()["detail"]
+    adjustment.payload["items"][0]["expected_reserved"] = 10
     adjustment.payload["items"][0]["new_quantity"] = 9
     assert adjustment.client.post(URL, json=adjustment.payload).status_code == 409
     adjustment.payload["items"][0]["new_quantity"] = 10

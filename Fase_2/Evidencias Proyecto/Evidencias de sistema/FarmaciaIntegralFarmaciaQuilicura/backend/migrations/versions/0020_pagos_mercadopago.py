@@ -15,7 +15,8 @@ def upgrade():
     op.create_check_constraint(
         "ck_pedido_estado",
         "pedido_online",
-        "estado IN ('PENDIENTE_PAGO','CANCELADO','PAGADO','REVISION_PAGO')",
+        "estado IN ('PENDIENTE_PAGO','CANCELADO','PAGADO',"
+        "'REVISION_PAGO','EN_PREPARACION','LISTO_PARA_RETIRO')",
     )
     op.add_column(
         "venta", sa.Column("pedido_id", postgresql.UUID(as_uuid=True), nullable=True)

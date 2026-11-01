@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import ActionIcon from '../ActionIcon'
 import AssignedUsers from './AssignedUsers'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
@@ -192,7 +193,7 @@ export default function BranchDialog({
           <p id="branch-delete-help" className="s1-muted">
             No se eliminarán sucursales con usuarios asignados o registros asociados.
           </p>
-          {error && <p className="s1-error" role="alert">{error}</p>}
+          {error && <Notification message={error} kind="error" />}
           <footer>
             <button type="button" className="s1-button" disabled={busy} onClick={() => { setMode('edit'); setConfirmationId('') }}>Volver a la ficha</button>
             <button type="submit" className="s1-button danger"
@@ -204,9 +205,7 @@ export default function BranchDialog({
       ) : mode === 'deactivate' || mode === 'activate' ? (
         <>
           {error && (
-            <p className="s1-error" role="alert">
-              {error}
-            </p>
+            <Notification message={error} kind="error" />
           )}
 
           <p className="s1-muted">

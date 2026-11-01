@@ -8,3 +8,10 @@
 .stock-confirmation { display: flex; gap: 10px; align-items: center; padding: 16px 0; }
 .stock-confirmation input { width: 18px; height: 18px; accent-color: #702582; }
 .stock-operation-dialog .users-button.primary { background: #702582; border-color: #702582; }
+.stock-operation-actions { flex-wrap: wrap; align-items: center; gap: 12px; }
+.stock-review { flex: 1 1 300px; text-align: left; }
+.stock-review .stock-confirmation { margin: 0; padding: 0; font-weight: 600; }
+.stock-review small { display: block; margin-top: 6px; color: #65748e; }
+.stock-review p { margin: 0; color: #65748e; }
+.stock-change { display: inline-block; padding: 5px 9px; border-radius: 8px; background: #edf5ed; color: #315e32; white-space: nowrap; }
+.stock-change-decrease { background: #fff3e5; color: #85500c; }

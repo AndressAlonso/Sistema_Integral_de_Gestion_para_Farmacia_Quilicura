@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import {
   useEffect,
   useMemo,
@@ -198,12 +199,7 @@ export default function InventoryPage() {
   if (error) {
     return (
       <main className="inventory-main inventory-error">
-        <p
-          className="users-error"
-          role="alert"
-        >
-          {error}
-        </p>
+        <Notification message={error} kind="error" />
 
         <button
           type="button"
@@ -232,7 +228,7 @@ export default function InventoryPage() {
             {canReceive && <button type="button" className="users-button primary" onClick={() => setOperation('receipt')}>+ Crear lotes / recibir mercadería</button>}
           </div>
         </header>
-        {message && <p className="users-success" role="status">{message}</p>}
+        {message && <Notification message={message} kind="success" />}
 
         <nav
           className="inventory-tabs"

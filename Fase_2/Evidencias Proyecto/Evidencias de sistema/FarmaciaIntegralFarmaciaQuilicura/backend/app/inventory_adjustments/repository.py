@@ -1,4 +1,5 @@
 from sqlalchemy import select, text
+from app.transfers.repository import TransferRepository
 
 from app.models import (
     AjusteInventario,
@@ -54,6 +55,8 @@ class AdjustmentRepository:
         if branch_id is not None:
             branches = branches.where(Sucursal.id == branch_id)
             query = query.where(InventarioSucursal.sucursal_id == branch_id)
+        lots = list(db.scalars(query.order_by(Producto.nombre, LoteInventario.fecha_vencimiento, LoteInventario.id)))
+        reserved = TransferRepository.reserved_lots_for(db, list({row.inventario_sucursal_id for row in lots}))
         return {
             "products": [
                 {
@@ -84,16 +87,11 @@ class AdjustmentRepository:
                     "number": row.numero_lote,
                     "expiration_date": row.fecha_vencimiento,
                     "quantity": row.cantidad,
+                    "available": max(0, row.cantidad - reserved.get(row.id, 0)),
                     "is_active": row.activo,
                     "product_active": row.inventario.producto.activo,
                 }
-                for row in db.scalars(
-                    query.order_by(
-                        Producto.nombre,
-                        LoteInventario.fecha_vencimiento,
-                        LoteInventario.id,
-                    )
-                )
+                for row in lots
             ],
         }
 

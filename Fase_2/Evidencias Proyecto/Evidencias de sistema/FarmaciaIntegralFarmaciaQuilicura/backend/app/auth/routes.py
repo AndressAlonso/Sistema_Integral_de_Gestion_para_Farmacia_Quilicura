@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from jwt import InvalidTokenError
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.audit.recording import request_audit
 from app.auth.security import create_token, dummy_hash, validate_token, verify_password
 from app.auth.state import LoginLimited
 from app.auth.users import User
@@ -108,6 +109,9 @@ def authenticated_user(request: Request) -> tuple[User, dict]:
     user = request.app.state.users.by_id(user_id)
     if user is None or not user.is_active:
         raise HTTPException(401, "La sesión no es válida o expiró.")
+    context = request_audit.get()
+    if context is not None:
+        context["actor"] = user
     return user, claims
 
 

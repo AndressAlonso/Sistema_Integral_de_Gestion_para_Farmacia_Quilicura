@@ -23,6 +23,8 @@
 .public-header .public-header-customer button:hover { background: var(--brand-purple-soft); }
 .public-header button:disabled { opacity: .65; cursor: wait; }
 .public-header-error { margin-top: 12px; color: #8e2525; font-size: 14px; }
+.public-header-nav a.public-header-cart { gap: 8px; background: #702582; color: #fff; padding-inline: 16px; }
+.public-header-nav a.public-header-cart:hover { background: #572065; color: #fff; }
 .public-header :is(a, button):focus-visible { outline: 3px solid var(--brand-purple); outline-offset: 4px; }
 @media (max-width: 950px) {
   .public-header-row { flex-wrap: wrap; gap: 4px; }
