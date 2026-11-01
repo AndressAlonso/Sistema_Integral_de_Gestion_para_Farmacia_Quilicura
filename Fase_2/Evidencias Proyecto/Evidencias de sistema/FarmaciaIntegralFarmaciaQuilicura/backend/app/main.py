@@ -32,6 +32,9 @@ from app.inventory.routes import router as inventory_router
 from app.inventory_adjustments.repository import AdjustmentRepository
 from app.inventory_adjustments.routes import router as adjustments_router
 from app.orders.routes import router as orders_router
+from app.payments.routes import router as payments_router
+from app.payments.routes import webhook_router
+from app.payments.worker import payment_expiration_worker
 from app.pos.repository import PosRepository
 from app.pos.routes import router as pos_router
 from app.promotions.repository import PromotionRepository
@@ -82,7 +85,8 @@ def create_app(
             app.state.customer_sessions = CustomerSessionRepository(factory)
             app.state.customer_auth = AuthState()
 
-            yield
+            async with payment_expiration_worker(factory, allow_start=session_factory is None):
+                yield
         finally:
             if engine is not None:
                 engine.dispose()
@@ -251,6 +255,8 @@ def create_app(
     app.include_router(adjustments_router)
     app.include_router(pos_router)
     app.include_router(orders_router)
+    app.include_router(payments_router)
+    app.include_router(webhook_router)
     app.include_router(promotions_router)
     app.include_router(scanner_router)
     app.include_router(ecommerce_router)

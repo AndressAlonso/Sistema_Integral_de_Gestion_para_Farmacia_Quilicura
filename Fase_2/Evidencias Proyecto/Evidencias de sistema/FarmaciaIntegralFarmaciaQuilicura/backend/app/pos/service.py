@@ -440,7 +440,7 @@ class PosService:
         self.authorize(actor, "pos.operar")
         with self.repo.factory.begin() as db:
             sale = db.get(Venta, sale_id)
-            if sale is None or (
+            if sale is None or sale.pedido_id is not None or (
                 "ADMINISTRADOR" not in actor.roles
                 and (sale.usuario_id != actor.id or sale.sucursal_id != actor.branch_id)
             ):
@@ -475,7 +475,7 @@ class PosService:
     def list_sales(self, actor):
         self.authorize(actor, "pos.operar")
         with self.repo.factory.begin() as db:
-            query = select(Venta).order_by(Venta.fecha.desc(), Venta.id).limit(50)
+            query = select(Venta).where(Venta.pedido_id.is_(None)).order_by(Venta.fecha.desc(), Venta.id).limit(50)
             if "ADMINISTRADOR" not in actor.roles:
                 query = query.where(
                     Venta.usuario_id == actor.id, Venta.sucursal_id == actor.branch_id
@@ -513,7 +513,7 @@ class PosService:
                     )
                 return {"id": str(existing.id), "amount": str(existing.importe)}
             sale = db.scalar(select(Venta).where(Venta.id == sale_id).with_for_update())
-            if sale is None:
+            if sale is None or sale.pedido_id is not None:
                 raise PosError(404, "No encontramos la venta original.")
             branches = TransferRepository.branches(
                 db, sorted({actor.branch_id, sale.sucursal_id})
