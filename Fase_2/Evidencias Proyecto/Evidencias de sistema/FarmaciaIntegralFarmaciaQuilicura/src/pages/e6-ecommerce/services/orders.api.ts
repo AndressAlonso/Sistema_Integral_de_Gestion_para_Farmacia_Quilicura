@@ -31,3 +31,15 @@ export async function recoverOrder(attempt: OrderAttempt): Promise<OnlineOrder> 
   return (await apiRequest(`/api/customers/orders/${encodeURIComponent(attempt.request_id)}/status`, { method: 'POST',
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ request_token: attempt.request_token }) }, {}, true)).json()
 }
+
+// La clave permanece en la misma pestaña, nunca en la URL de Mercado Pago.
+export function rememberOrder(orderId: string, attempt: OrderAttempt) {
+  sessionStorage.setItem('sigfq_order_access:' + orderId, JSON.stringify({ ...attempt, request_id: orderId }))
+}
+export function orderAccess(orderId: string): OrderAttempt | null {
+  try {
+    const data = JSON.parse(sessionStorage.getItem('sigfq_order_access:' + orderId) ?? 'null')
+    return data && data.request_id === orderId && /^[0-9a-f-]{36}$/i.test(orderId)
+      && /^[0-9a-f]{64}$/i.test(data.request_token) ? data : null
+  } catch { return null }
+}

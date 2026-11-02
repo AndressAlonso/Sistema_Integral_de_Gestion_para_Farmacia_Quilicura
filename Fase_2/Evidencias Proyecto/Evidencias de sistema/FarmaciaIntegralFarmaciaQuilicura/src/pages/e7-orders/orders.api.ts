@@ -2,7 +2,7 @@ import { apiRequest } from '../../services/http'
 import type { OnlineOrder } from '../e6-ecommerce/services/orders.api'
 
 export const orderStates: Record<string, string> = {
-  PENDIENTE_PAGO: 'Pendiente de pago', PAGADO: 'Pagado', EN_PREPARACION: 'En preparación',
+  REVISION_PAGO: 'Pago en revisión', PENDIENTE_PAGO: 'Pendiente de pago', PAGADO: 'Pagado', EN_PREPARACION: 'En preparación',
   LISTO_PARA_RETIRO: 'Listo para retiro', CANCELADO: 'Cancelado',
 }
 export const orderStateLabel = (state: string) => orderStates[state] ?? state

@@ -11,7 +11,7 @@ from app.orders.service import summary
 from app.orders.transfers import lock_order, reservation_rows
 from app.transfers.repository import TransferRepository
 
-STATES = ("PENDIENTE_PAGO", "PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO", "CANCELADO")
+STATES = ("PENDIENTE_PAGO", "PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO", "REVISION_PAGO", "CANCELADO")
 PAID_STATES = ("PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO")
 
 
@@ -109,7 +109,7 @@ class PreparationService:
                 actions.append("ready")
         events = db.scalars(select(EventoAuditoria).where(
             EventoAuditoria.referencia_historica == f"Pedido {order.id}",
-            EventoAuditoria.accion.in_(("E7-H4_ESTADO", "E7-H3_PAGO_SIMULADO")))
+            EventoAuditoria.accion.in_(("E7-H4_ESTADO", "E7-H3_PAGO_SIMULADO", "E7-H2_PAGO_VERIFICADO")))
             .order_by(EventoAuditoria.secuencia))
         return summary(order) | {
             "customer": {"name": order.nombre, "email": order.correo},

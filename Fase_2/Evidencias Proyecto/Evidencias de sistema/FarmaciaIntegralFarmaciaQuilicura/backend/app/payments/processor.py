@@ -8,9 +8,17 @@ from uuid import UUID, uuid4
 from fastapi import HTTPException
 from sqlalchemy import func, select, text
 
-from app.models import InventarioSucursal, LoteInventario, Producto, Venta, VentaDetalle
+from app.models import (
+    EventoAuditoria,
+    InventarioSucursal,
+    LoteInventario,
+    Producto,
+    Venta,
+    VentaDetalle,
+)
 from app.orders.models import PedidoOnline, ReservaPedido
 from app.orders.service import movement
+from app.orders.transfers import generate_order_transfers
 from app.payments.client import MercadoPagoClient, MercadoPagoError
 from app.payments.models import CheckoutMercadoPago, PagoMercadoPago
 from app.payments.service import lock_order
@@ -216,6 +224,7 @@ class PaymentNotificationService:
                 )
             ):
                 raise PaymentVerificationError()
+            previous_order_state = order.estado
             row = db.get(PagoMercadoPago, payment_id)
             if row and row.pedido_id != order.id:
                 raise PaymentVerificationError()
@@ -292,6 +301,7 @@ class PaymentNotificationService:
                     ):
                         raise PaymentVerificationError()
                     register_sale(db, order, approved)
+                    generate_order_transfers(db, order)
             elif (
                 status in {"rejected", "cancelled"} and order.estado == "PENDIENTE_PAGO"
             ):
@@ -302,6 +312,17 @@ class PaymentNotificationService:
                     order.estado = "REVISION_PAGO"
                 elif order.estado == "PENDIENTE_PAGO":
                     release_reservations(db, order)
+            db.add(EventoAuditoria(
+                origen_actor="MERCADOPAGO",
+                accion="E7-H2_PAGO_VERIFICADO",
+                referencia_historica=f"Pedido {order.id}",
+                sucursal_id=order.sucursal_id,
+                datos_cambio={
+                    "pedido_id": str(order.id), "pago_id": payment_id,
+                    "estado_pago": status, "anterior": previous_order_state,
+                    "nuevo": order.estado, "revision_motivo": row.revision_motivo,
+                },
+            ))
             db.flush()
             return {
                 "received": True,
