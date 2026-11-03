@@ -27,7 +27,7 @@ ROLE_CATALOG = {
         "catálogo, precios, promociones, configuraciones, autorizaciones, auditoría e indicadores.",
         (
             "usuarios.gestionar",
-            "pedidos.consultar", "pedidos.preparar",
+            "pedidos.consultar", "pedidos.preparar", "pedidos.retirar",
             "pos.operar", "caja.operar", "ventas.reversar",
             "roles.gestionar",
             "sucursales.gestionar",
@@ -55,7 +55,7 @@ ROLE_CATALOG = {
     "ENCARGADO_PEDIDOS": RoleDefinition(
         "Encargado de pedidos",
         "Preparación de pedidos online, seguimiento, cambio de estados y entrega mediante QR.",
-        ("transferencias.consultar", "pedidos.consultar", "pedidos.preparar"),
+        ("transferencias.consultar", "pedidos.consultar", "pedidos.preparar", "pedidos.retirar"),
     ),
     "QUIMICO_FARMACEUTICO": RoleDefinition(
         "Químico farmacéutico",
@@ -68,6 +68,7 @@ ROLE_CATALOG = {
 
 # Solo permisos existentes. El alcance futuro no habilita módulos por adelantado.
 PERMISSIONS = {
+    "pedidos.retirar": ("Validar QR y confirmar entrega única de pedidos pagados", True),
     "pedidos.consultar": ("Consultar pedidos e historial de la sucursal autorizada", True),
     "pedidos.preparar": ("Iniciar preparación y marcar pedidos listos para retiro", True),
     "ventas.reversar": ("Registrar anulaciones y devoluciones como administrador", True),
@@ -196,7 +197,7 @@ def reconcile_e7_permissions(db: Session) -> None:
         raise ValueError("Carga primero el catálogo existente de roles y permisos.")
     if permission not in role.permisos:
         role.permisos.append(permission)
-    for code in ("pedidos.consultar", "pedidos.preparar"):
+    for code in ("pedidos.consultar", "pedidos.preparar", "pedidos.retirar"):
         item = db.scalar(select(Permiso).where(Permiso.codigo == code))
         if item is None:
             item = Permiso(codigo=code, descripcion=PERMISSIONS[code][0])

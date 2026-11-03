@@ -8,7 +8,7 @@ import '../payment.css'
 const labels: Record<string, string> = {
   PENDIENTE_PAGO: 'Pendiente de pago', PAGADO: 'Pago confirmado',
   CANCELADO: 'Pedido cancelado', REVISION_PAGO: 'Pago en revisión',
-  EN_PREPARACION: 'En preparación', LISTO_PARA_RETIRO: 'Listo para retiro',
+  EN_PREPARACION: 'En preparación', LISTO_PARA_RETIRO: 'Listo para retiro', RETIRADO: 'Pedido retirado',
 }
 
 export default function OrderPaymentPanel({ order, onUpdate }: {
@@ -78,6 +78,7 @@ export default function OrderPaymentPanel({ order, onUpdate }: {
     {order.status === 'PAGADO' && <p>Recibimos la confirmación del pago. Tu pedido aún debe prepararse; este mensaje no confirma que esté listo para retiro.</p>}
     {order.status === 'EN_PREPARACION' && <p>Estamos preparando tu pedido. Te avisaremos cuando esté listo para retiro.</p>}
     {order.status === 'LISTO_PARA_RETIRO' && <p>Tu pedido está listo para retiro en la sucursal seleccionada.</p>}
+    {order.status === 'RETIRADO' && <p>La entrega de tu pedido ya fue registrada. Gracias por tu compra.</p>}
     {order.status === 'CANCELADO' && <p>Este pedido ya no admite pagos. Si realizaste un pago, consulta con la farmacia antes de crear otro pedido.</p>}
     {order.status === 'REVISION_PAGO' && <p>El pago necesita revisión de la farmacia. No vuelvas a pagar este pedido.</p>}
     {error && <p className="guest-error" role="alert">{error}</p>}

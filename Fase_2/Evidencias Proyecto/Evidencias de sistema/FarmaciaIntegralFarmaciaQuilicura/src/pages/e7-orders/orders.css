@@ -8,6 +8,13 @@
 .order-state-EN_PREPARACION { background:#fff1da; color:#80510b; }
 .order-state-LISTO_PARA_RETIRO { background:#e9f5e7; color:#286526; }
 .order-state-CANCELADO { background:#fdebed; color:#972b36; }
+.order-state-RETIRADO { background:#e8eef9; color:#264b70; }
+.orders-pickup-action { display:flex; justify-content:flex-end; margin-bottom:16px; }
+dialog.order-pickup-dialog { width:min(600px, calc(100vw - 32px)); max-height:calc(100dvh - 32px); box-sizing:border-box; overflow:auto; }
+.pickup-code { display:grid; gap:8px; }
+.pickup-code input { width:100%; box-sizing:border-box; font:inherit; padding:12px; border:1px solid #d9dce8; border-radius:8px; }
+.pickup-preview { padding:16px; margin-top:16px; border-radius:12px; background:#f5f6fa; overflow-wrap:anywhere; }
+.pickup-preview li { margin:10px 0; }
 .orders-pagination,.orders-transfers li { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
 .orders-pagination { padding:20px; }
 dialog.app-modal.orders-dialog { display:flex; flex-direction:column; overflow:hidden; background:#f5f6fa; font-size:14px; }

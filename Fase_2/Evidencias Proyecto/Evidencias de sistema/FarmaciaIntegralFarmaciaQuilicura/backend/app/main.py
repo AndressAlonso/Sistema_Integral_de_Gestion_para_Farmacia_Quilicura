@@ -4,10 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import event
 from starlette.exceptions import HTTPException
 
-from app.audit.recording import record_changes, request_audit
+from app.audit.recording import audit_listener, request_audit
 from app.audit.routes import router as audit_router
 from app.auth.routes import COOKIE_NAME, COOKIE_PATH, router
 from app.auth.sessions import SessionRepository
@@ -36,6 +35,8 @@ from app.inventory_adjustments.repository import AdjustmentRepository
 from app.inventory_adjustments.routes import router as adjustments_router
 from app.orders.admin_routes import router as order_admin_router
 from app.orders.development import router as order_development_router
+from app.orders.mail import order_mail_worker
+from app.orders.pickup_routes import router as pickup_router
 from app.orders.routes import router as orders_router
 from app.payments.routes import router as payments_router
 from app.payments.routes import webhook_router
@@ -89,14 +90,11 @@ def create_app(
             app.state.customers = CustomerRepository(factory)
             app.state.customer_sessions = CustomerSessionRepository(factory)
             app.state.customer_auth = AuthState()
-            event.listen(factory, "before_flush", record_changes)
-            try:
+            with audit_listener(factory):
                 async with payment_expiration_worker(
                     factory, allow_start=session_factory is None
-                ):
+                ), order_mail_worker(factory, allow_start=session_factory is None):
                     yield
-            finally:
-                event.remove(factory, "before_flush", record_changes)
         finally:
             if engine is not None:
                 engine.dispose()
@@ -154,6 +152,8 @@ def create_app(
             detail = (
                 "Revisa el código y los datos de vinculación del escáner."
             )
+        elif path.startswith("/api/orders"):
+            detail = "Revisa el código QR, el pedido y los datos de confirmación."
         elif path.startswith("/api/customers/orders"):
             detail = "Revisa los productos, cantidades, sucursal, nombre y correo, total y confirmación del pedido."
         elif path.startswith("/api/customers"):
@@ -275,6 +275,7 @@ def create_app(
     app.include_router(payments_router)
     app.include_router(webhook_router)
     app.include_router(order_development_router)
+    app.include_router(pickup_router)
     app.include_router(order_admin_router)
     app.include_router(promotions_router)
     app.include_router(scanner_router)

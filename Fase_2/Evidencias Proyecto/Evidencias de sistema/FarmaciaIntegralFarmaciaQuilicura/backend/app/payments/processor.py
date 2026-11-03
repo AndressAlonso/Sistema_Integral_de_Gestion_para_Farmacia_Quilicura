@@ -262,7 +262,7 @@ class PaymentNotificationService:
             if refunded > 0 and status == "approved":
                 row.revision_motivo = "REVISAR_REEMBOLSO_PARCIAL"
                 if sale:
-                    order.estado = "REVISION_PAGO"
+                    order.estado = "RETIRADO" if order.estado == "RETIRADO" else "REVISION_PAGO"
                 elif order.estado == "PENDIENTE_PAGO":
                     release_reservations(db, order)
             elif status == "approved":
@@ -309,7 +309,7 @@ class PaymentNotificationService:
             elif status in {"refunded", "charged_back", "in_mediation"}:
                 row.revision_motivo = "REVISAR_REEMBOLSO_O_DISPUTA"
                 if sale:
-                    order.estado = "REVISION_PAGO"
+                    order.estado = "RETIRADO" if order.estado == "RETIRADO" else "REVISION_PAGO"
                 elif order.estado == "PENDIENTE_PAGO":
                     release_reservations(db, order)
             db.add(EventoAuditoria(

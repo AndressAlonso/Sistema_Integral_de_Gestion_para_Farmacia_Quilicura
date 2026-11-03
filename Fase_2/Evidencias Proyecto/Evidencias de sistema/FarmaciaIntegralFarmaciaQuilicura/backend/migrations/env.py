@@ -4,6 +4,7 @@ from app.config import database_url
 from app.customers import models as customer_models  # noqa: F401
 from app.db import create_database_engine
 from app.models import Base
+from app.orders import fulfillment_models  # noqa: F401
 from app.orders import models as order_models  # noqa: F401
 from app.payments import models as payment_models  # noqa: F401
 
