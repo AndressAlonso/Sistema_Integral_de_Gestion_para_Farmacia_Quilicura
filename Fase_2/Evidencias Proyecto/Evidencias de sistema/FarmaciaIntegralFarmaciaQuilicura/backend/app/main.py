@@ -21,6 +21,7 @@ from app.customers.repository import CustomerRepository
 from app.customers.routes import router as customers_router
 from app.customers.security import clear_customer_cookie
 from app.customers.sessions import CustomerSessionRepository
+from app.dashboard.routes import router as dashboard_router
 from app.db import create_database_engine, create_session_factory
 from app.ecommerce.cart.repository import CartRepository
 from app.ecommerce.cart.routes import router as cart_router
@@ -141,7 +142,9 @@ def create_app(
     ):
         path = request.url.path
 
-        if path.startswith("/api/audit"):
+        if path.startswith("/api/dashboard"):
+            detail = "Revisa la sucursal y las fechas de los indicadores."
+        elif path.startswith("/api/audit"):
             detail = "Revisa la sucursal, las fechas y la página de auditoría."
         elif path.startswith(("/api/pos", "/api/cash")):
             detail = (
@@ -263,6 +266,7 @@ def create_app(
 
     app.include_router(router)
     app.include_router(audit_router)
+    app.include_router(dashboard_router)
     app.include_router(users_router)
     app.include_router(branches_router)
     app.include_router(catalog_router)

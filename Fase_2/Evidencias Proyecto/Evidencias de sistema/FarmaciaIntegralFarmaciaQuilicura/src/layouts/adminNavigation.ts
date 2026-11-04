@@ -51,8 +51,8 @@ export const adminNavigation = [
     icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 4a4 4 0 0 1 0 7M22 21v-2a4 4 0 0 0-3-4',
   },
   {
-    path: '/admin/reports',
-    label: 'Reportes',
+    path: '/admin/dashboard',
+    label: 'Dashboard',
     icon: 'M4 21V11M10 21V3M16 21v-7M22 21V7',
   },
   {
@@ -80,6 +80,7 @@ const placeholderRoles: Readonly<Record<string, readonly string[]>> = {
   '/admin/promotions': ['ADMINISTRADOR'],
   '/admin/audit': ['ADMINISTRADOR', 'SOCIO'],
   '/admin/reports': ['ADMINISTRADOR', 'SOCIO'],
+  '/admin/dashboard': ['ADMINISTRADOR', 'SOCIO'],
 }
 
 export function canAccessAdminPage(path: string, permissions: readonly string[], roles: readonly string[]): boolean {

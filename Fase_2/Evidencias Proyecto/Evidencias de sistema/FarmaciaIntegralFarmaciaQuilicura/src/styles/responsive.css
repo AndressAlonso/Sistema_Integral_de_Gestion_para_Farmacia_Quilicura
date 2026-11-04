@@ -1,0 +1,92 @@
+/* Shared sizing rules: scroll large datasets locally, never the whole page. */
+.admin-content { container: workspace / inline-size; width: 100%; max-width: 1920px; margin-inline: auto; padding-inline: clamp(16px, 2.5vw, 48px); }
+.admin-sidebar nav { display: flex; flex-direction: column; overflow-y: auto; max-height: none; overscroll-behavior: contain; }
+.admin-nav-link { min-height: 44px; flex-shrink: 0; }
+.admin-menu-toggle, .auth-logout-button { min-height: 44px; }
+.admin-mobile-drawer { padding: 0; border: 0; margin: 0; height: 100dvh; max-height: 100dvh; width: min(320px, calc(100vw - 32px)); max-width: none; color: #233451; background: white; }
+.admin-mobile-drawer::backdrop { background: #17213880; backdrop-filter: blur(3px); }
+.admin-drawer-content { display: flex; flex-direction: column; height: 100%; padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom); }
+.admin-drawer-content header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 12px; }
+.admin-drawer-content nav { overflow-y: auto; padding: 4px; display: grid; gap: 5px; overscroll-behavior: contain; }
+body:has(.admin-mobile-drawer[open]) { overflow: hidden; }
+:is(.users-heading, .branches-heading, .catalog-heading, .pos-heading) { flex-wrap: wrap; gap: 16px; }
+:is(.users-panel, .pos-panel, .cart-summary, .cart-item, .store-page-heading, .users-heading > div) { min-width: 0; }
+:is(.users-table-scroll, .branches-table-scroll, .promotions-table) { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+:is(input, select, textarea, fieldset) { min-width: 0; max-width: 100%; }
+:is(.users-fields, .roles-fields) > label { min-width: 0; }
+:is(.users-dialog-actions, .branches-dialog-actions, .pos-dialog footer) { flex-wrap: wrap; gap: 12px; }
+dialog.app-modal { width: min(1600px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); }
+.customer-order-progress.is-compact { min-width: 0; width: 100%; }
+.cart-item-controls { flex-wrap: wrap; }
+.cart-pickup-options label > span { min-width: 0; overflow-wrap: anywhere; }
+.cart-page .cart-quantity-stepper button { width: 44px; min-height: 44px; }
+.cart-page .cart-quantity-stepper input { min-height: 44px; }
+.public-menu-toggle { display: none; }
+.orders-page > .users-heading { display: flex; align-items: flex-start; justify-content: space-between; }
+.orders-page > .users-heading > div { flex: 1; }
+.orders-refresh { flex-shrink: 0; }
+@media (pointer: coarse), (max-width: 600px) {
+  :is(.admin-content, .public-header, .operational-filters, dialog) button { min-height: 44px; }
+  .operational-periods { width: 100%; }
+  .operational-periods button { flex: 1 1 auto; }
+  .operational-chips button { white-space: normal; text-align: left; }
+  .users-row-actions { flex-wrap: wrap; }
+}
+@media (max-width: 600px) {
+  .public-header-row { position: relative; gap: 8px; }
+  .public-header-brand img { width: 56px; }
+  .public-header-brand span { font-size: 13px; }
+  .public-menu-toggle { display: inline-flex; gap: 8px; align-items: center; justify-content: center; margin-left: auto; min-height: 44px; border: 1px solid #e4dce9; border-radius: 10px; background: white; color: #702582; padding: 8px 12px; }
+  .public-header-nav { justify-content: flex-start; }
+  .public-header-nav:not(.is-open) > :is(.public-header-customer, .public-header-internal) { display: none; }
+  .public-header-nav > .public-header-cart { margin-left: auto; }
+  .public-header-customer { width: 100%; padding-top: 8px; border-top: 1px solid #eee5f2; }
+}
+
+@container workspace (max-width: 950px) {
+  .pos-sales-page .pos-workspace { grid-template-columns: minmax(0, 1fr); }
+  .pos-sales-page .pos-cart { position: static; }
+  .pos-cart-items { max-height: none; }
+  .dashboard-main-grid { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 1050px) {
+  .orders-responsive-table thead { position: static; width: auto; height: auto; overflow: visible; clip-path: none; display: block; padding: 12px; border-bottom: 1px solid #e4e9f3; }
+  .orders-responsive-table thead tr { display: flex; gap: 12px; flex-wrap: wrap; }
+  .orders-responsive-table thead th { padding: 0; border: 0; }
+  .orders-responsive-table thead th:nth-child(odd) { display: none; }
+}
+@container (max-width: 480px) {
+  .customer-order-progress.is-compact .customer-order-steps { grid-template-columns: 1fr; }
+  .customer-order-progress.is-compact .customer-order-steps li { flex-direction: row; text-align: left; gap: 12px; padding: 0 0 16px; }
+  .customer-order-progress.is-compact .customer-order-steps li:last-child { padding-bottom: 0; }
+  .customer-order-progress.is-compact .customer-order-step-label { font-size: 12px; }
+  .customer-order-progress.is-compact .customer-order-step-label small { font-size: 11px; }
+  .customer-order-progress.is-compact .customer-order-steps li:not(:last-child)::after { top: 28px; left: 11px; width: 2px; height: calc(100% - 32px); }
+}
+@media (max-width: 800px) {
+  .admin-shell { display: block; }
+  .admin-shell > .admin-sidebar { display: none; }
+  .admin-content { padding: 20px 12px; }
+  .admin-section-name { display: block; min-width: 0; overflow-wrap: anywhere; }
+  .admin-topbar { gap: 10px; }
+  .customer-auth-intro { padding: 24px; }
+  .cart-summary { position: static; }
+}
+@media (max-width: 600px) {
+  :root { --ui-dialog-title: 23px; }
+  :is(.public-page, .cart-page, .admin-content, dialog) :is(input:not([type=checkbox]):not([type=radio]), select, textarea) { font-size: 16px; }
+  dialog.app-modal { width: calc(100vw - 16px); height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: 12px; }
+  :is(.users-button, .users-close, .orders-refresh, .dashboard-refresh, .pos-text-button) { min-height: 44px; }
+  :is(.users-close, .dashboard-refresh) { min-width: 44px; }
+  .users-search { min-width: 0; flex-basis: 100%; }
+  .customer-auth-panel { padding: 20px; }
+  .store-page-heading { padding: 20px; gap: 16px; }
+  .orders-dialog-header { flex-wrap: wrap; gap: 12px; }
+  .orders-dialog-content { padding: 16px; }
+  .pos-payment { width: 100%; max-width: 100%; }
+  .admin-avatar { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

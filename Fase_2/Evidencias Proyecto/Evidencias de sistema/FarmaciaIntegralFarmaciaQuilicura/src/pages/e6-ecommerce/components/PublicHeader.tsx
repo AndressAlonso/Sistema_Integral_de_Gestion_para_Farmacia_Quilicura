@@ -1,4 +1,5 @@
 import StoreIcon from './StoreIcon'
+import { useState } from 'react'
 import Notification from '../../../components/Notification'
 import { Link, useLocation } from 'react-router-dom'
 import { useCustomerSession } from '../hooks/useCustomerSession'
@@ -11,12 +12,15 @@ export default function PublicHeader() {
   const { pathname } = useLocation()
   const { customer, loading, closing, error, logout } = useCustomerSession()
   const { draft } = useCart()
+  const [menuPath, setMenuPath] = useState<string | null>(null)
+  const menuOpen = menuPath === pathname
 
   return (
     <header className="public-header">
       <div className="public-header-row">
         <Link className="public-header-brand" to="/tienda"><img src={logo} alt="Farmacia Quilicura" width="718" height="718" /><span>Tienda online</span></Link>
-        <nav className="public-header-nav" aria-label="Navegación pública">
+        <button className="public-menu-toggle" type="button" aria-label="Menú de la tienda" aria-expanded={menuOpen} aria-controls="store-navigation" onClick={() => setMenuPath(menuOpen ? null : pathname)}>☰ <span>Menú</span></button>
+        <nav id="store-navigation" className={`public-header-nav${menuOpen ? ' is-open' : ''}`} aria-label="Navegación pública" onClick={event => { if ((event.target as HTMLElement).closest('a')) setMenuPath(null) }}>
           <Link to="/tienda" aria-current={pathname === '/tienda' ? 'page' : undefined}><StoreIcon name="orders" />Catálogo</Link>
           <Link className="public-header-cart" to="/tienda/carrito" aria-current={pathname === '/tienda/carrito' ? 'page' : undefined}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 3h2l3 12h10l3-9H6" /><circle cx="9" cy="20" r="1" /><circle cx="18" cy="20" r="1" /></svg>Carrito ({draft.items.reduce((sum, item) => sum + item.quantity, 0)})</Link>
           <div className="public-header-customer" aria-live="polite" aria-busy={loading || closing}>

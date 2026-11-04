@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Notification from '../../components/Notification'
 import { apiRequest } from '../../services/http'
+import OperationalFilters from '../e9-dashboard/OperationalFilters'
 import '../e1-access-users-branches/users/users.css'
 import './audit.css'
 
@@ -45,8 +46,7 @@ function AuditDetail({ event, onClose }: { event: AuditEvent; onClose: () => voi
 }
 export default function AuditPage() {
   const [data, setData] = useState<AuditList | null>(null)
-  const [draft, setDraft] = useState({ branch_id: '', date_from: '', date_to: '' })
-  const [filters, setFilters] = useState(draft)
+  const [filters, setFilters] = useState({ branch_id: '', date_from: '', date_to: '' })
   const [page, setPage] = useState(1)
   const [attempt, setAttempt] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -66,15 +66,9 @@ export default function AuditPage() {
   return <section className="users-page audit-page">
     <header className="users-heading"><div><h1>Auditoría</h1><p>Consulta quién realizó cada operación y revisa sus cambios.</p></div><button className="users-button" onClick={refresh} disabled={loading} aria-label="Actualizar auditoría" title="Actualizar auditoría"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1" /></svg></button></header>
     {error && <Notification message={error} kind="error" />}
-    <form className="users-panel audit-filters" onSubmit={e => { e.preventDefault(); if (draft.date_from && draft.date_to && draft.date_from > draft.date_to) { setError('La fecha inicial no puede ser posterior a la fecha final.'); return } setFilters({ ...draft }); setPage(1); setLoading(true) }}>
-      <label>Sucursal<select value={draft.branch_id} onChange={e => setDraft({ ...draft, branch_id: e.target.value })}><option value="">Todas las sucursales</option>{data?.branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select></label>
-      <label>Desde<input type="date" value={draft.date_from} onChange={e => setDraft({ ...draft, date_from: e.target.value })} /></label>
-      <label>Hasta<input type="date" value={draft.date_to} onChange={e => setDraft({ ...draft, date_to: e.target.value })} /></label>
-      <button className="users-button users-button-primary" type="submit" disabled={loading}>Aplicar filtros</button><button className="users-button" type="button" disabled={loading} onClick={() => { const empty = { branch_id: '', date_from: '', date_to: '' }; setDraft(empty); setFilters(empty); setPage(1); setLoading(true) }}>Limpiar</button>
-      <small>Fechas y horas de Chile · Incluye ambos días del período.</small>
-    </form>
-    <section className="users-panel" aria-busy={loading}><div className="users-table-scroll"><table className="users-table"><thead><tr><th>Fecha y hora</th><th>Responsable</th><th>Operación</th><th>Sucursal</th><th>Detalle</th></tr></thead><tbody>
-      {loading ? <tr><td colSpan={5} role="status">Cargando operaciones…</td></tr> : error ? <tr><td colSpan={5}>No se pudo mostrar el registro. <button className="users-button" onClick={refresh}>Reintentar</button></td></tr> : data?.events.length ? data.events.map(event => <tr key={event.id} className="audit-row" onClick={() => setSelected(event)}><td>{timestamp(event.at)}</td><td>{event.actor.name}</td><td><strong>{actionLabel(event.action)}</strong><small>{event.reference}</small></td><td>{event.branch?.name ?? 'General'}</td><td><button className="users-button" aria-label={`Ver detalle de ${event.reference}`} onClick={e => { e.stopPropagation(); setSelected(event) }}>Ver detalle →</button></td></tr>) : <tr><td colSpan={5} className="users-empty">No hay operaciones para estos filtros.</td></tr>}
+    <OperationalFilters branches={data?.branches ?? []} value={filters} allowAll onChange={next => { setFilters(next); setPage(1); setLoading(true); setError('') }} />
+    <section className="users-panel" aria-busy={loading}><div className="users-table-scroll"><table className="users-table responsive-admin-table"><thead><tr><th>Fecha y hora</th><th>Responsable</th><th>Operación</th><th>Sucursal</th><th>Detalle</th></tr></thead><tbody>
+      {loading ? <tr><td colSpan={5} role="status">Cargando operaciones…</td></tr> : error ? <tr><td colSpan={5}>No se pudo mostrar el registro. <button className="users-button" onClick={refresh}>Reintentar</button></td></tr> : data?.events.length ? data.events.map(event => <tr key={event.id} className="audit-row" onClick={() => setSelected(event)}><td data-label="Fecha y hora">{timestamp(event.at)}</td><td data-label="Responsable">{event.actor.name}</td><td data-label="Operación"><strong>{actionLabel(event.action)}</strong><small>{event.reference}</small></td><td data-label="Sucursal">{event.branch?.name ?? 'General'}</td><td data-label="Detalle"><button className="users-button" aria-label={`Ver detalle de ${event.reference}`} onClick={e => { e.stopPropagation(); setSelected(event) }}>Ver detalle →</button></td></tr>) : <tr><td colSpan={5} className="users-empty">No hay operaciones para estos filtros.</td></tr>}
     </tbody></table></div><footer className="audit-pagination"><span>{data?.total ?? 0} operaciones · Página {page}</span><button className="users-button" disabled={loading || !!error || page === 1} onClick={() => { setPage(n => n - 1); setLoading(true) }}>Anterior</button><button className="users-button" disabled={loading || !!error || page * 20 >= (data?.total ?? 0)} onClick={() => { setPage(n => n + 1); setLoading(true) }}>Siguiente</button></footer></section>
     {selected && <AuditDetail event={selected} onClose={() => setSelected(null)} />}
   </section>

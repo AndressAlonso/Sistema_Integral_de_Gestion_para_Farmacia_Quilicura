@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { Navigate, NavLink, Outlet, useLocation, useOutletContext } from 'react-router-dom'
 import logo from '../assets/logo-farmacia-quilicura.jpg'
 import LogoutButton from '../pages/e1-access-users-branches/auth/LogoutButton'
@@ -9,6 +9,15 @@ import './admin-layout.css'
 export default function AdminLayout() {
   const session = useOutletContext<AuthSession>()
   const { pathname } = useLocation()
+  const drawer = useRef<HTMLDialogElement>(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 800px)').matches)
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 800px)')
+    const closeOnDesktop = () => { setMobile(media.matches); if (!media.matches) drawer.current?.close() }
+    media.addEventListener('change', closeOnDesktop)
+    return () => media.removeEventListener('change', closeOnDesktop)
+  }, [])
   const [expanded, setExpanded] = useState(() => {
     try {
       const preference = localStorage.getItem('sigfq-menu-expanded')
@@ -18,12 +27,25 @@ export default function AdminLayout() {
   })
   const navigation = adminNavigation.filter(item => canAccessAdminPage(item.path, session.user.permissions, session.user.roles))
   function toggleMenu() {
+    if (window.matchMedia('(max-width: 800px)').matches) {
+      drawer.current?.showModal()
+      setMobileOpen(true)
+      return
+    }
     const next = !expanded
     setExpanded(next)
     try { localStorage.setItem('sigfq-menu-expanded', String(next)) } catch { /* Preferencia opcional. */ }
   }
   function closeMobileMenu() {
-    if (window.matchMedia('(max-width: 800px)').matches) setExpanded(false)
+    drawer.current?.close()
+  }
+  function keepMenuFocus(event: KeyboardEvent<HTMLDialogElement>) {
+    if (event.key !== 'Tab') return
+    const controls = event.currentTarget.querySelectorAll<HTMLElement>('button, a[href]')
+    const first = controls[0]
+    const last = controls[controls.length - 1]
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+    if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
   }
   const current = adminNavigation.find(item => item.path === pathname)
 
@@ -34,6 +56,16 @@ export default function AdminLayout() {
   return (
     <div className={`admin-shell${expanded ? ' admin-menu-open' : ' admin-menu-compact'}`}>
       <a className="admin-skip" href="#admin-content">Saltar al contenido</a>
+      <dialog id="admin-mobile-menu" ref={drawer} className="admin-mobile-drawer" aria-label="Menú principal" onKeyDown={keepMenuFocus} onClose={() => setMobileOpen(false)} onClick={event => { if (event.target === event.currentTarget) closeMobileMenu() }}>
+        <div className="admin-drawer-content">
+          <header><strong>Farmacia Quilicura</strong><button type="button" className="admin-menu-toggle" onClick={closeMobileMenu} aria-label="Cerrar menú">✕</button></header>
+          <nav aria-label="Secciones del sistema">
+            {navigation.map(item => <NavLink key={item.path} to={item.path} end onClick={closeMobileMenu} className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d={item.icon} /></svg>{item.label}
+            </NavLink>)}
+          </nav>
+        </div>
+      </dialog>
       <aside className="admin-sidebar" id="admin-sidebar" aria-label="Menú principal">
         <NavLink className="admin-brand" to="/session" onClick={closeMobileMenu} aria-label="Farmacia Quilicura, resumen">
           {expanded ? <img src={logo} alt="Farmacia Quilicura — Cuidando tu salud" /> : <span className="admin-brand-short" aria-hidden="true">FQ</span>}
@@ -50,7 +82,7 @@ export default function AdminLayout() {
       </aside>
       <div className="admin-workspace">
         <header className="admin-topbar">
-          <button className="admin-menu-toggle" type="button" title={expanded ? 'Mostrar solo iconos' : 'Mostrar iconos y nombres'} aria-label={expanded ? 'Contraer menú a iconos' : 'Expandir menú'} aria-expanded={expanded} aria-controls="admin-sidebar" onClick={toggleMenu}>
+          <button className="admin-menu-toggle" type="button" title="Menú de navegación" aria-label="Menú de navegación" aria-expanded={mobile ? mobileOpen : expanded} aria-controls={mobile ? 'admin-mobile-menu' : 'admin-sidebar'} onClick={toggleMenu}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
           </button>
           <span className="admin-section-name">{current?.label}</span>
