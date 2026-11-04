@@ -46,7 +46,7 @@ a.store-back-link:hover { background: #f5edf8; }
 .guest-page .guest-back { font-size: 14px; font-weight: 600; text-underline-offset: 4px; }
 .order-history-page .order-history-item { padding: 24px; box-shadow: 0 4px 18px #352b3b05; }
 .order-history-page .order-history-item h2 { font-size: 15px; color: #702582; margin: 0; padding-bottom: 16px; border-bottom: 1px solid #eee8f1; }
-.order-history-page .order-history-item dl { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.order-history-page .order-history-item dl { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .order-history-page .order-history-item dt { color: #74667d; font-size: 12px; font-weight: 400; }
 .order-history-page .order-history-item dd { font-size: 14px; font-weight: 600; color: #43274f; }
 .store-order-status { display: inline-block; padding: 4px 10px; background: #f1eaf5; color: #702582; border-radius: 20px; font-size: 12px; }

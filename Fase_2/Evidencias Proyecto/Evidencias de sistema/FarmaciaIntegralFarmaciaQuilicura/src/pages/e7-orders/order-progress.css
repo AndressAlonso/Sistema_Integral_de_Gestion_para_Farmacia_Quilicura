@@ -1,0 +1,29 @@
+.customer-order-progress { margin-top: 20px; padding-top: 18px; border-top: 1px solid #eee5f2; }
+.customer-order-progress-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 20px; font-size: 13px; color: #73637b; }
+.customer-order-progress-heading strong { color: #702582; background: #f5edf8; border-radius: 20px; padding: 5px 10px; font-size: 12px; }
+.customer-order-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; }
+.customer-order-steps li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: #736c79; padding: 0 6px; }
+.customer-order-steps li:not(:last-child)::after { content: ''; position: absolute; height: 2px; background: #e5dfe9; top: 17px; left: calc(50% + 23px); width: calc(100% - 46px); }
+.customer-order-steps li.is-complete::after { background: #83b44e; }
+.customer-order-step-dot { display: grid; place-items: center; width: 36px; height: 36px; box-sizing: border-box; border: 2px solid #e5dfe9; border-radius: 50%; background: #fff; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.customer-order-steps .is-complete .customer-order-step-dot { background: #edf6e5; border-color: #83b44e; color: #37691c; }
+.customer-order-steps .is-current .customer-order-step-dot { background: #702582; border-color: #702582; color: #fff; box-shadow: 0 0 0 5px #f3e8f8; }
+.customer-order-steps .is-current .customer-order-step-label { color: #702582; font-weight: 700; }
+.customer-order-step-label { font-size: 13px; line-height: 1.4; }
+.customer-order-step-label small { display: block; margin-top: 4px; font-size: 11px; font-weight: 400; }
+.customer-order-progress-exception { color: #76545b; font-size: 13px; margin: 0; }
+@media (max-width: 600px) {
+  .customer-order-steps { grid-template-columns: 1fr; gap: 0; }
+  .customer-order-steps li { flex-direction: row; text-align: left; padding: 0 0 22px; gap: 14px; }
+  .customer-order-steps li:last-child { padding-bottom: 0; }
+  .customer-order-steps li:not(:last-child)::after { top: 40px; left: 17px; width: 2px; height: calc(100% - 44px); }
+}
+.customer-order-progress.is-compact { min-width: 310px; max-width: 420px; margin: 0; padding: 4px 0; border: 0; }
+.customer-order-progress.is-compact .customer-order-progress-heading { margin-bottom: 12px; font-size: 0; gap: 0; }
+.customer-order-progress.is-compact .customer-order-progress-heading strong { font-size: 12px; }
+.customer-order-progress.is-compact .customer-order-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.customer-order-progress.is-compact .customer-order-steps li { flex-direction: column; gap: 7px; padding: 0 4px; text-align: center; }
+.customer-order-progress.is-compact .customer-order-step-dot { width: 24px; height: 24px; font-size: 10px; }
+.customer-order-progress.is-compact .customer-order-steps li:not(:last-child)::after { top: 11px; left: calc(50% + 17px); width: calc(100% - 34px); height: 2px; }
+.customer-order-progress.is-compact .customer-order-step-label { font-size: 10px; white-space: normal; }
+.customer-order-progress.is-compact .customer-order-step-label small { font-size: 10px; }
