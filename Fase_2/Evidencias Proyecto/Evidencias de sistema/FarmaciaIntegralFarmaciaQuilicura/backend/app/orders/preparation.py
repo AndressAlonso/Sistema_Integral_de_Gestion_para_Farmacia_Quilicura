@@ -11,7 +11,7 @@ from app.orders.service import summary
 from app.orders.transfers import lock_order, reservation_rows
 from app.transfers.repository import TransferRepository
 
-STATES = ("PENDIENTE_PAGO", "PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO", "CANCELADO")
+STATES = ("PENDIENTE_PAGO", "PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO", "REVISION_PAGO", "CANCELADO", "RETIRADO")
 PAID_STATES = ("PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO")
 
 
@@ -24,6 +24,8 @@ class PreparationService:
         if (not actor.is_active or "pedidos.consultar" not in actor.permissions
                 or (change and "pedidos.preparar" not in actor.permissions)):
             raise HTTPException(403, "No tienes permiso para gestionar estos pedidos.")
+        if "ADMINISTRADOR" not in actor.roles and actor.branch_id is None:
+            raise HTTPException(403, "Necesitas una sucursal asignada para gestionar pedidos.")
         if branch_id is not None and "ADMINISTRADOR" not in actor.roles and actor.branch_id != branch_id:
             raise HTTPException(403, "Solo puedes gestionar pedidos de tu sucursal de retiro.")
 
@@ -109,9 +111,10 @@ class PreparationService:
                 actions.append("ready")
         events = db.scalars(select(EventoAuditoria).where(
             EventoAuditoria.referencia_historica == f"Pedido {order.id}",
-            EventoAuditoria.accion.in_(("E7-H4_ESTADO", "E7-H3_PAGO_SIMULADO")))
+            EventoAuditoria.accion.in_(("E7-H4_ESTADO", "E7-H3_PAGO_SIMULADO", "E7-H2_PAGO_VERIFICADO", "E7-H6_RETIRO")))
             .order_by(EventoAuditoria.secuencia))
         return summary(order) | {
+            "notifications": self.notifications(db, order.id),
             "customer": {"name": order.nombre, "email": order.correo},
             "actions": actions, "ready_blocked_reason": problem,
             "transfers": [{"id": t.id, "status": t.estado,
@@ -121,6 +124,12 @@ class PreparationService:
                          "status": e.datos_cambio.get("nuevo", e.datos_cambio.get("resultado"))}
                         for e in events],
         }
+
+    @staticmethod
+    def notifications(db, order_id):
+        from app.orders.fulfillment_models import CorreoPedido
+        return [{"kind": row.tipo, "status": row.estado, "attempts": row.intentos, "sent_at": row.enviado_en}
+                for row in db.scalars(select(CorreoPedido).where(CorreoPedido.pedido_id == order_id).order_by(CorreoPedido.tipo))]
 
     def get(self, actor, order_id):
         self.authorize(actor)
@@ -149,6 +158,9 @@ class PreparationService:
                 if problem:
                     raise HTTPException(409, problem)
             order.estado = target
+            if action == "ready":
+                from app.orders.pickup import enqueue_ready
+                enqueue_ready(db, order)
             db.add(EventoAuditoria(origen_actor="USUARIO_INTERNO", accion="E7-H4_ESTADO",
                 referencia_historica=f"Pedido {order.id}", usuario_id=actor.id, sucursal_id=order.sucursal_id,
                 datos_cambio={"pedido_id": str(order.id), "anterior": source, "nuevo": target,

@@ -2,8 +2,8 @@ import { apiRequest } from '../../services/http'
 import type { OnlineOrder } from '../e6-ecommerce/services/orders.api'
 
 export const orderStates: Record<string, string> = {
-  PENDIENTE_PAGO: 'Pendiente de pago', PAGADO: 'Pagado', EN_PREPARACION: 'En preparación',
-  LISTO_PARA_RETIRO: 'Listo para retiro', CANCELADO: 'Cancelado',
+  REVISION_PAGO: 'Pago en revisión', PENDIENTE_PAGO: 'Pendiente de pago', PAGADO: 'Pagado', EN_PREPARACION: 'En preparación',
+  LISTO_PARA_RETIRO: 'Listo para retiro', RETIRADO: 'Retirado', CANCELADO: 'Cancelado',
 }
 export const orderStateLabel = (state: string) => orderStates[state] ?? state
 export type OrderAction = 'preparation' | 'ready'
@@ -14,6 +14,20 @@ export interface OrderDetail extends OnlineOrder {
   ready_blocked_reason: string | null
   transfers: { id: string; status: string; origin: string; destination: string }[]
   history: { at: string; actor: string; previous: string | null; status: string }[]
+  notifications?: { kind: string; status: string; attempts: number; sent_at: string | null }[]
+}
+
+export interface PickupPreview extends OnlineOrder { customer: { name: string; email: string } }
+export async function validatePickup(code: string): Promise<PickupPreview> {
+  return (await apiRequest('/api/orders/pickup/validate', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }),
+  }, { 404: 'El QR o código de retiro no es válido.' }, true)).json()
+}
+export async function confirmPickup(code: string, id: string): Promise<OnlineOrder> {
+  return (await apiRequest('/api/orders/pickup/confirm', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, expected_order_id: id, confirmed: true }),
+  }, { 404: 'El QR o código de retiro no es válido.' }, true)).json()
 }
 export interface OrderList {
   orders: OnlineOrder[]; total: number; page: number; limit: number

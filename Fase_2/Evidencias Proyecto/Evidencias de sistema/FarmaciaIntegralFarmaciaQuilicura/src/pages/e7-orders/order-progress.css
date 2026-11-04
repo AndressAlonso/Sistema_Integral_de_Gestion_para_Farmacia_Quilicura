@@ -1,7 +1,7 @@
 .customer-order-progress { margin-top: 20px; padding-top: 18px; border-top: 1px solid #eee5f2; }
 .customer-order-progress-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 20px; font-size: 13px; color: #73637b; }
 .customer-order-progress-heading strong { color: #702582; background: #f5edf8; border-radius: 20px; padding: 5px 10px; font-size: 12px; }
-.customer-order-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; }
+.customer-order-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; }
 .customer-order-steps li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; color: #736c79; padding: 0 6px; }
 .customer-order-steps li:not(:last-child)::after { content: ''; position: absolute; height: 2px; background: #e5dfe9; top: 17px; left: calc(50% + 23px); width: calc(100% - 46px); }
 .customer-order-steps li.is-complete::after { background: #83b44e; }
@@ -21,7 +21,7 @@
 .customer-order-progress.is-compact { min-width: 310px; max-width: 420px; margin: 0; padding: 4px 0; border: 0; }
 .customer-order-progress.is-compact .customer-order-progress-heading { margin-bottom: 12px; font-size: 0; gap: 0; }
 .customer-order-progress.is-compact .customer-order-progress-heading strong { font-size: 12px; }
-.customer-order-progress.is-compact .customer-order-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.customer-order-progress.is-compact .customer-order-steps { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .customer-order-progress.is-compact .customer-order-steps li { flex-direction: column; gap: 7px; padding: 0 4px; text-align: center; }
 .customer-order-progress.is-compact .customer-order-step-dot { width: 24px; height: 24px; font-size: 10px; }
 .customer-order-progress.is-compact .customer-order-steps li:not(:last-child)::after { top: 11px; left: calc(50% + 17px); width: calc(100% - 34px); height: 2px; }

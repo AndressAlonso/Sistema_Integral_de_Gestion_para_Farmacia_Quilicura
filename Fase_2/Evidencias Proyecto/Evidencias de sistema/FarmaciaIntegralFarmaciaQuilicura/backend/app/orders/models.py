@@ -22,7 +22,9 @@ class PedidoOnline(Base):
     __tablename__ = "pedido_online"
     __table_args__ = (
         CheckConstraint(
-            "estado IN ('PENDIENTE_PAGO','CANCELADO','PAGADO','EN_PREPARACION','LISTO_PARA_RETIRO')", name="ck_pedido_estado"
+            "estado IN ('PENDIENTE_PAGO','CANCELADO','PAGADO',"
+            "'REVISION_PAGO','EN_PREPARACION','LISTO_PARA_RETIRO','RETIRADO')",
+            name="ck_pedido_estado",
         ),
         CheckConstraint("total >= 0", name="ck_pedido_total"),
         CheckConstraint(

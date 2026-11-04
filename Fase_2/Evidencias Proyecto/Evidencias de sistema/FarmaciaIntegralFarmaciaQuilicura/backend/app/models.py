@@ -89,20 +89,23 @@ class SesionCaja(Base):
 class Venta(Base):
     __tablename__ = "venta"
     __table_args__ = (
-        CheckConstraint("medio_pago IN ('EFECTIVO','DEBITO','CREDITO','TRANSFERENCIA')", name="ck_venta_pago"),
+        UniqueConstraint("pedido_id", name="uq_venta_pedido"),
+        CheckConstraint("medio_pago IN ('EFECTIVO','DEBITO','CREDITO','TRANSFERENCIA','MERCADOPAGO')", name="ck_venta_pago"),
+        CheckConstraint("(pedido_id IS NULL AND sesion_caja_id IS NOT NULL AND usuario_id IS NOT NULL AND medio_pago <> 'MERCADOPAGO') OR (pedido_id IS NOT NULL AND sesion_caja_id IS NULL AND usuario_id IS NULL AND medio_pago = 'MERCADOPAGO')", name="ck_venta_canal"),
         CheckConstraint("subtotal >= 0 AND descuento >= 0 AND total >= 0 AND total = subtotal - descuento",
                         name="ck_venta_totales"),
     )
     id: Mapped[UUID] = mapped_column(primary_key=True)
+    pedido_id: Mapped[UUID | None] = mapped_column(ForeignKey("pedido_online.id", name="fk_venta_pedido", ondelete="RESTRICT"))
     solicitud_hash: Mapped[str] = mapped_column(String(64))
-    sesion_caja_id: Mapped[UUID] = mapped_column(ForeignKey("sesion_caja.id", ondelete="RESTRICT"), index=True)
-    usuario_id: Mapped[UUID] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
+    sesion_caja_id: Mapped[UUID | None] = mapped_column(ForeignKey("sesion_caja.id", ondelete="RESTRICT"), index=True)
+    usuario_id: Mapped[UUID | None] = mapped_column(ForeignKey("usuario_interno.id", ondelete="RESTRICT"))
     sucursal_id: Mapped[UUID] = mapped_column(ForeignKey("sucursal.id", ondelete="RESTRICT"), index=True)
     fecha: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     medio_pago: Mapped[str] = mapped_column(String(20))
-    subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2))
-    descuento: Mapped[Decimal] = mapped_column(Numeric(14, 2))
-    total: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    descuento: Mapped[Decimal] = mapped_column(Numeric(18, 2))
+    total: Mapped[Decimal] = mapped_column(Numeric(18, 2))
 
 
 class VentaDetalle(Base):
@@ -115,13 +118,13 @@ class VentaDetalle(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     venta_id: Mapped[UUID] = mapped_column(ForeignKey("venta.id", ondelete="RESTRICT"))
     producto_id: Mapped[UUID] = mapped_column(ForeignKey("producto.id", ondelete="RESTRICT"))
-    nombre: Mapped[str] = mapped_column(String(150))
+    nombre: Mapped[str] = mapped_column(String(200))
     sku: Mapped[str] = mapped_column(String(64))
     cantidad: Mapped[int] = mapped_column(Integer)
     precio_base: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     precio_final: Mapped[Decimal] = mapped_column(Numeric(14, 2))
     promocion: Mapped[dict | None] = mapped_column(JSONB)
-    total: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+    total: Mapped[Decimal] = mapped_column(Numeric(18, 2))
 
 
 class VentaLote(Base):

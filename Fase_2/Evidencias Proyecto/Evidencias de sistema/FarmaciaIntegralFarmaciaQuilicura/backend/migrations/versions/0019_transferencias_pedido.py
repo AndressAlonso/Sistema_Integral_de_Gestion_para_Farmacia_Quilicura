@@ -11,8 +11,12 @@ depends_on = None
 
 def upgrade():
     op.drop_constraint("ck_pedido_estado", "pedido_online", type_="check")
-    op.create_check_constraint("ck_pedido_estado", "pedido_online",
-                               "estado IN ('PENDIENTE_PAGO','CANCELADO','PAGADO')")
+    op.create_check_constraint(
+        "ck_pedido_estado",
+        "pedido_online",
+        "estado IN ('PENDIENTE_PAGO','CANCELADO','PAGADO',"
+        "'REVISION_PAGO','EN_PREPARACION','LISTO_PARA_RETIRO')",
+    )
     op.add_column("transferencia", sa.Column("pedido_id", postgresql.UUID(), nullable=True))
     op.create_foreign_key("fk_transferencia_pedido", "transferencia", "pedido_online",
                           ["pedido_id"], ["id"], ondelete="RESTRICT")

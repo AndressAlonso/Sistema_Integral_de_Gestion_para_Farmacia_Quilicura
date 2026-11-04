@@ -1,7 +1,7 @@
 import { orderStateLabel } from './orders.api'
 import './order-progress.css'
 
-const steps = ['PENDIENTE_PAGO', 'PAGADO', 'EN_PREPARACION', 'LISTO_PARA_RETIRO']
+const steps = ['PENDIENTE_PAGO', 'PAGADO', 'EN_PREPARACION', 'LISTO_PARA_RETIRO', 'RETIRADO']
 
 export default function OrderProgress({ status, compact = false }: { status: string; compact?: boolean }) {
   const current = steps.indexOf(status)
@@ -13,7 +13,7 @@ export default function OrderProgress({ status, compact = false }: { status: str
         <span className="customer-order-step-dot" aria-hidden="true">{index < current ? '✓' : index + 1}</span>
         <span className="customer-order-step-label">{orderStateLabel(step)}<small>{index === current ? 'Estado actual' : index < current ? 'Completado' : 'Pendiente'}</small></span>
       </li>)}
-    </ol> : <p className="customer-order-progress-exception">{status === 'CANCELADO' ? 'Este pedido fue cancelado y no continuará su preparación.' : 'El seguimiento por etapas no está disponible para este estado.'}</p>}
+    </ol> : <p className="customer-order-progress-exception">{status === 'CANCELADO' ? 'Este pedido fue cancelado y no continuará su preparación.' : status === 'REVISION_PAGO' ? 'El pago está en revisión. La preparación continuará cuando se confirme su estado.' : 'El seguimiento por etapas no está disponible para este estado.'}</p>}
   </div>
   )
 }

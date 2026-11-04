@@ -1,15 +1,41 @@
 """Registro de cambios ORM confirmados; sin serializar entidades completas ni secretos."""
+from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import date, datetime
 from decimal import Decimal
+from threading import RLock
 from uuid import UUID, uuid4
+from weakref import WeakKeyDictionary
 
-from sqlalchemy import inspect
+from sqlalchemy import event, inspect
 
 from app.models import EventoAuditoria, InventarioSucursal, Sucursal
 
 # Un objeto por solicitud, compartido con las dependencias síncronas de FastAPI.
 request_audit: ContextVar[dict | None] = ContextVar("request_audit", default=None)
+
+_listeners = WeakKeyDictionary()
+_listener_lock = RLock()
+
+
+@contextmanager
+def audit_listener(factory):
+    """Varias instancias pueden compartir fábrica sin quitarse la auditoría."""
+    with _listener_lock:
+        count = _listeners.get(factory, 0)
+        if count == 0:
+            event.listen(factory, "before_flush", record_changes)
+        _listeners[factory] = count + 1
+    try:
+        yield
+    finally:
+        with _listener_lock:
+            count = _listeners[factory] - 1
+            if count:
+                _listeners[factory] = count
+            else:
+                event.remove(factory, "before_flush", record_changes)
+                del _listeners[factory]
 
 FIELDS = {
     "usuario_interno": ("nombre", "correo", "activo", "sucursal_id", "roles"),

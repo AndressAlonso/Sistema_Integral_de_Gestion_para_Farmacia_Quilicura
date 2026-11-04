@@ -23,7 +23,7 @@ class Transition(BaseModel):
 @router.get("")
 def list_orders(request: Request, state: str | None = None, branch_id: UUID | None = None,
                 page: int = Query(default=1, ge=1), limit: int = Query(default=15, ge=1, le=100),
-                states: Annotated[list[str] | None, Query(max_length=5)] = None,
+                states: Annotated[list[str] | None, Query(max_length=7)] = None,
                 sort: Literal["newest", "state_asc", "state_desc", "branch_asc", "branch_desc"] = "newest",
                 branch_ids: Annotated[list[UUID] | None, Query(max_length=100)] = None):
     service, actor = context(request)

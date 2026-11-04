@@ -5,6 +5,7 @@ import { changeOrder, getOrder, orderStateLabel, type OrderAction, type OrderDet
 
 const transferStates: Record<string, string> = { AUTORIZADA: 'Pendiente de despacho', EN_TRANSITO: 'En camino', RECIBIDA: 'Recibida', RECHAZADA: 'Rechazada', SOLICITADA: 'Solicitada' }
 const date = (value: string) => new Date(value).toLocaleString('es-CL')
+const stages = ['PAGADO', 'EN_PREPARACION', 'LISTO_PARA_RETIRO', 'RETIRADO']
 
 export default function OrderPreparationDialog({ id, onClose, onChanged }: {
   id: string; onClose: () => void; onChanged: () => void
@@ -43,8 +44,8 @@ export default function OrderPreparationDialog({ id, onClose, onChanged }: {
         <div><span className="orders-field-label">Cliente</span><strong>{order.customer.name}</strong><p>{order.customer.email}</p></div>
       </section>
       <section className="orders-state-management" aria-labelledby="manage-order-state">
-        <div><h3 id="manage-order-state">Gestionar estado</h3><ol className="orders-progress" aria-label="Etapas de preparación">{['PAGADO', 'EN_PREPARACION', 'LISTO_PARA_RETIRO'].map((state, index) => {
-          const current = ['PAGADO', 'EN_PREPARACION', 'LISTO_PARA_RETIRO'].indexOf(order.status)
+        <div><h3 id="manage-order-state">Gestionar estado</h3><ol className="orders-progress" aria-label="Etapas de preparación">{stages.map((state, index) => {
+          const current = stages.indexOf(order.status)
           return <li key={state} className={current >= index ? 'is-reached' : ''} aria-current={order.status === state ? 'step' : undefined}><span aria-hidden="true">{current > index ? '✓' : index + 1}</span>{orderStateLabel(state)}</li>
         })}</ol></div>
         {order.status === 'PAGADO' && <div className="orders-next-action"><button className="users-button primary" disabled={busy || loading || !order.actions.includes('preparation')} onClick={() => void change('preparation')}>{busy ? 'Guardando…' : 'Iniciar preparación'}</button><small>{order.actions.includes('preparation') ? 'El pedido pasará a En preparación.' : 'No puedes iniciar la preparación con los permisos o la sucursal actuales.'}</small></div>}
@@ -56,6 +57,8 @@ export default function OrderPreparationDialog({ id, onClose, onChanged }: {
         {order.status === 'PENDIENTE_PAGO' && <p>Falta confirmar el pago para iniciar la preparación.</p>}
         {order.status === 'CANCELADO' && <p>Este pedido está cancelado y no puede prepararse.</p>}
         {order.status === 'LISTO_PARA_RETIRO' && <p role="status">Preparación completada. El pedido está listo para retiro.</p>}
+        {order.status === 'RETIRADO' && <p role="status">Pedido entregado. El retiro está registrado en el historial.</p>}
+        {order.notifications?.map(mail => <p key={mail.kind}>{mail.kind === 'LISTO' ? 'Correo de retiro' : 'Recordatorio'}: {mail.status === 'ENVIADO' ? 'enviado' : mail.status === 'OMITIDO' ? 'no corresponde enviarlo' : mail.attempts ? 'envío pendiente; se reintentará' : 'pendiente de envío'}.</p>)}
       </section>
       <div className="orders-detail-grid"><div className="orders-main-column"><section className="orders-detail-card">
       <header className="orders-card-heading"><h3>Productos a preparar</h3><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} unidades</span></header>

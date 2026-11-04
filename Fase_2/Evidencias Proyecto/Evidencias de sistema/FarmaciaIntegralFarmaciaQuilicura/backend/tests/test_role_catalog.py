@@ -3,6 +3,10 @@ from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import select
+from test_auth import login
+from test_users import payload
+
 from app.models import Permiso, Rol, UsuarioInterno
 from app.role_catalog import (
     ADMIN_ROLE,
@@ -14,9 +18,6 @@ from app.role_catalog import (
     reconcile_e4_permissions,
     sync_roles,
 )
-from sqlalchemy import select
-from test_auth import login
-from test_users import payload
 
 
 def test_role_sync_preserves_ids_assignments_and_is_repeatable(setup):
@@ -170,7 +171,7 @@ def test_unit_empty_catalog_command_creates_base_and_exact_e4(monkeypatch, capsy
     for p in db.permissions:
         assert p.descripcion == PERMISSIONS[p.codigo][0]
     output = capsys.readouterr().out
-    assert "Permisos creados (17)" in output
+    assert f"Permisos creados ({len(PERMISSIONS)})" in output
     assert "ADMINISTRADOR (7)" in output
     assert "ENCARGADO_INVENTARIO (6)" in output
     assert "Commit confirmado" in output
