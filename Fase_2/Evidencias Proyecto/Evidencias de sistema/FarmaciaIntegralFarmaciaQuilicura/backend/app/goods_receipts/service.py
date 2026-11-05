@@ -1,8 +1,8 @@
 """E4-H4: entrada atómica e idempotente, sin modificar las reservas existentes."""
 
-from datetime import datetime, timezone
 from hashlib import sha256
 
+from app.business_time import business_date
 from app.models import (
     LoteInventario,
     MovimientoInventario,
@@ -56,7 +56,7 @@ class ReceiptService:
                     raise ReceiptError(409, "La solicitud ya fue utilizada con otros datos.")
                 return self.repository.response(existing), False
 
-            today = datetime.now(timezone.utc).date()
+            today = business_date()
             if data.document_date > today:
                 raise ReceiptError(422, "La fecha del documento no puede ser futura.")
             branch = self.repository.branch(db, data.branch_id)

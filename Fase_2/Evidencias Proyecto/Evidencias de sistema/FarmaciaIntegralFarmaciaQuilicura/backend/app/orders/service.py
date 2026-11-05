@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import select, text, tuple_
 
+from app.business_time import business_date
 from app.customers.models import Cliente
 from app.ecommerce.cart.service import CartService
 from app.models import (
@@ -188,7 +189,7 @@ class OrderService:
                     if needed == 0:
                         break
                     reserved = TransferRepository.reserved_lots(db, inv.id)
-                    lots = TransferRepository.lots(db, inv.id, now.date())
+                    lots = TransferRepository.lots(db, inv.id, business_date(now))
                     all_lots = list(
                         db.scalars(
                             select(LoteInventario).where(
@@ -196,7 +197,7 @@ class OrderService:
                             )
                         )
                     )
-                    free = CartService.available(inv, all_lots, reserved, now.date())
+                    free = CartService.available(inv, all_lots, reserved, business_date(now))
                     if free is None:
                         raise HTTPException(
                             409, "El inventario requiere revisión antes de reservar."

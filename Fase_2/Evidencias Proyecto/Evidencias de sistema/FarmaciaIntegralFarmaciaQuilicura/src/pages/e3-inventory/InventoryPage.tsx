@@ -217,7 +217,7 @@ export default function InventoryPage() {
   return (
     <div className="inventory-app">
       <main className="inventory-main">
-        <header className="inventory-title-row inventory-heading">
+        <header className="inventory-title-row inventory-heading app-page-heading">
           <div>
             <p className="eyebrow">CONTROL DE EXISTENCIAS</p>
             <h1>Inventario</h1>
@@ -384,6 +384,7 @@ export default function InventoryPage() {
               </div>
 
               <InventoryTable
+                canConfigureMinimum={session.user.permissions.includes('inventario.configurar_minimo')}
                 records={records}
                 productFilter={<input type="search" aria-label="Buscar producto por nombre o SKU" placeholder="Nombre o SKU…" value={query} onChange={event => setQuery(event.target.value)} />}
                 branchFilter={<div className="lot-branch-options" aria-label="Filtrar disponibilidad por sucursal">

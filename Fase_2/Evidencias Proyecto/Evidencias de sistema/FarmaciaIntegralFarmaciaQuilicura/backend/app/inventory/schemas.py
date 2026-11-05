@@ -9,6 +9,8 @@ from pydantic import (
     field_validator,
 )
 
+from app.business_time import business_date
+
 StockStatus = Literal[
     "SIN_STOCK",
     "BAJO",
@@ -92,7 +94,7 @@ class CreateInventoryLot(BaseModel):
         cls,
         value: date,
     ) -> date:
-        if value <= date.today():
+        if value <= business_date():
             raise ValueError(
                 "La fecha de vencimiento debe ser futura."
             )

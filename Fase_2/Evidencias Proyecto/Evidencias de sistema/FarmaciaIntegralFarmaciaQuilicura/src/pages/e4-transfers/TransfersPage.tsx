@@ -68,7 +68,7 @@ export default function TransfersPage() {
   ] as const
 
   return <div className="users-page transfers-page">
-    <header className="users-heading transfer-heading"><div><h1>Transferencias</h1><p>Gestiona solicitudes, autorizaciones, despachos y recepciones entre sucursales.</p></div>
+    <header className="users-heading transfer-heading app-page-heading"><div><h1>Transferencias</h1><p>Gestiona solicitudes, autorizaciones, despachos y recepciones entre sucursales.</p></div>
       <div className="transfer-actions">
         {options?.can_create && <button type="button" className="users-button primary" disabled={loading} onClick={() => { setMessage(''); setCreating(true) }}>+ Nueva transferencia</button>}
       </div></header>

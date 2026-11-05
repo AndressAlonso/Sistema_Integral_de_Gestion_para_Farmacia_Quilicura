@@ -1,3 +1,4 @@
+import { chileToday } from '../../utils/businessDate'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
@@ -71,13 +72,7 @@ function formatDate(value: string): string {
 }
 
 function todayAsUtc(): number {
-  const today = new Date()
-
-  return Date.UTC(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  )
+  return dateAsUtc(chileToday())
 }
 
 function dateAsUtc(value: string): number {

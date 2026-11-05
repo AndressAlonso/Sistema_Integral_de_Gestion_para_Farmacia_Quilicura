@@ -124,7 +124,7 @@ export default function UsersPage() {
 
   return (
     <div className="users-page">
-      <header className="users-heading"><h1>Gestión de usuarios</h1><p>Administra las cuentas y el acceso del personal interno.</p></header>
+      <header className="users-heading app-page-heading"><h1>Gestión de usuarios</h1><p>Administra las cuentas y el acceso del personal interno.</p></header>
       <p className="access-summary" aria-label="Recuento de usuarios">
         <span><strong>{data.users.length}</strong> {data.users.length === 1 ? 'usuario' : 'usuarios'}</span>
         <span><i className="access-summary-dot active" aria-hidden="true" /><strong>{data.users.filter(user => user.is_active).length}</strong> activos</span>

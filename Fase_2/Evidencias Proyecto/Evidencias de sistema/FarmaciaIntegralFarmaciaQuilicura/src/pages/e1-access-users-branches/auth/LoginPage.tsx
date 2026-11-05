@@ -1,7 +1,8 @@
 import Notification from '../../../components/Notification'
+import PasswordInput from '../../../components/PasswordInput'
 // HU: E1-H1 — Iniciar sesión en la plataforma
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthError, getSession, login } from './login.api'
 import logo from '../../../assets/logo-farmacia-quilicura.jpg'
 import '../sprint-one.css'
@@ -9,7 +10,6 @@ import '../sprint-one.css'
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [visible, setVisible] = useState(false)
   const [loading, setLoading] = useState(false)
   const [checkingSession, setCheckingSession] = useState(true)
   const sending = useRef(false)
@@ -64,7 +64,7 @@ export default function LoginPage() {
   return (
     <div className="s1 s1-login">
       <aside className="s1-login-story">
-        <img className="s1-logo" src={logo} alt="Farmacia Quilicura — Cuidando tu salud" />
+        <Link className="s1-login-brand" to="/tienda" aria-label="Farmacia Quilicura, ir a la tienda"><img className="s1-logo" src={logo} alt="Farmacia Quilicura — Cuidando tu salud" /></Link>
         <div className="s1-story-copy">
           <p className="s1-kicker">Sistema integral de gestión</p>
           <h2>Cuidamos tu salud.<br /><span>Conectamos nuestra farmacia.</span></h2>
@@ -81,7 +81,7 @@ export default function LoginPage() {
           {error && <Notification message={error} kind="error" />}
           <form onSubmit={submit} aria-busy={loading}>
             <div className="s1-field"><label htmlFor="login-email">Correo electrónico</label><input id="login-email" name="email" type="email" placeholder="nombre@farmacia.cl" autoComplete="username" required onChange={() => setError('')} /></div>
-            <div className="s1-field"><label htmlFor="login-password">Contraseña</label><div className="s1-password"><input id="login-password" name="password" type={visible ? 'text' : 'password'} placeholder="Ingresa tu contraseña" autoComplete="current-password" required onChange={() => setError('')} /><button type="button" aria-pressed={visible} aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setVisible(!visible)}>{visible ? 'Ocultar' : 'Mostrar'}</button></div></div>
+            <div className="s1-field"><label htmlFor="login-password">Contraseña</label><PasswordInput id="login-password" name="password" placeholder="Ingresa tu contraseña" autoComplete="current-password" required disabled={loading} onChange={() => setError('')} /></div>
             <button className="s1-button primary" type="submit" disabled={loading}>{loading ? 'Iniciando sesión…' : 'Ingresar al sistema'} <span aria-hidden="true">→</span></button>
             <span className="sr-only" role="status">{loading ? 'Validando credenciales…' : ''}</span>
           </form>

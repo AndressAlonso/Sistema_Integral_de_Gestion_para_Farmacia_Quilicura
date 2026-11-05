@@ -1,4 +1,5 @@
 import Notification from '../../../components/Notification'
+import PasswordInput from '../../../components/PasswordInput'
 import ActionIcon from '../ActionIcon'
 import {
   useEffect,
@@ -307,11 +308,11 @@ export default function UserDialog({
             {creating && (
               <>
               <h3 className="users-form-section">Credenciales de acceso</h3>
-              <label>
-                Contraseña inicial
-
-                <input
-                  type="password"
+              <div className="password-field">
+                <label htmlFor="internal-user-password">Contraseña inicial</label>
+                <PasswordInput
+                  id="internal-user-password"
+                  disabled={busy}
                   autoComplete="new-password"
                   value={password}
                   required
@@ -327,11 +328,13 @@ export default function UserDialog({
                 <small id="password-hint">
                   Mínimo 12 caracteres.
                 </small>
-              </label>
-              <label>
-                Confirmar contraseña
-                <input
-                  type="password"
+              </div>
+              <div className="password-field">
+                <label htmlFor="internal-user-confirmation">Confirmar contraseña</label>
+                <PasswordInput
+                  id="internal-user-confirmation"
+                  toggleLabel="confirmación de contraseña"
+                  disabled={busy}
                   autoComplete="new-password"
                   value={passwordConfirmation}
                   required
@@ -349,7 +352,7 @@ export default function UserDialog({
                     ? 'Las contraseñas no coinciden.'
                     : 'Vuelve a escribir la contraseña inicial.'}
                 </small>
-              </label>
+              </div>
               <h3 className="users-form-section">Rol y asignación</h3>
               </>
             )}

@@ -251,7 +251,7 @@ export default function BranchesPage() {
 
   return (
     <div className="branches-page">
-      <header className="branches-heading">
+      <header className="branches-heading app-page-heading">
         <h1>Gestión de sucursales</h1>
 
         <p>

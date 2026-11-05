@@ -1,8 +1,13 @@
 // Navegación compartida; las secciones pendientes no implementan otras HU.
 export const adminNavigation = [
   {
-    path: '/session',
+    path: '/admin/dashboard',
     label: 'Resumen',
+    icon: 'M4 21V11M10 21V3M16 21v-7M22 21V7',
+  },
+  {
+    path: '/session',
+    label: 'Inicio',
     icon: 'M3 10 12 3l9 7M5 9v12h14V9M9 21v-8h6v8',
   },
   {
@@ -51,11 +56,6 @@ export const adminNavigation = [
     icon: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 4a4 4 0 0 1 0 7M22 21v-2a4 4 0 0 0-3-4',
   },
   {
-    path: '/admin/dashboard',
-    label: 'Dashboard',
-    icon: 'M4 21V11M10 21V3M16 21v-7M22 21V7',
-  },
-  {
     path: '/admin/audit',
     label: 'Auditoría',
     icon: 'M6 3h12v18H6ZM9 7h6M9 11h6M9 15h3',
@@ -85,6 +85,7 @@ const placeholderRoles: Readonly<Record<string, readonly string[]>> = {
 
 export function canAccessAdminPage(path: string, permissions: readonly string[], roles: readonly string[]): boolean {
   if (path === '/session') return true
+  if (path === '/admin/promotions') return roles.includes('ADMINISTRADOR') && permissions.includes('catalogo.gestionar')
   const required = pagePermissions[path]
   if (required !== undefined) return permissions.includes(required)
   return placeholderRoles[path]?.some(role => roles.includes(role)) ?? false

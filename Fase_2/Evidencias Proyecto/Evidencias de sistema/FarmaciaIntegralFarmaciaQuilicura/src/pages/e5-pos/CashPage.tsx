@@ -61,7 +61,7 @@ export default function CashPage() {
     } catch (cause) { setError(errorMessage(cause)) }
     finally { locked.current = false; setBusy(false) }
   }
-  return <section className="pos-page"><header className="pos-heading"><div><p className="pos-eyebrow">CONTROL DEL TURNO</p><h1>Mi caja</h1><p>{user.branch_name} · {user.name}</p></div><Link className="pos-secondary" to="/admin/pos">Ir al punto de venta →</Link></header>
+  return <section className="pos-page"><header className="pos-heading app-page-heading"><div><p className="pos-eyebrow">CONTROL DEL TURNO</p><h1>Mi caja</h1><p>{user.branch_name} · {user.name}</p></div><Link className="pos-secondary" to="/admin/pos">Ir al punto de venta →</Link></header>
     {error && <Notification message={error} kind="error" />}{loading ? <p role="status">Consultando caja…</p> : <>
       {closed && <Notification kind="success" message="Caja cerrada. El resumen quedó registrado." />}
       {!cash || closed ? <section className="pos-panel"><h2>Abrir un nuevo turno</h2><p>Registra el efectivo inicial. Puedes comenzar con $0.</p><form className="pos-inline-form" onSubmit={event => void open(event)}><label>Monto inicial<input type="number" min="0" max="999999999999.99" step="0.01" required value={initial} disabled={busy} onChange={event => { setInitial(event.target.value); requestId.current = crypto.randomUUID() }} /></label><button disabled={busy}>{busy ? 'Abriendo…' : 'Abrir caja'}</button></form></section> : <section className="pos-panel pos-section-title"><div><h2>Caja abierta</h2><p>Desde {new Date(cash.opened_at).toLocaleString('es-CL')} · Inicial: {currency(cash.initial_amount)}</p></div><button disabled={busy} onClick={() => void review()}>Revisar y cerrar caja</button></section>}

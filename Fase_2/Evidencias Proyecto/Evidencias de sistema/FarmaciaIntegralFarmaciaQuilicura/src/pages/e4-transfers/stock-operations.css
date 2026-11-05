@@ -15,3 +15,41 @@
 .stock-review p { margin: 0; color: #65748e; }
 .stock-change { display: inline-block; padding: 5px 9px; border-radius: 8px; background: #edf5ed; color: #315e32; white-space: nowrap; }
 .stock-change-decrease { background: #fff3e5; color: #85500c; }
+
+/* Inventory's card layout must not turn this dialog's table headings into a column. */
+.stock-operation-dialog .users-table-scroll { container: stock-rows / inline-size; }
+.inventory-app .stock-operation-dialog .stock-operation-table,
+.stock-operation-dialog .stock-operation-table { display: table; width: 100%; min-width: 750px; }
+.inventory-app .stock-operation-dialog .stock-operation-table thead { display: table-header-group; }
+.inventory-app .stock-operation-dialog .stock-operation-table tbody { display: table-row-group; }
+.inventory-app .stock-operation-dialog .stock-operation-table tr { display: table-row; }
+.inventory-app .stock-operation-dialog .stock-operation-table :is(th, td) { display: table-cell; width: auto; }
+.inventory-app .stock-operation-dialog .stock-operation-table td::before { content: none; }
+.stock-operation-dialog .stock-operation-table:has(.users-empty) { min-width: 0; }
+.stock-operation-dialog .stock-operation-table:has(.users-empty) thead { display: none; }
+@container stock-rows (max-width: 800px) {
+  .inventory-app .stock-operation-dialog .stock-operation-table,
+  .stock-operation-dialog .stock-operation-table { display: block; min-width: 0; }
+  .inventory-app .stock-operation-dialog .stock-operation-table thead,
+  .stock-operation-dialog .stock-operation-table thead { display: none; }
+  .inventory-app .stock-operation-dialog .stock-operation-table tbody,
+  .stock-operation-dialog .stock-operation-table tbody { display: grid; gap: 12px; }
+  .inventory-app .stock-operation-dialog .stock-operation-table tbody tr,
+  .stock-operation-dialog .stock-operation-table tbody tr {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;
+    padding: 16px; border: 1px solid #dce2ec; border-radius: 10px;
+  }
+  .inventory-app .stock-operation-dialog .stock-operation-table td,
+  .stock-operation-dialog .stock-operation-table td { display: block; min-width: 0; padding: 0; }
+  .inventory-app .stock-operation-dialog .stock-operation-table td::before,
+  .stock-operation-dialog .stock-operation-table td::before {
+    content: attr(data-label); display: block; margin-bottom: 6px; color: #65748b; font-size: 12px; font-weight: 600;
+  }
+  .stock-operation-dialog .stock-operation-table td:first-child,
+  .stock-operation-dialog .stock-operation-table td:last-child,
+  .stock-operation-dialog .stock-operation-table td[colspan] { grid-column: 1 / -1; }
+}
+@container stock-rows (max-width: 480px) {
+  .inventory-app .stock-operation-dialog .stock-operation-table tbody tr,
+  .stock-operation-dialog .stock-operation-table tbody tr { grid-template-columns: minmax(0, 1fr); }
+}

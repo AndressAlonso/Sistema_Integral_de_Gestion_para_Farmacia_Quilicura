@@ -1,3 +1,4 @@
+import { chileToday } from '../../utils/businessDate'
 import Notification from '../../components/Notification'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
@@ -21,8 +22,7 @@ export default function LotStatusDialog({ lotId, onClose, onChanged }: { lotId: 
       .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : 'No se pudo revisar el lote.') })
     return () => { active = false }
   }, [lotId])
-  const today = new Date()
-  const localToday = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'), String(today.getDate()).padStart(2, '0')].join('-')
+  const localToday = chileToday()
   const expired = !!lot && lot.expiration_date <= localToday
   const canChange = !!lot && !expired && (lot.is_active ? lot.can_disable : lot.can_reactivate)
   const action = lot?.is_active ? 'Deshabilitar lote' : 'Reactivar lote'
@@ -57,7 +57,7 @@ export default function LotStatusDialog({ lotId, onClose, onChanged }: { lotId: 
         <label>{lot.is_active ? 'Motivo de deshabilitación' : 'Motivo de reactivación'}<textarea required minLength={3} maxLength={250} disabled={busy} value={reason} onChange={event => { setReason(event.target.value); setConfirmed(false) }} /></label>
         <label className="lot-status-confirm"><input type="checkbox" required disabled={busy} checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />{lot.is_active ? 'Revisé el lote y confirmo su deshabilitación.' : 'Revisé el lote y confirmo su reactivación.'}</label>
       </div> : !expired && <p className="lot-status-note">{lot.is_active ? 'No puedes deshabilitar este lote: revisa el permiso y la sucursal.' : 'No se puede reactivar: revisa el permiso, la sucursal y el vencimiento.'}</p>}</>}
-      <footer><button type="button" disabled={busy} onClick={onClose}>Cerrar</button>{canChange && <button className="lot-status-primary" type="submit" disabled={busy || !confirmed || reason.trim().length < 3}>{busy ? 'Guardando…' : action}</button>}</footer>
+      <footer><button type="button" disabled={busy} onClick={onClose}>Cerrar</button>{canChange && <button className={lot?.is_active ? 'lot-status-primary danger' : 'lot-status-primary'} type="submit" disabled={busy || !confirmed || reason.trim().length < 3}>{busy ? 'Guardando…' : action}</button>}</footer>
     </form>
   </dialog>, document.body)
 }

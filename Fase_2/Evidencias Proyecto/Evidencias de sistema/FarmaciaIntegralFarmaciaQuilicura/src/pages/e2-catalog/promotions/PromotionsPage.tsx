@@ -69,7 +69,7 @@ export default function PromotionsPage() {
     finally { setBusy(false) }
   }
   return <main className="promotions-page">
-    <header className="promotions-heading"><div><p className="promotions-kicker">CATÁLOGO</p><h1>Promociones</h1><p>Configura descuentos por producto o categoría.</p></div><button type="button" className="promotions-primary" disabled={loading || busy} onClick={create}>Nueva promoción</button></header>
+    <header className="promotions-heading app-page-heading"><div><p className="promotions-kicker">CATÁLOGO</p><h1>Promociones</h1><p>Configura descuentos por producto o categoría.</p></div><button type="button" className="promotions-primary" disabled={loading || busy} onClick={create}>Nueva promoción</button></header>
     <p className="promotions-alert">Los descuentos no se acumulan. Se aplica únicamente la promoción vigente que deje el menor precio final. Un precio fijo es el precio final del producto.</p>
     {error && !editorOpen && <Notification message={error} kind="error" />}
     {notice && <Notification message={notice} kind="info" />}

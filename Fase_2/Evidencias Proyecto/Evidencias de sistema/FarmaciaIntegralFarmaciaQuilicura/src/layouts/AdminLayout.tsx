@@ -25,7 +25,10 @@ export default function AdminLayout() {
     } catch { /* El menú funciona también sin almacenamiento disponible. */ }
     return !window.matchMedia('(max-width: 800px)').matches
   })
-  const navigation = adminNavigation.filter(item => canAccessAdminPage(item.path, session.user.permissions, session.user.roles))
+  const hasSummary = canAccessAdminPage('/admin/dashboard', session.user.permissions, session.user.roles)
+  const navigation = adminNavigation.filter(item =>
+    !(item.path === '/session' && hasSummary)
+    && canAccessAdminPage(item.path, session.user.permissions, session.user.roles))
   function toggleMenu() {
     if (window.matchMedia('(max-width: 800px)').matches) {
       drawer.current?.showModal()
@@ -67,7 +70,7 @@ export default function AdminLayout() {
         </div>
       </dialog>
       <aside className="admin-sidebar" id="admin-sidebar" aria-label="Menú principal">
-        <NavLink className="admin-brand" to="/session" onClick={closeMobileMenu} aria-label="Farmacia Quilicura, resumen">
+        <NavLink className="admin-brand" to="/tienda" onClick={closeMobileMenu} aria-label="Farmacia Quilicura, ir a la tienda">
           {expanded ? <img src={logo} alt="Farmacia Quilicura — Cuidando tu salud" /> : <span className="admin-brand-short" aria-hidden="true">FQ</span>}
         </NavLink>
         <nav aria-label="Secciones del sistema" style={{ '--nav-count': navigation.length } as CSSProperties}>

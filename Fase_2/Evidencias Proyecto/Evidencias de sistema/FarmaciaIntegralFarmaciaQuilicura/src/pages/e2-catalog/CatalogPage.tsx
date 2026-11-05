@@ -256,7 +256,7 @@ export default function CatalogPage() {
 
   return (
     <div className="users-page catalog-page">
-      <header className="users-heading catalog-heading">
+      <header className="users-heading catalog-heading app-page-heading">
         <div>
           <h1>Gestión de productos</h1>
           <p>Administra el catálogo, las categorías y los códigos de barras de la farmacia.</p>

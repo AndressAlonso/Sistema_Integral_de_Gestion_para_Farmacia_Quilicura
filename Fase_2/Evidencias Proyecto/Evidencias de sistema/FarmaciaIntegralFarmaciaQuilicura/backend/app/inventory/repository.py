@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.business_time import business_date
 from app.models import (
     InventarioSucursal,
     LoteInventario,
@@ -298,7 +299,7 @@ class PostgresInventoryRepository:
         branch_id: UUID | None = None,
         today: date | None = None,
     ) -> list[dict[str, Any]]:
-        reference_date = today or date.today()
+        reference_date = today or business_date()
         maximum_date = (
             reference_date + timedelta(days=days)
         )

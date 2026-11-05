@@ -1,15 +1,15 @@
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.auth.routes import authenticated_user
+from app.business_time import BUSINESS_TIMEZONE as CHILE
+from app.business_time import business_date
 from app.dashboard.service import dashboard
 
 router = APIRouter(prefix="/api/dashboard", tags=["Indicadores"])
-CHILE = ZoneInfo("America/Santiago")
 
 
 def period(date_from: date | None, date_to: date | None, today: date):
@@ -33,7 +33,7 @@ def get_dashboard(
     actor, _ = authenticated
     if not {"ADMINISTRADOR", "SOCIO"}.intersection(actor.roles):
         raise HTTPException(403, "No tienes permiso para consultar los indicadores.")
-    today = datetime.now(CHILE).date()
+    today = business_date()
     start, end = period(date_from, date_to, today)
     # Límites locales inclusivos, incluso en cambios de horario de verano.
     since = datetime.combine(start, datetime.min.time(), CHILE).astimezone(timezone.utc)

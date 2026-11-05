@@ -157,7 +157,7 @@ export default function PosPage() {
   }
 
   return <section className="pos-page pos-sales-page">
-    <header className="pos-heading">
+    <header className="pos-heading app-page-heading">
       <div><p className="pos-eyebrow">VENTA EN SUCURSAL</p><h1>Punto de venta</h1><p>{user.branch_name} · {user.name}</p></div>
       <div className="pos-header-actions"><button className="pos-secondary" onClick={() => setShowSales(true)} title="Ventas, comprobantes y devoluciones">Historial de ventas</button><ScannerLinkDialog
       userName={user.name}

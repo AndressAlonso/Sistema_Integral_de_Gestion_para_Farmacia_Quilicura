@@ -1,10 +1,10 @@
 """E7-H4: preparación sin consumir las reservas comprometidas del pedido."""
 from collections import defaultdict
-from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import case, func, select
 
+from app.business_time import business_date
 from app.models import EventoAuditoria, Sucursal, Transferencia
 from app.orders.models import PedidoOnline
 from app.orders.service import summary
@@ -78,7 +78,7 @@ class PreparationService:
             return "Falta recibir una transferencia del pedido."
         rows = reservation_rows(db, order.id)
         quantities = defaultdict(int)
-        today = datetime.now(timezone.utc).date()
+        today = business_date()
         for reserve, lot, inventory in rows:
             if inventory.sucursal_id != order.sucursal_id:
                 return "Falta stock reservado en la sucursal de retiro."

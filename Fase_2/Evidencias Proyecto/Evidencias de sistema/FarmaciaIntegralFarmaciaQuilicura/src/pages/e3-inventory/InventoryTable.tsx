@@ -17,6 +17,7 @@ import {
 
 interface InventoryTableProps {
   records: InventoryRecord[]
+  canConfigureMinimum: boolean
   productFilter?: ReactNode
   branchFilter?: ReactNode
   onRecordUpdated: (
@@ -105,6 +106,7 @@ function minimumErrorMessage(
 
 export default function InventoryTable({
   records,
+  canConfigureMinimum,
   onRecordUpdated,
   productFilter,
   branchFilter,
@@ -127,6 +129,7 @@ export default function InventoryTable({
   function startEditing(
     record: InventoryRecord,
   ): void {
+    if (!canConfigureMinimum) return
     setEditingId(record.id)
     setMinimumValue(String(record.minimum))
     setErrorId(null)
@@ -145,6 +148,7 @@ export default function InventoryTable({
     record: InventoryRecord,
   ): Promise<void> {
     event.preventDefault()
+    if (!canConfigureMinimum) return
 
     const minimum = Number(minimumValue)
 
@@ -286,8 +290,8 @@ export default function InventoryTable({
                     </td>
 
                     <td className="minimum-action-cell">
-                      <button type="button" className="minimum-edit-button" disabled={submittingId !== null}
-                        onClick={() => startEditing(record)}>Configurar aviso</button>
+                      {canConfigureMinimum ? <button type="button" className="minimum-edit-button" disabled={submittingId !== null}
+                        onClick={() => startEditing(record)}>Configurar aviso</button> : <span aria-label="Solo consulta">—</span>}
                     </td>
                   </>
                 )}
@@ -308,7 +312,7 @@ export default function InventoryTable({
         </PaginatedTableBody>
       </table>
     </div>
-    {editingRecord && <StockNoticeDialog busy={busy} onClose={cancelEditing}>
+    {editingRecord && canConfigureMinimum && <StockNoticeDialog busy={busy} onClose={cancelEditing}>
       <form onSubmit={event => void handleMinimumSubmit(event, editingRecord)}>
         <header><h2 id="stock-notice-title">Aviso de stock bajo</h2>
           <button type="button" className="lot-status-close" aria-label="Cerrar aviso de stock bajo" disabled={busy} onClick={cancelEditing}>×</button></header>

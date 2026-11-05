@@ -2,6 +2,7 @@ import Notification from '../../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../../../services/http'
 import ActionIcon from '../ActionIcon'
+import { permissionHints } from './permissionHints'
 import { listRoles, saveRole, type ManagedRole, type RoleCatalog } from './users.api'
 
 interface Props {
@@ -141,8 +142,9 @@ export default function RoleDialog({ onClose, onSaved }: Props) {
                   if (!target && !codeEdited) setCode(value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60))
                 }} /></label><label>Código<input required readOnly={Boolean(target)} maxLength={60} pattern="[A-Z][A-Z0-9_]*" value={code} onChange={event => { setCodeEdited(true); setCode(event.target.value.toUpperCase()) }} /><small>{target ? 'El código se conserva para mantener las asignaciones existentes.' : 'Código único sugerido. Puedes ajustarlo antes de crear el rol.'}</small></label></div>
                 {target && <p className="roles-impact">Asignado a <strong>{target.users_count} usuarios</strong>. Los cambios se aplicarán a todos ellos.</p>}
-                <h3>Permisos del rol</h3><p>Selecciona los accesos. Los permisos de todos los roles de un usuario se suman.</p>
-                {modules.map(module => <fieldset className="roles-permission-group" key={module}><legend>{module}</legend>{catalog.permissions.filter(permission => permission.module === module).map(permission => <label key={permission.id}><input type="checkbox" checked={selected.includes(permission.id)} onChange={event => setSelected(current => event.target.checked ? [...current, permission.id] : current.filter(id => id !== permission.id))} /><span><strong>{permission.description}</strong><small>{permission.implemented ? 'Disponible' : 'Módulo pendiente: este permiso no implementa la funcionalidad.'}</small></span></label>)}</fieldset>)}
+                <h3>Permisos del rol</h3><p>Selecciona los accesos. Los permisos de todos los roles de un usuario se suman. Los requisitos indicados pueden estar en este rol o en otro rol del mismo usuario.</p>
+                {target?.code === 'QUIMICO_FARMACEUTICO' && selected.length === 0 && <p className="roles-impact">Químico farmacéutico no tiene accesos configurados. Su nombre no habilita el catálogo: revisa y selecciona los permisos que correspondan.</p>}
+                {modules.map(module => <fieldset className="roles-permission-group" key={module}><legend>{module}</legend>{catalog.permissions.filter(permission => permission.module === module).map(permission => <label key={permission.id}><input type="checkbox" checked={selected.includes(permission.id)} onChange={event => setSelected(current => event.target.checked ? [...current, permission.id] : current.filter(id => id !== permission.id))} /><span><strong>{permission.description}</strong><small>{permission.implemented ? 'Disponible' : 'Módulo pendiente: este permiso no implementa la funcionalidad.'}</small>{selected.includes(permission.id) && permissionHints[permission.code] && <small>{permissionHints[permission.code]}</small>}</span></label>)}</fieldset>)}
                 {selected.length === 0 && <p className="roles-impact">Este rol no otorgará permisos operativos.</p>}
               </fieldset>
               <footer className="users-dialog-actions"><button type="button" className="users-button" disabled={busy} onClick={() => choose('close')}>Cancelar</button><button type="submit" className="users-button primary" disabled={busy || !dirty}>{busy ? 'Guardando…' : target ? 'Guardar cambios' : 'Crear rol'}</button></footer>

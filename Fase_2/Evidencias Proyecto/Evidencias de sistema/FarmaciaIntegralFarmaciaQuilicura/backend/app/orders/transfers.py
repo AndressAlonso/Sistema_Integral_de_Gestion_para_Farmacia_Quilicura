@@ -7,6 +7,7 @@ from uuid import uuid4
 from fastapi import HTTPException
 from sqlalchemy import select, text
 
+from app.business_time import business_date
 from app.models import (
     InventarioSucursal,
     LoteInventario,
@@ -64,7 +65,7 @@ def generate_order_transfers(db, order):
         # Otra operación puede cambiar el lote mientras esperamos el bloqueo del inventario.
         db.refresh(lot)
         reserved = TransferRepository.reserved_lots(db, inv.id)
-        if (not product.activo or not lot.activo or lot.fecha_vencimiento <= now.date()
+        if (not product.activo or not lot.activo or lot.fecha_vencimiento <= business_date(now)
                 or inv.stock_reservado > inv.stock_fisico
                 or inv.stock_reservado < reservation.cantidad
                 or lot.cantidad < reserved.get(lot.id, 0)):

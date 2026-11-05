@@ -1,5 +1,5 @@
 """Estado de lotes en Inventario: permisos, motivo y auditoría, sin movimientos."""
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import Literal
 from uuid import UUID
 
@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
+from app.business_time import business_date
 from app.models import EventoAuditoria, InventarioSucursal, LoteInventario, Sucursal
 
 
@@ -69,7 +70,7 @@ class LotStatusService:
                     and inventory.sucursal.activa and lot.activo),
                 "can_reactivate": bool(actor.is_active and "inventario.gestionar_lotes" in actor.permissions
                     and inventory.sucursal.activa and not lot.activo
-                    and lot.fecha_vencimiento > datetime.now(timezone.utc).date())}
+                    and lot.fecha_vencimiento > business_date())}
 
     @staticmethod
     def reactivate_in_session(db, actor, lot_id, data, transfer_id=None):
@@ -78,7 +79,7 @@ class LotStatusService:
         lot, inventory = LotStatusService.context(db, actor, lot_id, lock=True)
         if not inventory.sucursal.activa:
             raise HTTPException(409, "La sucursal está inactiva. No se puede reactivar el lote.")
-        if lot.fecha_vencimiento <= datetime.now(timezone.utc).date():
+        if lot.fecha_vencimiento <= business_date():
             raise HTTPException(409, "El lote está vencido o vence hoy. No se puede reactivar para su uso.")
         if lot.fecha_vencimiento != data.expected_expiration_date or lot.cantidad != data.expected_quantity:
             raise HTTPException(409, "El lote cambió. Actualiza la revisión antes de reactivar.")

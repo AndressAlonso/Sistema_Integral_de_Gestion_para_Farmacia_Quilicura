@@ -1,3 +1,4 @@
+import { chileToday } from '../../utils/businessDate'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
@@ -92,11 +93,8 @@ export default function LotPanel({
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [])
-  // FEFO visual: la fecha alcanzada tampoco es vendible. Usar el día local.
-  const today = new Date()
-  const localToday = [today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0')].join('-')
+  // FEFO visual: la fecha alcanzada tampoco es vendible. Usar el día de negocio chileno.
+  const localToday = chileToday()
   const firstFefoLotIds = useMemo(() => {
     const firstLotByInventory = new Map<string, string>()
 

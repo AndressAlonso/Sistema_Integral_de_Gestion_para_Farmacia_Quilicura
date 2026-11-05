@@ -88,3 +88,4 @@ dialog.app-modal.orders-dialog:not([open]) { display:none; }
 .orders-filter-actions button { padding:9px 13px; border:1px solid #ddd6e5; border-radius:8px; background:white; font:inherit; cursor:pointer; }
 .orders-filter-actions button:last-child { background:#702582; border-color:#702582; color:white; }
 .orders-filter-actions button:disabled { opacity:.5; cursor:not-allowed; }
+.orders-pagination > .table-pagination { width:100%; padding:0; }

@@ -33,8 +33,8 @@ export interface OrderList {
   orders: OnlineOrder[]; total: number; page: number; limit: number
   branches: { id: string; name: string }[]
 }
-export async function listOrders(states: string[], branches: string[] | null, page: number, sort: OrderSort = 'newest'): Promise<OrderList> {
-  const query = new URLSearchParams({ page: String(page), limit: '15' })
+export async function listOrders(states: string[], branches: string[] | null, page: number, sort: OrderSort = 'newest', limit = 15): Promise<OrderList> {
+  const query = new URLSearchParams({ page: String(page), limit: String(limit) })
   states.forEach(state => query.append('states', state))
   query.set('sort', sort)
   branches?.forEach(branch => query.append('branch_ids', branch))

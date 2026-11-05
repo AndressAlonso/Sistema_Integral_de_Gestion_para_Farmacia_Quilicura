@@ -5,6 +5,7 @@ from hashlib import sha256
 
 from sqlalchemy import select
 
+from app.business_time import business_date
 from app.models import (
     InventarioSucursal,
     LoteInventario,
@@ -54,7 +55,7 @@ class TransferService:
 
     def options(self, actor):
         self.authorize(actor)
-        today = datetime.now(timezone.utc).date()
+        today = business_date()
         with self.repo.factory() as db:
             branches = [
                 {"id": b.id, "name": b.nombre}
@@ -152,7 +153,7 @@ class TransferService:
                 403, "Solo puedes solicitar desde tu sucursal asignada."
             )
         fingerprint = sha256(data.model_dump_json().encode()).hexdigest()
-        today = datetime.now(timezone.utc).date()
+        today = business_date()
         with self.repo.factory.begin() as db:
             self.repo.lock_request(db, data.request_id)
             existing = self.repo.get(db, data.request_id)
@@ -320,7 +321,7 @@ class TransferService:
                     data.reason,
                 )
             elif action == "dispatch":
-                self.dispatch(db, row, actor, now.date())
+                self.dispatch(db, row, actor, business_date(now))
                 row.despachador_id, row.despachada_en = actor.id, now
             else:
                 self.receive(db, row, actor)

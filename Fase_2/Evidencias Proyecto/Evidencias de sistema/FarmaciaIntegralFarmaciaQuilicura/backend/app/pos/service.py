@@ -6,6 +6,7 @@ from uuid import UUID
 
 from sqlalchemy import String, cast, func, or_, select
 
+from app.business_time import business_date
 from app.models import (
     CodigoBarra,
     LoteInventario,
@@ -60,7 +61,7 @@ class PosService:
         inventory = TransferRepository.inventory(db, product_id, branch_id)
         if inventory is None:
             return None, [], 0
-        today = datetime.now(timezone.utc).date()
+        today = business_date()
         lots = TransferRepository.lots(db, inventory.id, today)
         reserved = TransferRepository.reserved_lots(db, inventory.id)
         allocations = [
@@ -598,7 +599,7 @@ class PosService:
                         not product.activo
                         or not lot.activo
                         or lot.fecha_vencimiento
-                        <= datetime.now(timezone.utc).date()
+                        <= business_date()
                     ):
                         raise PosError(
                             409,
