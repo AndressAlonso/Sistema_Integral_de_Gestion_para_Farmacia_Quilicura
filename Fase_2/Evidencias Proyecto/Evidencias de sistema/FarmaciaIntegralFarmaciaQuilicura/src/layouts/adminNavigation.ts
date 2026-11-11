@@ -80,6 +80,7 @@ const placeholderRoles: Readonly<Record<string, readonly string[]>> = {
 
 export function canAccessAdminPage(path: string, permissions: readonly string[], roles: readonly string[]): boolean {
   if (path === '/session') return true
+  if (path === '/admin/promotions') return roles.includes('ADMINISTRADOR') && permissions.includes('catalogo.gestionar')
   const required = pagePermissions[path]
   if (required !== undefined) return permissions.includes(required)
   return placeholderRoles[path]?.some(role => roles.includes(role)) ?? false

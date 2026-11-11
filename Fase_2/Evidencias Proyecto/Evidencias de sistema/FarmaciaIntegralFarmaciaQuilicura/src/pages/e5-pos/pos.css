@@ -7,10 +7,10 @@
 .pos-eyebrow { letter-spacing: .12em; font-size: 11px !important; font-weight: 700; }
 .pos-workspace { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(320px,1fr); gap: 22px; align-items: start; }
 .pos-panel { padding: 26px; background: white; border: 1px solid #e6eaf2; border-radius: 18px; box-shadow: 0 8px 25px #25305105; }
-.pos-page button,.pos-secondary { border: 1px solid transparent; background: #702283; color: white; border-radius: 9px; padding: 12px 17px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; }
+.pos-page button,.pos-secondary { border: 1px solid transparent; background: var(--brand-purple); color: white; border-radius: 9px; padding: 12px 17px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; }
 .pos-page button:disabled { opacity: .5; cursor: not-allowed; }
 .pos-page button:focus-visible,.pos-page input:focus-visible,.pos-page select:focus-visible { outline: 3px solid #a8cf75; outline-offset: 3px; }
-.pos-page .pos-secondary,.pos-page .pos-text-button { background: white; border-color: #e2e6ee; color: #702283; }
+.pos-page .pos-secondary,.pos-page .pos-text-button { background: white; border-color: #e2e6ee; color: var(--brand-purple); }
 .pos-page input,.pos-page select { font: inherit; padding: 12px; border: 1px solid #dce1ec; border-radius: 9px; background: #fbfcff; color: #202a44; min-width: 0; }
 .pos-page label { display: grid; gap: 8px; font-size: 13px; color: #58647d; }
 .pos-search { display: flex; gap: 10px; }
@@ -121,7 +121,7 @@
 .pos-sales-page .pos-empty strong { color: #46516a; font-size: 15px; }
 .pos-sales-page .pos-empty span { max-width: 290px; font-size: 13px; line-height: 1.6; color: #69758a; }
 .pos-sales-page .pos-cart { position: sticky; top: 20px; gap: 0; overflow: hidden; }
-.pos-unit-count { font-size: 12px; font-weight: 600; color: #702283; background: #f3edf7; border-radius: 20px; padding: 6px 10px; }
+.pos-unit-count { font-size: 12px; font-weight: 600; color: var(--brand-purple); background: #f3edf7; border-radius: 20px; padding: 6px 10px; }
 .pos-cart-items { display: grid; gap: 16px; max-height: 48dvh; overflow-y: auto; scrollbar-width: thin; }
 .pos-sales-page .pos-cart-row { grid-template-columns: minmax(0, 1fr) 65px; gap: 10px; padding-bottom: 14px; }
 .pos-sales-page .pos-cart-row .pos-text-button { grid-column: 2; padding: 5px 2px; font-size: 12px; border: 0; }

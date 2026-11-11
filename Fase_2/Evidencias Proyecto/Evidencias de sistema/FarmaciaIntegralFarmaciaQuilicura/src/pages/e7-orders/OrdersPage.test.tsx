@@ -1,11 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import OrdersPage from './OrdersPage'
 import { listOrders } from './orders.api'
 
 vi.mock('./orders.api', async () => ({ ...await vi.importActual('./orders.api'), listOrders: vi.fn() }))
 vi.mock('./OrderPreparationDialog', () => ({ default: ({ id, onClose }: { id: string; onClose: () => void }) => <div role="dialog" aria-label={`Detalle ${id}`}><button onClick={onClose}>Cerrar</button></div> }))
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.clearAllMocks() })
 
 it('abre el detalle desde cualquier celda y conserva el botón accesible', async () => {
   vi.mocked(listOrders).mockResolvedValue({ page: 1, limit: 15, total: 1, branches: [{ id: 'branch', name: 'Centro' }], orders: [{ id: 'qa', number: 'WEB-QA', status: 'PAGADO', created_at: '2026-10-20T12:00:00Z', currency: 'CLP', total: '100', pickup_branch: { id: 'branch', name: 'Centro' }, items: [] }] })
@@ -18,4 +18,18 @@ it('abre el detalle desde cualquier celda y conserva el botón accesible', async
   expect(document.activeElement).toBe(button)
   fireEvent.click(button)
   expect(screen.getAllByRole('dialog')).toHaveLength(1)
+})
+
+it('pagina en servidor y vuelve al inicio al cambiar las filas por página', async () => {
+  vi.mocked(listOrders).mockImplementation(async (_states, _branches, page, _sort, limit = 15) => ({
+    page, limit, total: 40, branches: [], orders: [],
+  }))
+  render(<OrdersPage />)
+  await screen.findByText('Mostrando 1–15 de 40')
+  fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }))
+  await screen.findByText('Mostrando 16–30 de 40')
+  fireEvent.change(screen.getByLabelText('Filas por página'), { target: { value: '100' } })
+  await screen.findByText('Mostrando 1–40 de 40')
+  await waitFor(() => expect(vi.mocked(listOrders).mock.lastCall?.slice(2)).toEqual([1, 'newest', 100]))
+  expect((screen.getByRole('button', { name: 'Siguiente' }) as HTMLButtonElement).disabled).toBe(true)
 })

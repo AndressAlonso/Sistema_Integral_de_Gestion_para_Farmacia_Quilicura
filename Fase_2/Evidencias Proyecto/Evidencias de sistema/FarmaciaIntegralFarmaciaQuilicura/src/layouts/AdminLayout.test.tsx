@@ -44,6 +44,7 @@ it('abre el menú móvil sin cambiar la preferencia del escritorio y lo cierra a
   fireEvent.click(toggle)
   const dialog = screen.getByRole('dialog', { name: 'Menú principal' })
   expect(localStorage.getItem('sigfq-menu-expanded')).toBe('true')
+  expect(within(dialog).queryByRole('link', { name: 'Inicio' })).toBeNull()
   fireEvent.click(within(dialog).getByRole('link', { name: 'Dashboard' }))
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(screen.getByText('Indicadores')).toBeTruthy()

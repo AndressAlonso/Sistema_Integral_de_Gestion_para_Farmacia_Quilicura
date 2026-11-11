@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { loginCustomer, registerCustomer } from '../services/customers.api'
 import { useCustomerSession } from '../hooks/useCustomerSession'
 import PublicHeader from './PublicHeader'
+import PasswordInput from '../../../components/PasswordInput'
 import '../customer-auth.css'
 
 export default function CustomerAuthForm({ registration = false }: { registration?: boolean }) {
@@ -71,13 +72,13 @@ export default function CustomerAuthForm({ registration = false }: { registratio
             <label htmlFor="customer-email"><span className="store-label-icon"><StoreIcon name="mail" />Correo electrónico</span>
               <input id="customer-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required maxLength={254} disabled={busy} />
             </label>
-            <label htmlFor="customer-password"><span className="store-label-icon"><StoreIcon name="lock" />Contraseña</span>
-              <input id="customer-password" type="password" autoComplete={registration ? 'new-password' : 'current-password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={12} maxLength={128} aria-describedby="customer-password-help" disabled={busy} />
-            </label>
+            <div className="customer-auth-field"><label htmlFor="customer-password"><span className="store-label-icon"><StoreIcon name="lock" />Contraseña</span></label>
+              <PasswordInput id="customer-password" autoComplete={registration ? 'new-password' : 'current-password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={12} maxLength={128} aria-describedby="customer-password-help" disabled={busy} />
+            </div>
             <p id="customer-password-help" className="customer-auth-help">Entre 12 y 128 caracteres. Puedes usar una frase.</p>
-            {registration && <label htmlFor="customer-confirmation"><span className="store-label-icon"><StoreIcon name="lock" />Confirmar contraseña</span>
-              <input id="customer-confirmation" type="password" autoComplete="new-password" value={confirmation} onChange={e => setConfirmation(e.target.value)} required minLength={12} maxLength={128} disabled={busy} />
-            </label>}
+            {registration && <div className="customer-auth-field"><label htmlFor="customer-confirmation"><span className="store-label-icon"><StoreIcon name="lock" />Confirmar contraseña</span></label>
+              <PasswordInput id="customer-confirmation" toggleLabel="confirmación de contraseña" autoComplete="new-password" value={confirmation} onChange={e => setConfirmation(e.target.value)} required minLength={12} maxLength={128} disabled={busy} />
+            </div>}
             {error && <Notification message={error} kind="error" />}
             <button type="submit" disabled={busy}>{busy ? 'Procesando…' : registration ? 'Crear cuenta' : 'Iniciar sesión'}</button>
           </form>

@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const refresh = () => { setLoading(true); setError(''); setAttempt(value => value + 1) }
   const branchName = data?.branches.find(branch => branch.id === filters.branch_id)?.name ?? 'Todas las sucursales'
   return <section className="dashboard-page">
-    <header className="dashboard-heading">
+    <header className="dashboard-heading app-page-heading">
       <div><span className="dashboard-eyebrow">PANORAMA OPERATIVO</span><h1>Dashboard</h1><p>Lo esencial de tu farmacia, en un vistazo.</p></div>
       
     </header>

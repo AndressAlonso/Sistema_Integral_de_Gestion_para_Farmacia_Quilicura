@@ -1,8 +1,8 @@
 """Revisión y reactivación explícita de lotes destino; no incorpora mercadería."""
-from datetime import datetime, timezone
 
 from sqlalchemy import select
 
+from app.business_time import business_date
 from app.inventory.lot_status import LotStatusService
 from app.models import InventarioSucursal, LoteInventario
 from app.transfers.service import TransferError, TransferService
@@ -32,7 +32,7 @@ class ReceiptReviewService:
     def review(self, actor, transfer_id):
         with self.repo.factory() as db:
             row = self.context(db, actor, transfer_id)
-            today = datetime.now(timezone.utc).date()
+            today = business_date()
             items = []
             for detail in row.detalles:
                 inventory = db.scalar(select(InventarioSucursal).where(
@@ -75,6 +75,6 @@ class ReceiptReviewService:
             if source is None:
                 raise TransferError(409, "El lote no corresponde a los productos de esta transferencia.")
             if (lot.fecha_vencimiento != source.fecha_vencimiento
-                    or lot.fecha_vencimiento <= datetime.now(timezone.utc).date()):
+                    or lot.fecha_vencimiento <= business_date()):
                 raise TransferError(409, "El vencimiento no permite reactivar el lote para esta recepción. Revisa los datos.")
             return LotStatusService.reactivate_in_session(db, actor, lot.id, data, transfer_id=row.id)
