@@ -5,6 +5,7 @@ from itertools import groupby
 
 from app.models import AjusteInventario, AjusteInventarioDetalle, MovimientoInventario
 from app.transfers.repository import TransferRepository
+from app.inventory_adjustments.schemas import REASON_LABELS
 
 PERMISSION = "inventario.ajustar"
 RECEIPT_PERMISSION = "inventario.registrar_entrada"
@@ -67,6 +68,8 @@ class AdjustmentService:
 
     def create(self, actor, data):
         self.authorize(actor, data.branch_id)
+        label = REASON_LABELS.get(data.reason_type, "")
+        reason = f"{label}: {data.reason}" if label and data.reason else label or data.reason
         fingerprint = sha256(data.model_dump_json(exclude_none=True).encode()).hexdigest()
         with self.repo.factory.begin() as db:
             self.repo.lock_request(db, data.request_id)
@@ -95,7 +98,8 @@ class AdjustmentService:
                 solicitud_hash=fingerprint,
                 sucursal_id=data.branch_id,
                 usuario_id=actor.id,
-                motivo=data.reason,
+                motivo=data.reason or label,
+                tipo_motivo=data.reason_type,
             )
             db.add(row)
             items = {item.lot_id: item for item in data.items}
@@ -170,7 +174,7 @@ class AdjustmentService:
                             stock_fisico_resultante=inv.stock_fisico + difference,
                             stock_reservado_anterior=inv.stock_reservado,
                             stock_reservado_resultante=inv.stock_reservado,
-                            motivo=data.reason,
+                            motivo=reason,
                             referencia_tipo="AJUSTE_INVENTARIO",
                             referencia_id=row.id,
                         )

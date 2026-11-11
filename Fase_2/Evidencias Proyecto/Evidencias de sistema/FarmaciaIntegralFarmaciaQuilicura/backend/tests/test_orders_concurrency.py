@@ -8,9 +8,6 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
-from sqlalchemy import delete, select
-
 from app.db import create_database_engine, create_session_factory
 from app.models import (
     Categoria,
@@ -31,6 +28,8 @@ from app.orders.service import OrderService
 from app.pos.repository import PosRepository
 from app.pos.schemas import Cart, OpenCash, SaleInput
 from app.pos.service import PosError, PosService
+from fastapi import HTTPException
+from sqlalchemy import delete, select
 
 
 @pytest.mark.parametrize("scenario", ["online", "pos"])
@@ -129,7 +128,7 @@ def test_last_unit_order_vs_other_channel(scenario, password_hash):
                             pickup_branch_id=branch_id,
                             expected_total="100",
                             confirmed=True,
-                            guest={"name": "QA invitado", "email": "qa@example.com"},
+                            guest={"name": "QA invitado", "email": f"{sale_ids[index]}@example.com"},
                         )
                     )
                 else:

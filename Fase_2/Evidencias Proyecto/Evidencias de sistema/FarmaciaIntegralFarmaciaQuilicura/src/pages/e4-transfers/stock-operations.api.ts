@@ -10,6 +10,7 @@ export interface OperationOptions {
   branches: { id: string; name: string }[]; lots: StockLot[]; can_receive: boolean; can_adjust: boolean
 }
 export interface AdjustmentInput {
+  reason_type?: 'CONTEO' | 'DANADO' | 'VENCIMIENTO' | 'OTRO'
   request_id: string; branch_id: string; reason: string
   items: { lot_id: string; expected_quantity: number; new_quantity: number; expected_reserved?: number }[]
 }

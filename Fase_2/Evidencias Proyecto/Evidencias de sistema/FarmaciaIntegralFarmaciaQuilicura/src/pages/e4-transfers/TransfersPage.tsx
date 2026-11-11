@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
@@ -25,6 +26,7 @@ export default function TransfersPage() {
   const [creating, setCreating] = useState(false)
   const [selected, setSelected] = useState<{ transfer: Transfer; action?: TransferAction } | null>(null)
   const [filters, setFilters] = useState({ query: '', state: '', origin: '', destination: '', date: '' })
+  useAutoRefresh(() => setAttempt(n => n + 1), !loading && !creating && !selected)
   useEffect(() => {
     let active = true
     Promise.all([listTransfers(), transferOptions()]).then(([data, choices]) => {
@@ -85,7 +87,7 @@ export default function TransfersPage() {
         <label>Origen<select value={filters.origin} onChange={event => setFilters({ ...filters, origin: event.target.value })}><option value="">Todas</option>{[...branches].map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
         <label>Destino<select value={filters.destination} onChange={event => setFilters({ ...filters, destination: event.target.value })}><option value="">Todas</option>{[...branches].map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
         <label>Fecha<input type="date" value={filters.date} onChange={event => setFilters({ ...filters, date: event.target.value })} /></label>
-      </div><div className="transfer-actions"><button type="button" className="users-button" disabled={!Object.values(filters).some(Boolean)} onClick={() => setFilters({ query: '', state: '', origin: '', destination: '', date: '' })}>Limpiar filtros</button><button type="button" className="users-button" disabled={loading} onClick={refresh}>{loading ? 'Actualizando…' : 'Actualizar listado'}</button></div>
+      </div><div className="transfer-actions"><button type="button" className="users-button" disabled={!Object.values(filters).some(Boolean)} onClick={() => setFilters({ query: '', state: '', origin: '', destination: '', date: '' })}>Limpiar filtros</button></div>
     </section>
     <section className="users-panel" aria-busy={loading}><header className="users-panel-heading"><h2>Listado de transferencias</h2><p>{filtered.length} resultados · Las acciones dependen del estado, permisos y sucursal asignada.</p></header>
       <div className="users-table-scroll"><table className="users-table transfer-table responsive-admin-table"><thead><tr>{['ID', 'Fecha', 'Ruta', 'Productos', 'Unidades', 'Reserva', 'Responsable', 'Estado', 'Acciones'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>

@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import ActionIcon from '../ActionIcon'
@@ -37,6 +38,7 @@ export default function BranchesPage() {
 
   const sending = useRef(false)
 
+  useAutoRefresh(() => setAttempt(n => n + 1), !loading && !busy && !editor)
   useEffect(() => {
     let active = true
 
@@ -47,6 +49,7 @@ export default function BranchesPage() {
         }
 
         setBranches(result.branches)
+        setLoadError('')
         setLoading(false)
       })
       .catch((cause: unknown) => {

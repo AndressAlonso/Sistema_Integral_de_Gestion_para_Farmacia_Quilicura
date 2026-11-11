@@ -1,15 +1,17 @@
-"""Simulador local para E7-H3. No implementa Flow ni registra cobros/ventas."""
+"""Simulador local para E7-H3. Completa el retiro sin cobros reales; ventas identificadas como SIMULADO."""
 from datetime import datetime, timezone
 from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select
+from sqlalchemy import String, select
 
 from app.auth.routes import authenticated_user, check_origin
-from app.models import EventoAuditoria, Transferencia
+from app.models import EventoAuditoria, Transferencia, Venta
+from app.orders.fulfillment_models import CorreoPedido
 from app.orders.models import PedidoOnline
+from app.orders.pickup import enqueue_ready
 from app.orders.preparation import PAID_STATES
 from app.orders.service import summary
 from app.orders.transfers import (
@@ -17,6 +19,8 @@ from app.orders.transfers import (
     lock_order,
     release_order_reservations,
 )
+from app.payments.models import CheckoutMercadoPago, PagoMercadoPago
+from app.payments.processor import register_sale
 from app.transfers.service import TransferError
 
 router = APIRouter(prefix="/api/orders/development", tags=["orders-development"])
@@ -46,7 +50,14 @@ def availability(request: Request):
 def pending_orders(request: Request):
     admin(request)
     with request.app.state.inventory.session_factory() as db:
-        rows = db.scalars(select(PedidoOnline).where(PedidoOnline.estado == "PENDIENTE_PAGO")
+        rows = db.scalars(select(PedidoOnline).where((PedidoOnline.estado == "PENDIENTE_PAGO") | (
+                              PedidoOnline.estado.in_(("PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO"))
+                              & ~select(Venta.id).where(Venta.pedido_id == PedidoOnline.id).exists()
+                              & select(EventoAuditoria.id).where(
+                                  EventoAuditoria.origen_actor == "SIMULACION_DESARROLLO",
+                                  EventoAuditoria.accion == "E7-H3_PAGO_SIMULADO",
+                                  EventoAuditoria.referencia_historica == "Pedido " + PedidoOnline.id.cast(String),
+                              ).exists()))
                           .order_by(PedidoOnline.creado_en).limit(100))
         return {"orders": [summary(row) for row in rows]}
 
@@ -65,6 +76,9 @@ def simulate_payment(order_id: UUID, data: SimulationInput, request: Request):
     try:
         with request.app.state.inventory.session_factory.begin() as db:
             order = lock_order(db, order_id)
+            if (db.get(CheckoutMercadoPago, order.id) is not None
+                    or db.scalar(select(PagoMercadoPago.id).where(PagoMercadoPago.pedido_id == order.id)) is not None):
+                raise HTTPException(409, "Este pedido usa Mercado Pago y no puede simularse. Crea otro pedido de prueba.")
             accepted_retry = data.outcome == "accepted" and order.estado in PAID_STATES
             if order.estado not in ("PENDIENTE_PAGO", target) and not accepted_retry:
                 raise HTTPException(409, "El pedido ya tiene un resultado distinto. No se modificó.")
@@ -72,6 +86,8 @@ def simulate_payment(order_id: UUID, data: SimulationInput, request: Request):
             if changed:
                 order.estado = target
                 if data.outcome == "accepted":
+                    register_sale(db, order, datetime.now(timezone.utc), simulated=True)
+                    db.add(CorreoPedido(pedido_id=order.id, tipo="CONFIRMACION"))
                     generate_order_transfers(db, order)
                 else:
                     release_order_reservations(db, order)
@@ -80,6 +96,23 @@ def simulate_payment(order_id: UUID, data: SimulationInput, request: Request):
                     referencia_historica=f"Pedido {order.id}", usuario_id=actor.id,
                     sucursal_id=order.sucursal_id, ocurrido_en=datetime.now(timezone.utc),
                     datos_cambio={"resultado": target, "simulado": True, "pedido_id": str(order.id)}))
+                db.flush()
+            if accepted_retry and db.scalar(select(Venta.id).where(Venta.pedido_id == order.id)) is None:
+                evidence = db.scalar(select(EventoAuditoria.id).where(
+                    EventoAuditoria.origen_actor == "SIMULACION_DESARROLLO",
+                    EventoAuditoria.accion == "E7-H3_PAGO_SIMULADO",
+                    EventoAuditoria.referencia_historica == f"Pedido {order.id}"))
+                if evidence is None or order.estado == "RETIRADO":
+                    raise HTTPException(409, "Este pedido no corresponde a una simulación pendiente de completar.")
+                previous = order.estado
+                register_sale(db, order, datetime.now(timezone.utc), simulated=True)
+                order.estado = previous
+                if previous == "LISTO_PARA_RETIRO":
+                    enqueue_ready(db, order)
+                changed = True
+                db.add(EventoAuditoria(origen_actor="SIMULACION_DESARROLLO", accion="E7_SIMULACION_COMPLETADA",
+                    referencia_historica=f"Pedido {order.id}", usuario_id=actor.id, sucursal_id=order.sucursal_id,
+                    datos_cambio={"simulado": True, "pedido_id": str(order.id)}))
                 db.flush()
             transfers = list(db.scalars(select(Transferencia).where(Transferencia.pedido_id == order.id)))
             return {"order": summary(order), "transfer_ids": [row.id for row in transfers],

@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -29,10 +30,11 @@ export default function ReceiptReviewPanel({ transferId, disabled, onBusyChange,
     } catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : 'No se pudo revisar el destino.') }
     finally { operation.current = false; if (mounted.current) { setBusy(false); onBusyChange?.(false) } }
   }
+  useAutoRefresh(inspect, !disabled && !busy, 20_000, false)
   return <section className="users-panel receipt-review" aria-label="Revisión de lotes destino">
     {!autoReview && <h3>Revisar lote destino</h3>}
     <p>El estado del lote se gestiona en Inventario. Esta revisión no cambia cantidades ni fechas.</p>
-    <button type="button" className="users-button" disabled={disabled || busy} onClick={() => void inspect()}>{busy ? 'Consultando…' : autoReview ? 'Actualizar revisión' : 'Revisar lotes destino'}</button>
+    {!autoReview && !review && <button type="button" className="users-button" disabled={disabled || busy} onClick={() => void inspect()}>Revisar lotes destino</button>}
     {error && <Notification message={error} kind="error" />}
     {review && <><p>Destino: <strong>{review.destination_name}</strong></p>{review.items.map((lot, index) => <article key={`${lot.number}-${index}`} className="receipt-lot-review">
       <h4>{lot.product_name} · Lote {lot.number}</h4>

@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import { useEffect, useRef, useState } from 'react'
 import { apiRequest } from '../../services/http'
@@ -23,6 +24,7 @@ export default function PaymentSimulation({ onChanged }: { onChanged: () => void
   const [message, setMessage] = useState('')
   const [revision, setRevision] = useState(0)
   const sending = useRef(false)
+  useAutoRefresh(() => setRevision(n => n + 1), enabled && !busy && !confirmed)
   useEffect(() => {
     let active = true
     async function load() {
@@ -49,7 +51,7 @@ export default function PaymentSimulation({ onChanged }: { onChanged: () => void
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ outcome, confirmed: true }),
       }, {}, true)).json()
-      setMessage(result.order.status === 'PAGADO'
+      setMessage(outcome === 'accepted'
         ? `Pago simulado aceptado. ${result.transfer_ids.length} transferencias automáticas. No se cobró dinero.`
         : 'Pago simulado fallido. Pedido cancelado y reservas liberadas.')
       setSelected(''); setConfirmed(false); setRevision(value => value + 1); onChanged()
@@ -59,10 +61,10 @@ export default function PaymentSimulation({ onChanged }: { onChanged: () => void
   }
   return <details className="users-panel payment-simulation">
     <summary>Simulación de pago — desarrollo</summary>
-    <p>Solo para pruebas de E7-H3. No procesa pagos con Flow ni registra una venta. Aceptar crea los traslados necesarios; fallar cancela el pedido y libera sus reservas.</p>
+    <p>Prueba el flujo completo sin cobrar dinero: registra una venta simulada, genera los traslados necesarios y permite preparar y retirar mediante QR. La entrega descuenta stock local. También permite completar simulaciones anteriores.</p>
     {error && <Notification message={error} kind="error" />}
     {message && <Notification message={message} kind="success" />}
-    <label>Pedido pendiente<select value={selected} disabled={busy} onChange={event => { setSelected(event.target.value); setConfirmed(false); setMessage('') }}>
+    <label>Pedido de prueba<select value={selected} disabled={busy} onChange={event => { setSelected(event.target.value); setConfirmed(false); setMessage('') }}>
       <option value="">Selecciona un pedido</option>
       {orders.map(row => <option key={row.id} value={row.id}>{row.number} · {row.pickup_branch.name}</option>)}
     </select></label>
@@ -74,7 +76,6 @@ export default function PaymentSimulation({ onChanged }: { onChanged: () => void
     <div className="transfer-actions">
       <button type="button" className="users-button primary" disabled={busy || !confirmed || !order} onClick={() => void simulate('accepted')}>Simular pago aceptado</button>
       <button type="button" className="users-button" disabled={busy || !confirmed || !order} onClick={() => void simulate('failed')}>Simular pago fallido</button>
-      <button type="button" className="users-button" disabled={busy} onClick={() => setRevision(value => value + 1)}>Actualizar pedidos</button>
     </div>
   </details>
 }

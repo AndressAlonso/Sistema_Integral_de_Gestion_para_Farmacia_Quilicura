@@ -11,6 +11,22 @@ def manual_label(code):
     return " ".join(code[index:index + 4] for index in range(0, len(code), 4))
 
 
+def confirmation_email(order, number):
+    rows = "".join(
+        f'<tr><td style="padding:12px;border-bottom:1px solid #eee">{escape(d.nombre)} × {d.cantidad}</td>'
+        f'<td style="padding:12px;text-align:right;border-bottom:1px solid #eee">{money(d.subtotal)}</td></tr>'
+        for d in order.detalles)
+    return f'''<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;background:#f5f4f8;font-family:Arial,sans-serif;color:#26354b">
+<div style="max-width:600px;margin:24px auto;background:white;border-radius:16px;overflow:hidden">
+<div style="padding:24px;background:#702582;color:white"><p>Farmacia Quilicura</p><h1 style="font-size:24px">Tu pedido está confirmado</h1></div>
+<div style="padding:24px"><p>Hola {escape(order.nombre)}, recibimos tu pago.</p><p><strong>Pedido {escape(number)}</strong></p>
+<table style="width:100%;border-collapse:collapse">{rows}</table><p style="text-align:right;font-weight:bold">Total pagado: {money(order.total)}</p>
+<p><strong>Sucursal de retiro:</strong> {escape(order.sucursal.nombre)}<br>{escape(order.sucursal.direccion_local or '')}</p>
+<p style="padding:16px;background:#f4eef8;border-radius:10px">Te avisaremos por correo cuando tu pedido esté listo para retirar. En ese aviso recibirás tu código de retiro.</p>
+</div></div></body></html>'''
+
+
 def ready_email(order, number, title, manual):
     rows = "".join(
         f'<tr><td style="padding:14px 0;border-bottom:1px solid #ece8ef;color:#26354b">{escape(d.nombre)}'

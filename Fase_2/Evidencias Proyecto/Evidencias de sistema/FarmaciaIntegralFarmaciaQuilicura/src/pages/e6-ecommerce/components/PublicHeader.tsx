@@ -1,4 +1,5 @@
 import StoreIcon from './StoreIcon'
+import { guestOrderAccess } from '../services/orders.api'
 import { useState } from 'react'
 import Notification from '../../../components/Notification'
 import { Link, useLocation } from 'react-router-dom'
@@ -14,6 +15,7 @@ export default function PublicHeader() {
   const { draft } = useCart()
   const [menuPath, setMenuPath] = useState<string | null>(null)
   const menuOpen = menuPath === pathname
+  const guestOrder = customer ? null : guestOrderAccess()
 
   return (
     <header className="public-header">
@@ -29,6 +31,7 @@ export default function PublicHeader() {
               <Link to="/tienda/mis-pedidos" aria-current={pathname === '/tienda/mis-pedidos' ? 'page' : undefined}><StoreIcon name="receipt" />Mis pedidos</Link>
               <button type="button" disabled={closing} onClick={() => { void logout() }}>{closing ? 'Cerrando sesión…' : 'Cerrar sesión'}</button>
             </> : <>
+              {guestOrder && <Link to={`/tienda/confirmar?order_id=${guestOrder.request_id}`}><StoreIcon name="receipt" />Mi pedido</Link>}
               <Link to="/tienda/registro" aria-current={pathname === '/tienda/registro' ? 'page' : undefined}><StoreIcon name="user" />Crear cuenta</Link>
               <Link to="/tienda/iniciar-sesion" aria-current={pathname === '/tienda/iniciar-sesion' ? 'page' : undefined}><StoreIcon name="user" />Iniciar sesión</Link>
             </>}

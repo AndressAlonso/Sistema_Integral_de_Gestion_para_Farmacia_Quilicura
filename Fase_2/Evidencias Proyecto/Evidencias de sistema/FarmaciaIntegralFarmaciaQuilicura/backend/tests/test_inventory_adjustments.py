@@ -22,6 +22,34 @@ from test_auth import login
 URL = "/api/inventory-adjustments"
 
 
+def test_typed_reason_persisted_and_retry_safe(adjustment):
+    payload = adjustment.payload | {"reason_type": "DANADO", "reason": "Envase roto"}
+    response = adjustment.client.post(URL, json=payload)
+    assert response.status_code == 201, response.text
+    assert response.json()["reason_type"] == "DANADO"
+    assert response.json()["reason"] == "Envase roto"
+    assert adjustment.client.post(URL, json=payload).status_code == 200
+    saved = adjustment.client.get(URL + "/" + payload["request_id"]).json()
+    assert saved["reason_type"] == "DANADO"
+    with adjustment.factory() as db:
+        movements = db.scalars(select(MovimientoInventario).where(MovimientoInventario.referencia_id == UUID(payload["request_id"]))).all()
+        assert len(movements) == 2
+        assert all(row.motivo == "Producto dañado: Envase roto" for row in movements)
+
+
+@pytest.mark.parametrize("kind,reason,valid", [("OTRO", "   ", False), ("OTRO", "Corrección documentada", True), ("CONTEO", "", True), ("INVALIDO", "Texto", False)])
+def test_reason_validation(kind, reason, valid):
+    from pydantic import ValidationError
+    from app.inventory_adjustments.schemas import CreateAdjustment
+    payload = dict(request_id=uuid4(), branch_id=uuid4(), reason_type=kind, reason=reason,
+                   items=[dict(lot_id=uuid4(), expected_quantity=2, new_quantity=1)])
+    if valid:
+        assert CreateAdjustment(**payload).reason_type == kind
+    else:
+        with pytest.raises(ValidationError):
+            CreateAdjustment(**payload)
+
+
 @pytest.fixture
 def adjustment(setup):
     with setup.factory.begin() as db:

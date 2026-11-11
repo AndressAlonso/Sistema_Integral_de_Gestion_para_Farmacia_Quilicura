@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -18,6 +19,7 @@ export default function OrderPreparationDialog({ id, onClose, onChanged }: {
   const [confirmed, setConfirmed] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [loading, setLoading] = useState(true)
+  useAutoRefresh(() => setAttempt(n => n + 1), !busy && !loading && !confirmed, 20_000, false)
   useEffect(() => { const el = dialog.current; el?.showModal(); return () => el?.close() }, [])
   useEffect(() => {
     let active = true
@@ -58,7 +60,7 @@ export default function OrderPreparationDialog({ id, onClose, onChanged }: {
         {order.status === 'CANCELADO' && <p>Este pedido está cancelado y no puede prepararse.</p>}
         {order.status === 'LISTO_PARA_RETIRO' && <p role="status">Preparación completada. El pedido está listo para retiro.</p>}
         {order.status === 'RETIRADO' && <p role="status">Pedido entregado. El retiro está registrado en el historial.</p>}
-        {order.notifications?.map(mail => <p key={mail.kind}>{mail.kind === 'LISTO' ? 'Correo de retiro' : 'Recordatorio'}: {mail.status === 'ENVIADO' ? 'enviado' : mail.status === 'OMITIDO' ? 'no corresponde enviarlo' : mail.attempts ? 'envío pendiente; se reintentará' : 'pendiente de envío'}.</p>)}
+        {order.notifications?.map(mail => <p key={mail.kind}>{mail.kind === 'CONFIRMACION' ? 'Confirmación de compra' : mail.kind === 'LISTO' ? 'Correo de retiro' : 'Recordatorio'}: {mail.status === 'ENVIADO' ? 'enviado' : mail.status === 'OMITIDO' ? 'no corresponde enviarlo' : mail.attempts ? 'envío pendiente; se reintentará' : 'pendiente de envío'}.</p>)}
       </section>
       <div className="orders-detail-grid"><div className="orders-main-column"><section className="orders-detail-card">
       <header className="orders-card-heading"><h3>Productos a preparar</h3><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} unidades</span></header>
@@ -70,7 +72,7 @@ export default function OrderPreparationDialog({ id, onClose, onChanged }: {
       </section></div>
     </div>}
     <footer className="users-dialog-actions orders-actions">
-      <button className="users-button" disabled={busy || loading} onClick={() => { setLoading(true); setConfirmed(false); setAttempt(n => n + 1) }}>Actualizar</button>
+      
       <button className="users-button" disabled={busy} onClick={onClose}>Cerrar detalle</button>
     </footer>
   </dialog>

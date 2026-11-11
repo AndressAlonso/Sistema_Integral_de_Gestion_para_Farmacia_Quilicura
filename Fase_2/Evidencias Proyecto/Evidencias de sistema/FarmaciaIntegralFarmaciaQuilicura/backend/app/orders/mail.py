@@ -16,7 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import BACKEND_DIR
 from app.models import EventoAuditoria
-from app.orders.email_templates import manual_label, money, ready_email, receipt_html
+from app.orders.email_templates import confirmation_email, manual_label, money, ready_email, receipt_html
 from app.orders.fulfillment_models import CorreoPedido, RetiroPedido
 from app.orders.models import PedidoOnline
 from app.orders.pickup import enqueue_ready, paid_sale
@@ -47,6 +47,11 @@ def message_for(order, credential, outbox, settings, sale):
     msg["From"], msg["To"] = settings.sender, order.correo
     msg["Subject"] = f"{title} · {number}"
     msg["Message-ID"] = f"<pedido-{outbox.id}@sigfq.local>"
+    if outbox.tipo == "CONFIRMACION":
+        msg.replace_header("Subject", f"Tu pedido está confirmado · {number}")
+        msg.set_content(f"Hola {order.nombre}, recibimos tu pago.\n\nPedido: {number}\n{products}\nTotal pagado: {money(order.total)}\nSucursal de retiro: {order.sucursal.nombre}\n\nTe avisaremos por correo cuando tu pedido esté listo para retirar. En ese aviso recibirás tu código de retiro.")
+        msg.add_alternative(confirmation_email(order, number), subtype="html")
+        return msg
     msg.set_content(f"Hola {order.nombre},\n\n{title}.\nPedido: {number}\nSucursal: {order.sucursal.nombre}\n{products}\nTotal: {money(order.total)}\n\nCódigo de retiro: {manual_label(credential.codigo_manual)}\nPresenta el QR adjunto o dicta este código al personal al retirar. Ambos sirven para un único retiro y no vencen por el paso del tiempo.\nIncluimos tu comprobante interno sin validez tributaria.")
     image = io.BytesIO()
     qrcode.make(credential.codigo).save(image, format="PNG")
@@ -119,12 +124,17 @@ class OrderMailService:
                 if row.tipo == "RECORDATORIO" and not self.settings.reminder_enabled:
                     continue
                 credential = db.get(RetiroPedido, order_id)
-                if not credential or credential.retirado_en or order.estado != "LISTO_PARA_RETIRO" or not paid_sale(db, order):
+                sale = paid_sale(db, order)
+                confirmation = row.tipo == "CONFIRMACION"
+                # Un aviso inicial atrasado no debe llegar después del aviso de retiro.
+                valid = (order.estado in {"PAGADO", "EN_PREPARACION"}
+                         if confirmation else credential and not credential.retirado_en and order.estado == "LISTO_PARA_RETIRO")
+                if not valid or not sale:
                     row.estado = "OMITIDO"
                     continue
                 row.intentos += 1
                 try:
-                    self.sender(message_for(order, credential, row, self.settings, paid_sale(db, order)), self.settings)
+                    self.sender(message_for(order, credential, row, self.settings, sale), self.settings)
                 except (OSError, smtplib.SMTPException, ValueError):
                     row.proximo_intento = now + timedelta(minutes=min(60, 2 ** min(row.intentos, 6)))
                     continue

@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../../services/http'
@@ -7,6 +8,7 @@ import './stock-operations.css'
 
 type Operation = 'receipt' | 'adjustment'
 interface Draft {
+  reasonType?: 'CONTEO' | 'DANADO' | 'VENCIMIENTO' | 'OTRO'
   kind: Operation; requestId: string; branchId: string; reason: string; supplier: string
   documentType: 'GUIA' | 'FACTURA'; documentNumber: string; documentDate: string
   rows: { lot: StockLot; quantity: string }[]
@@ -45,14 +47,27 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
     return () => { if (element?.open) element.close() }
   }, [])
   useEffect(() => {
+    if (busy || confirmed) return
     let active = true
     operationOptions().then(async data => {
       const catalog = data.can_receive ? await receiptProducts() : []
-      if (active) { setOptions(data); setProducts(catalog); setLoading(false); setError('') }
+      if (active) {
+        setOptions(data); setProducts(catalog); setLoading(false); setError('')
+        if (!pending) setDraft(current => {
+          if (current.kind !== 'adjustment') return current
+          const lots = new Map(data.lots.map(lot => [lot.id, lot]))
+          const differs = current.rows.some(row => {
+            const next = lots.get(row.lot.id)
+            return next && (next.quantity !== row.lot.quantity || next.available !== row.lot.available)
+          })
+          return differs ? { ...current, rows: current.rows.map(row => ({ ...row, lot: lots.get(row.lot.id) ?? row.lot })) } : current
+        })
+      }
     })
       .catch((cause: unknown) => { if (active) { setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los lotes.'); setLoading(false) } })
     return () => { active = false }
-  }, [attempt])
+  }, [attempt, busy, confirmed, pending])
+  useAutoRefresh(() => setAttempt(n => n + 1), !busy && !loading && !pending && !confirmed, 20_000, false)
   const receipt = draft.kind === 'receipt'
   const available = options?.lots.filter(lot => lot.branch_id === draft.branchId && (!receipt || (lot.expiration_date > today && lot.is_active !== false && lot.product_active !== false))) ?? []
   const changed = draft.rows.filter(row => Number(row.quantity) !== row.lot.quantity)
@@ -66,27 +81,12 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
       return { ...row, lot: { ...row.lot, number, expiration_date: existing?.expiration_date ?? row.lot.expiration_date } }
     }) })
   }
-  function reload() {
-    if (sending.current || pending) return
-    setLoading(true); setConfirmed(false)
-    operationOptions().then(async data => {
-      const catalog = data.can_receive ? await receiptProducts() : []
-      setProducts(catalog)
-      setOptions(data)
-      if (receipt) { setError(''); return }
-      const lots = new Map(data.lots.map(lot => [lot.id, lot]))
-      if (draft.rows.some(row => !lots.has(row.lot.id))) {
-        setError('Un lote ya no está disponible. Quítalo del formulario antes de continuar.')
-      } else {
-        setDraft(current => ({ ...current, rows: current.rows.map(row => ({ ...row, lot: lots.get(row.lot.id) ?? row.lot })) }))
-        setError('')
-      }
-    }).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : 'No se pudo actualizar.'))
-      .finally(() => setLoading(false))
-  }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (sending.current || !confirmed || !count) return
+    if (!receipt && !pending && (!draft.reasonType || (draft.reasonType === 'OTRO' && !draft.reason.trim()))) {
+      setError('Selecciona un motivo y explica el ajuste si elegiste Otro.'); return
+    }
     if (receipt) {
       const keys = draft.rows.map(row => JSON.stringify([row.lot.product_id, row.lot.number.trim()]))
       if (new Set(keys).size !== keys.length) {
@@ -108,6 +108,7 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
         id = result.id
       } else {
         const result = await createAdjustment({ request_id: draft.requestId, branch_id: draft.branchId, reason: draft.reason,
+          reason_type: draft.reasonType,
           items: changed.map(row => ({ lot_id: row.lot.id, expected_quantity: row.lot.quantity, new_quantity: Number(row.quantity), expected_reserved: row.lot.available === undefined ? undefined : row.lot.quantity - row.lot.available })) })
         id = result.id
       }
@@ -142,7 +143,18 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
           <label>Documento<select value={draft.documentType} onChange={event => update({ documentType: event.target.value as 'GUIA' | 'FACTURA' })}><option value="FACTURA">Factura</option><option value="GUIA">Guía de despacho</option></select></label>
           <label>Número de documento *<input required maxLength={80} value={draft.documentNumber} onChange={event => update({ documentNumber: event.target.value })} /></label>
           <label>Fecha del documento *<input type="date" required max={today} value={draft.documentDate} onChange={event => update({ documentDate: event.target.value })} /></label>
-        </> : <label className="transfer-wide">Motivo del ajuste *<textarea required maxLength={250} placeholder="Explica la diferencia detectada en el inventario" value={draft.reason} onChange={event => update({ reason: event.target.value })} /></label>}
+        </> : <div className="transfer-wide adjustment-reason">
+          <fieldset className="adjustment-reason-options"><legend>Motivo del ajuste *</legend>
+            {([
+              ['CONTEO', 'Diferencia de conteo'], ['DANADO', 'Producto dañado'],
+              ['VENCIMIENTO', 'Vencimiento'], ['OTRO', 'Otro'],
+            ] as const).map(([value, label]) => <label key={value} className={draft.reasonType === value ? 'selected' : ''}>
+              <input type="radio" name="adjustment-reason" required={!pending} checked={draft.reasonType === value} onChange={() => update({ reasonType: value })} />
+              {label}
+            </label>)}
+          </fieldset>
+          <label>{draft.reasonType === 'OTRO' ? 'Explica el motivo *' : 'Observación (opcional)'}<textarea required={draft.reasonType === 'OTRO'} maxLength={220} placeholder={draft.reasonType === 'OTRO' ? 'Describe por qué necesitas ajustar las existencias' : 'Añade un detalle si es necesario'} value={draft.reason} onChange={event => update({ reason: event.target.value })} /></label>
+        </div>}
         {receipt && <p className="transfer-wide">Selecciona productos del catálogo, aunque no tengan existencias. Ingresa las unidades recibidas y el lote y vencimiento del envase. Al confirmar se registrarán los lotes y se sumarán las cantidades; no necesitas crearlos antes en Inventario.</p>}
         <label className="transfer-wide">{receipt ? 'Producto del catálogo' : 'Producto y lote que quieres ajustar'}<select disabled={!draft.branchId} value={lotId} onChange={event => setLotId(event.target.value)}>
           <option value="">{draft.branchId ? 'Selecciona un producto' : 'Primero selecciona una sucursal'}</option>{receipt
@@ -175,7 +187,6 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
             <td>{row.quantity === '' ? '—' : receipt ? (available.find(lot => lot.product_id === row.lot.product_id && lot.number === row.lot.number.trim())?.quantity ?? 0) + Number(row.quantity) : <span className={`stock-change ${Number(row.quantity) < row.lot.quantity ? 'stock-change-decrease' : ''}`}>{Number(row.quantity) === row.lot.quantity ? 'Sin cambios' : `${Number(row.quantity) > row.lot.quantity ? 'Aumenta' : 'Disminuye'} ${Math.abs(Number(row.quantity) - row.lot.quantity)} ud.`}</span>}</td>
             <td><button type="button" className="users-button" aria-label={`Quitar ${row.lot.product_name}, lote ${row.lot.number}`} onClick={() => update({ rows: draft.rows.filter((_, i) => i !== index) })}>Quitar</button></td>
           </tr>)}</tbody></table></div>
-        <button type="button" className="users-button" onClick={reload}>↻ Actualizar existencias</button>
       </fieldset>
       {error && <Notification message={error} kind="error" />}
       {!options && !loading && <button type="button" className="users-button" onClick={() => { setLoading(true); setAttempt(value => value + 1) }}>Reintentar carga</button>}

@@ -6,12 +6,6 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
-from fastapi import HTTPException
-from test_e6_cart import cart, snapshot  # noqa: F401
-from test_orders import order_payload
-from test_payment_checkout import checkout  # noqa: F401
-from test_payment_webhook import state, webhook  # noqa: F401
-
 from app.orders.models import PedidoOnline
 from app.payments.client import MercadoPagoError
 from app.payments.config import PaymentSettings
@@ -19,6 +13,11 @@ from app.payments.expiration import PaymentExpirationService
 from app.payments.models import CheckoutMercadoPago
 from app.payments.processor import PaymentVerificationError
 from app.payments.worker import payment_expiration_worker
+from fastapi import HTTPException
+from test_e6_cart import cart, snapshot  # noqa: F401
+from test_orders import order_payload
+from test_payment_checkout import checkout  # noqa: F401
+from test_payment_webhook import state, webhook  # noqa: F401
 
 
 def expired(ctx):
@@ -92,6 +91,7 @@ def test_provider_outage_preserves_reservation(webhook, method):
     identity = expired(webhook)
     # Otro pedido vencido reproduce una BD de desarrollo con datos anteriores.
     unrelated = order_payload(webhook, quantity=1)
+    unrelated["guest"]["email"] = f"other-{unrelated['request_id']}@example.com"
     unrelated["expected_total"] = "1000"
     assert (
         webhook.client.post("/api/customers/orders", json=unrelated).status_code == 201

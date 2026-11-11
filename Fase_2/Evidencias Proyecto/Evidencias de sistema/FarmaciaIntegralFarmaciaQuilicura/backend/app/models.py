@@ -90,8 +90,8 @@ class Venta(Base):
     __tablename__ = "venta"
     __table_args__ = (
         UniqueConstraint("pedido_id", name="uq_venta_pedido"),
-        CheckConstraint("medio_pago IN ('EFECTIVO','DEBITO','CREDITO','TRANSFERENCIA','MERCADOPAGO')", name="ck_venta_pago"),
-        CheckConstraint("(pedido_id IS NULL AND sesion_caja_id IS NOT NULL AND usuario_id IS NOT NULL AND medio_pago <> 'MERCADOPAGO') OR (pedido_id IS NOT NULL AND sesion_caja_id IS NULL AND usuario_id IS NULL AND medio_pago = 'MERCADOPAGO')", name="ck_venta_canal"),
+        CheckConstraint("medio_pago IN ('EFECTIVO','DEBITO','CREDITO','TRANSFERENCIA','MERCADOPAGO','SIMULADO')", name="ck_venta_pago"),
+        CheckConstraint("(pedido_id IS NULL AND sesion_caja_id IS NOT NULL AND usuario_id IS NOT NULL AND medio_pago NOT IN ('MERCADOPAGO','SIMULADO')) OR (pedido_id IS NOT NULL AND sesion_caja_id IS NULL AND usuario_id IS NULL AND medio_pago IN ('MERCADOPAGO','SIMULADO'))", name="ck_venta_canal"),
         CheckConstraint("subtotal >= 0 AND descuento >= 0 AND total >= 0 AND total = subtotal - descuento",
                         name="ck_venta_totales"),
     )
@@ -876,6 +876,7 @@ class RecepcionMercaderiaDetalle(Base):
 
 
 class AjusteInventario(Base):
+    tipo_motivo: Mapped[str | None] = mapped_column(String(20))
     __tablename__ = "ajuste_inventario"
     __table_args__ = (CheckConstraint("btrim(motivo) <> ''", name="ck_ajuste_motivo"),)
 

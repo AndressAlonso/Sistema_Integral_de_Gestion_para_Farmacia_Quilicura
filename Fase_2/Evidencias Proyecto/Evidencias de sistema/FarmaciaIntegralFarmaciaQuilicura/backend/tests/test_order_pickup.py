@@ -6,19 +6,13 @@ from email.parser import BytesParser
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi import HTTPException
-from local_mailbox import local_mailbox
-from sqlalchemy import func, select
-from test_e6_cart import cart, snapshot  # noqa: F401
-from test_payment_checkout import checkout, pay  # noqa: F401
-from test_payment_order_integration import actor
-from test_payment_webhook import notify, state, webhook  # noqa: F401
-
 from app.models import (
     EventoAuditoria,
     InventarioSucursal,
     LoteInventario,
     MovimientoInventario,
+    Venta,
+    VentaDetalle,
     VentaLote,
 )
 from app.orders.fulfillment_models import CorreoPedido, RetiroPedido
@@ -26,6 +20,13 @@ from app.orders.mail import MailSettings, OrderMailService
 from app.orders.models import PedidoOnline
 from app.orders.pickup import PickupService
 from app.orders.preparation import PreparationService
+from fastapi import HTTPException
+from local_mailbox import local_mailbox
+from sqlalchemy import func, select
+from test_e6_cart import cart, snapshot  # noqa: F401
+from test_payment_checkout import checkout, pay  # noqa: F401
+from test_payment_order_integration import actor
+from test_payment_webhook import notify, state, webhook  # noqa: F401
 
 
 @pytest.fixture
@@ -43,7 +44,10 @@ def ready(webhook):
     assert snapshot(ctx) == before
     with ctx.factory() as db:
         ctx.qr = db.get(RetiroPedido, ctx.order_id).codigo
-        assert db.scalar(select(func.count()).select_from(CorreoPedido)) == 1
+        assert db.scalar(select(func.count()).select_from(CorreoPedido).where(
+            CorreoPedido.pedido_id == ctx.order_id,
+            CorreoPedido.tipo != "CONFIRMACION",
+        )) == 1
     return ctx
 
 
@@ -60,9 +64,9 @@ def test_qr_single_delivery_preserves_sale_and_audits(ready):
         inv = db.get(InventarioSucursal, ctx.cart_ids["destination_inventory"])
         assert inv.stock_fisico == 2 and inv.stock_reservado == 0
         assert db.get(RetiroPedido, ctx.order_id).usuario_id == ctx.pickup_actor.id
-        assert db.scalar(select(func.sum(VentaLote.cantidad))) == 1
-        assert db.scalar(select(func.count()).select_from(MovimientoInventario).where(MovimientoInventario.tipo == "RETIRO_PEDIDO")) == 1
-        assert db.scalar(select(func.count()).select_from(EventoAuditoria).where(EventoAuditoria.accion == "E7-H6_RETIRO")) == 1
+        assert db.scalar(select(func.sum(VentaLote.cantidad)).join(VentaDetalle, VentaDetalle.id == VentaLote.venta_detalle_id).join(Venta, Venta.id == VentaDetalle.venta_id).where(Venta.pedido_id == ctx.order_id)) == 1
+        assert db.scalar(select(func.count()).select_from(MovimientoInventario).where(MovimientoInventario.tipo == "RETIRO_PEDIDO", MovimientoInventario.referencia_id == ctx.order_id)) == 1
+        assert db.scalar(select(func.count()).select_from(EventoAuditoria).where(EventoAuditoria.accion == "E7-H6_RETIRO", EventoAuditoria.referencia_historica == f"Pedido {ctx.order_id}")) == 1
         assert ctx.qr not in str(list(db.scalars(select(EventoAuditoria.datos_cambio))))
     after = snapshot(ctx)
     with pytest.raises(HTTPException) as error:
@@ -250,7 +254,7 @@ def test_mail_failure_retries_without_changing_order_or_stock(ready):
     assert mail.run_once() == 0 and snapshot(ctx) == before
     assert state(ctx)["order"] == "LISTO_PARA_RETIRO"
     with ctx.factory.begin() as db:
-        row = db.scalar(select(CorreoPedido))
+        row = db.scalar(select(CorreoPedido).where(CorreoPedido.tipo != "CONFIRMACION"))
         assert row.intentos == 1 and row.estado == "PENDIENTE"
         row.proximo_intento = datetime.now(timezone.utc) - timedelta(seconds=1)
     mail.sender = lambda message, _: captured.append(message)
@@ -266,7 +270,7 @@ def test_disabled_reminders_and_pickup_suppresses_pending_mail(ready):
         db.get(RetiroPedido, ctx.order_id).listo_en = datetime.now(timezone.utc) - timedelta(days=365)
     assert mail.run_once() == 1 and mail.run_once() == 0
     with ctx.factory() as db:
-        assert db.scalar(select(func.count()).select_from(CorreoPedido)) == 1
+        assert db.scalar(select(func.count()).select_from(CorreoPedido).where(CorreoPedido.tipo != "CONFIRMACION")) == 1
     PickupService(ctx.factory).process(ctx.pickup_actor, ctx.qr, ctx.order_id)
     assert mail.run_once() == 0
 
@@ -305,9 +309,8 @@ def test_real_smtp_delivery_to_local_inbox(ready):
 
 
 def test_http_pickup_requires_permission_and_explicit_confirmation(ready):
-    from test_auth import login
-
     from app.models import Permiso, UsuarioInterno
+    from test_auth import login
     ctx = ready
     assert login(ctx).status_code == 200
     response = ctx.client.post('/api/orders/pickup/validate', json={'code': ctx.qr})
@@ -339,24 +342,23 @@ def test_pending_mail_is_not_sent_after_collection(ready):
     mail = OrderMailService(ready.factory, MailSettings(enabled=True, starttls=False), lambda *_: pytest.fail('No enviar luego del retiro'))
     assert mail.run_once() == 0
     with ready.factory() as db:
-        assert db.scalar(select(CorreoPedido)).estado == 'OMITIDO'
+        assert db.scalar(select(CorreoPedido).where(CorreoPedido.tipo != "CONFIRMACION")).estado == 'OMITIDO'
 
 
 def test_disabled_reminders_also_pause_already_queued_reminder(ready):
     with ready.factory.begin() as db:
-        db.scalar(select(CorreoPedido)).estado = 'ENVIADO'
+        db.scalar(select(CorreoPedido).where(CorreoPedido.tipo != "CONFIRMACION")).estado = 'ENVIADO'
         db.add(CorreoPedido(pedido_id=ready.order_id, tipo='RECORDATORIO'))
     mail = OrderMailService(ready.factory, MailSettings(enabled=True, starttls=False), lambda *_: pytest.fail('Recordatorio desactivado'))
     assert mail.run_once() == 0
 
 
 def test_transferred_order_can_be_collected_only_after_receipt(webhook):
-    from test_payment_order_integration import needs_transfer
-
     from app.models import Transferencia
     from app.transfers.repository import TransferRepository
     from app.transfers.schemas import ReceiveTransfer
     from app.transfers.service import TransferService
+    from test_payment_order_integration import needs_transfer
     ctx = webhook
     needs_transfer(ctx)
     assert notify(ctx).status_code == 200

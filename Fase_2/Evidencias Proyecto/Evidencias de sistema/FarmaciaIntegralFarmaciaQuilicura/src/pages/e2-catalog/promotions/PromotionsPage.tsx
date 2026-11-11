@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
@@ -33,14 +34,16 @@ export default function PromotionsPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading && !busy && !editorOpen)
   useEffect(() => {
     let active = true
     Promise.all([listPromotions(), listProducts(), listCategories()]).then(([promotions, items, groups]) => {
-      if (active) { setRows(promotions); setProducts(items); setCategories(groups) }
+      if (active) { setRows(promotions); setProducts(items); setCategories(groups); setError('') }
     }).catch(err => { if (active) setError(err instanceof Error ? err.message : 'No se pudo cargar la información.') })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
+  }, [autoRevision])
   function closeEditor() {
     if (busy) return
     setEditorOpen(false); setEditing(undefined); setForm(blank); setError('')

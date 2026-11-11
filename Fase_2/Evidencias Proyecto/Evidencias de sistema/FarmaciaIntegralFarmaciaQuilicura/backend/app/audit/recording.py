@@ -47,7 +47,7 @@ FIELDS = {
     "movimiento_inventario": ("tipo", "cantidad_fisica", "cantidad_reservada", "stock_fisico_anterior", "stock_fisico_resultante", "stock_reservado_anterior", "stock_reservado_resultante", "motivo", "referencia_tipo", "referencia_id"),
     "inventario_sucursal": ("stock_minimo",),
     "recepcion_mercaderia": ("proveedor", "tipo_documento", "numero_documento", "fecha_documento", "sucursal_id"),
-    "ajuste_inventario": ("motivo", "sucursal_id"),
+    "ajuste_inventario": ("motivo", "tipo_motivo", "sucursal_id"),
     "transferencia": ("origen_id", "destino_id", "estado", "pedido_id", "motivo_rechazo"),
     "sesion_caja": ("sucursal_id", "monto_inicial", "cierre_en", "efectivo_contado"),
     "venta": ("sucursal_id", "medio_pago", "subtotal", "descuento", "total"),

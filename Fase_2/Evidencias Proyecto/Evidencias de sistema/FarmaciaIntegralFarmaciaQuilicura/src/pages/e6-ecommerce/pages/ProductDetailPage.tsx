@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
@@ -10,6 +11,7 @@ export default function ProductDetailPage() {
   const { productId } = useParams()
   const [result, setResult] = useState<{ id: string; product?: PublicProduct; error?: string } | null>(null)
   const [attempt, setAttempt] = useState(0)
+  useAutoRefresh(() => setAttempt(n => n + 1))
   useEffect(() => {
     let active = true
     if (productId) void getProduct(productId).then(product => {

@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
@@ -84,14 +85,16 @@ export default function LotPanel({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading && !statusLot)
   useEffect(() => {
     let active = true
     listInventoryLots()
-      .then(records => { if (active) setLots(records) })
+      .then(records => { if (active) { setLots(records); setError('') } })
       .catch(cause => { if (active) setError(getErrorMessage(cause)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
+  }, [autoRevision])
   // FEFO visual: la fecha alcanzada tampoco es vendible. Usar el día local.
   const today = new Date()
   const localToday = [today.getFullYear(),

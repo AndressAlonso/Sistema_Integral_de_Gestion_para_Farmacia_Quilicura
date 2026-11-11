@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { actions, changeTransfer, getTransfer, states, transferCode, units, type Transfer, type TransferAction } from './transfers.api'
@@ -22,6 +23,7 @@ export default function TransferDetail({ transfer, initialAction, onClose, onCha
   const [attempt, setAttempt] = useState(0)
   const dialog = useRef<HTMLDialogElement>(null)
   const sending = useRef(false)
+  useAutoRefresh(() => setAttempt(n => n + 1), !busy && !loading && !confirmed && !reviewOpen, 20_000, false)
   useEffect(() => {
     const element = dialog.current
     element?.showModal()
@@ -101,7 +103,7 @@ export default function TransferDetail({ transfer, initialAction, onClose, onCha
       </div>}
       {reviewOpen && <ReceiptReviewDialog key={current.id} transferId={current.id} onClose={() => setReviewOpen(false)} />}
       </div></div>
-      <footer className="users-dialog-actions"><button type="button" className="users-button" disabled={busy} onClick={() => { setLoading(true); setAttempt(a => a + 1) }}>Actualizar detalle</button>
+      <footer className="users-dialog-actions">
         <button type="button" className="users-button" disabled={busy} onClick={onClose}>Cerrar</button>
         {action && current.actions.includes(action) && <button className={`users-button ${action === 'reject' ? 'danger' : 'primary'}`} type="submit" disabled={busy || loading || !confirmed}>{busy ? 'Procesando…' : confirmationLabels[action]}</button>}
       </footer>

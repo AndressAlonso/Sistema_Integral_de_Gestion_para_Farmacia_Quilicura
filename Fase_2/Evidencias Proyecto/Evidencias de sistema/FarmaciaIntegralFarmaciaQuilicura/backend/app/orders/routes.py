@@ -47,6 +47,34 @@ class OrderAccess(BaseModel):
     request_token: SecretStr = Field(min_length=64, max_length=64)
 
 
+class PickupAccess(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    request_token: SecretStr | None = Field(default=None, min_length=64, max_length=64)
+
+
+@router.post("/api/customers/orders/{order_id}/pickup-code")
+def customer_pickup_code(order_id: UUID, data: PickupAccess, request: Request, response: Response):
+    check_origin(request)
+    response.headers["Cache-Control"] = "no-store"
+    customer_id = authenticated_customer(request)[0].id if request.cookies.get(COOKIE_NAME) else None
+    from app.orders.fulfillment_models import RetiroPedido
+    from app.orders.pickup import paid_sale
+    from app.orders.transfers import lock_order
+    with request.app.state.inventory.session_factory.begin() as db:
+        order = lock_order(db, order_id)
+        owned = order is not None and customer_id is not None and order.cliente_id == customer_id
+        guest = (order is not None and order.cliente_id is None and data.request_token is not None
+                 and compare_digest(order.clave_hash, sha256(data.request_token.get_secret_value().encode()).hexdigest()))
+        if not (owned or guest):
+            raise HTTPException(404, "No se encontró el pedido solicitado.")
+        credential = db.get(RetiroPedido, order_id)
+        if (order.estado != "LISTO_PARA_RETIRO" or not credential or credential.retirado_en
+                or not order.sucursal.activa or not paid_sale(db, order)):
+            return {"available": False, "status": order.estado}
+        return {"available": True, "status": order.estado, "qr": credential.codigo,
+                "manual_code": credential.codigo_manual}
+
+
 @router.post("/api/customers/orders/{order_id}/status")
 def recover_order(order_id: UUID, data: OrderAccess, request: Request):
     check_origin(request)

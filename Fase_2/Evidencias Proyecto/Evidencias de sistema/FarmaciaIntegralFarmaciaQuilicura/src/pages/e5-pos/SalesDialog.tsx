@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
@@ -23,12 +24,14 @@ export default function SalesDialog({ userId, canReverse, onClose, onReceipt }: 
   const [pending, setPending] = useState<{ saleId: string; data: ReversalRequest } | null>(() => {
     try { return JSON.parse(sessionStorage.getItem(`pos-return:${userId}`) ?? 'null') as { saleId: string; data: ReversalRequest } | null } catch { return null }
   })
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !busy && !pending && !saleId, 20_000, false)
+  useEffect(() => { dialog.current?.showModal() }, [])
   useEffect(() => {
-    dialog.current?.showModal()
     let active = true
     posApi.sales().then(result => { if (active) setSales(result.sales) }).catch(cause => { if (active) setError(errorMessage(cause)) })
     return () => { active = false }
-  }, [])
+  }, [autoRevision])
   async function select(id: string) {
     if (locked.current || pending) return
     locked.current = true; setBusy(true); setError(''); setSuccess('')

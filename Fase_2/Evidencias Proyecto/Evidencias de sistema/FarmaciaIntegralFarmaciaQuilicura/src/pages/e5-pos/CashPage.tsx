@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
@@ -23,19 +24,21 @@ export default function CashPage() {
     const current = await posApi.cash(); setCash(current)
     setSummary(current ? await posApi.summary(current.id) : null)
   }
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading && !busy && !closed)
   useEffect(() => {
     let active = true
     async function init() {
       try {
         const current = await posApi.cash()
         const result = current ? await posApi.summary(current.id) : null
-        if (active) { setCash(current); setSummary(result) }
+        if (active) { setCash(current); setSummary(result); setError('') }
       } catch (cause) { if (active) setError(errorMessage(cause)) }
       finally { if (active) setLoading(false) }
     }
     void init()
     return () => { active = false }
-  }, [])
+  }, [autoRevision])
   async function open(event: FormEvent) {
     event.preventDefault()
     if (locked.current) return

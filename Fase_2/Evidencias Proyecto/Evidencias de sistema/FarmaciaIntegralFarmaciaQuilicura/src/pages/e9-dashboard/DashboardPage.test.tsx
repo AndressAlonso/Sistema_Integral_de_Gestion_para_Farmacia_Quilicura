@@ -57,7 +57,7 @@ describe('E9-H1 / E9-H3', () => {
     render(<DashboardPage />)
     await screen.findByText('94 ventas · POS y online')
     vi.mocked(apiRequest).mockRejectedValueOnce(new Error('Sin conexión'))
-    fireEvent.click(screen.getByLabelText('Actualizar indicadores'))
+    fireEvent(window, new Event('focus'))
     await screen.findByText('Sin conexión')
     expect(screen.queryByText('94 ventas · POS y online')).toBeNull()
     fireEvent.click(screen.getByText('Reintentar'))

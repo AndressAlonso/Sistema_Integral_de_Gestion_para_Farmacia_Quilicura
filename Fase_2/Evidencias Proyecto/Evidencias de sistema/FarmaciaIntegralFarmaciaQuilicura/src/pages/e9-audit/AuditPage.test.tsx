@@ -45,7 +45,7 @@ it('rechaza un período invertido sin consultar y permite reintentar errores', a
   expect(screen.getByRole('alert').textContent).toContain('posterior')
   expect(apiRequest).toHaveBeenCalledTimes(1)
   vi.mocked(apiRequest).mockRejectedValueOnce(new Error('Sin conexión'))
-  fireEvent.click(screen.getByLabelText('Actualizar auditoría'))
+  fireEvent(window, new Event('focus'))
   await screen.findByText('Sin conexión')
   fireEvent.click(screen.getByText('Reintentar'))
   await screen.findByText('Andrés histórico')

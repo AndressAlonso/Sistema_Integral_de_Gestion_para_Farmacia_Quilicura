@@ -1,4 +1,5 @@
 import OrderProgress from '../../e7-orders/OrderProgress'
+import OrderPickupCode from './OrderPickupCode'
 import type { OnlineOrderSummary } from '../types/order-history'
 
 
@@ -12,5 +13,6 @@ export default function OrderHistoryItem({ order }: { order: OnlineOrderSummary 
     <div><dt>Sucursal de retiro</dt><dd>{order.pickup_branch.name}</dd></div>
   </dl>
   <OrderProgress status={order.status} />
+  <OrderPickupCode orderId={order.id} status={order.status} />
   </li>
 }

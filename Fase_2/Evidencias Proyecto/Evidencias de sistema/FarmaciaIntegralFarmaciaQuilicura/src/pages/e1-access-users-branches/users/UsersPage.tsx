@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import ActionIcon from '../ActionIcon'
@@ -25,10 +26,11 @@ export default function UsersPage() {
   const [message, setMessage] = useState('')
   const sending = useRef(false)
 
+  useAutoRefresh(() => setAttempt(n => n + 1), !loading && !busy && !editor && !showRoles)
   useEffect(() => {
     let active = true
     listUsers().then(result => {
-      if (active) { setData(result); setLoading(false) }
+      if (active) { setData(result); setLoading(false); setLoadError('') }
     }).catch((cause: unknown) => {
       if (!active) return
       if (cause instanceof ApiError && cause.status === 401) navigate('/login', { replace: true })

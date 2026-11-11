@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 // E2-H1/E2-H2: catálogo y cambio de precio con auditoría.
@@ -60,6 +61,7 @@ export default function CatalogPage() {
   const [notice, setNotice] = useState('')
   const sending = useRef(false)
 
+  useAutoRefresh(() => setAttempt(n => n + 1), allowed && !loading && !busy && !editor && !priceProduct && !historyProduct)
   useEffect(() => {
     if (!allowed) return
     let active = true
@@ -69,6 +71,7 @@ export default function CatalogPage() {
         if (!active) return
         setProducts(items)
         setCategories(groups)
+        setLoadError('')
         setLoading(false)
       })
       .catch((cause: unknown) => {

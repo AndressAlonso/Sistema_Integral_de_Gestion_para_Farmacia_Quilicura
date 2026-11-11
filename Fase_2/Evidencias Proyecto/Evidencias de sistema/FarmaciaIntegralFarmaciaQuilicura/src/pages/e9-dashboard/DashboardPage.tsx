@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import { useEffect, useState } from 'react'
 import Notification from '../../components/Notification'
 import { Bars, PaymentChart, SalesChart } from './DashboardCharts'
@@ -14,6 +15,7 @@ export default function DashboardPage() {
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
   const [alertTab, setAlertTab] = useState<'stock' | 'expiry'>('stock')
+  useAutoRefresh(() => setAttempt(n => n + 1), !loading)
   useEffect(() => {
     let active = true
     getDashboard(filters).then(result => {
@@ -29,7 +31,7 @@ export default function DashboardPage() {
   return <section className="dashboard-page">
     <header className="dashboard-heading">
       <div><span className="dashboard-eyebrow">PANORAMA OPERATIVO</span><h1>Dashboard</h1><p>Lo esencial de tu farmacia, en un vistazo.</p></div>
-      <button type="button" className="dashboard-refresh" aria-label="Actualizar indicadores" title="Actualizar indicadores" disabled={loading} onClick={refresh}><MetricIcon name="refresh" /></button>
+      
     </header>
     <OperationalFilters branches={data?.branches ?? []} value={filters} onChange={changeFilters} />
     {error && <Notification kind="error" message={error} />}

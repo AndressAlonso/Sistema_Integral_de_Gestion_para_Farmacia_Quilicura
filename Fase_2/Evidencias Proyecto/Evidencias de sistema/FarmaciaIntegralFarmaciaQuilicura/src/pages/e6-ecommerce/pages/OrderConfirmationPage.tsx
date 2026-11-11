@@ -11,6 +11,7 @@ import { createOrder, finishAttempt, orderAttempt, pendingOrder, recoverOrder, r
 import type { OnlineOrder } from '../services/orders.api'
 import '../guest.css'
 import OrderPaymentPanel from '../components/OrderPaymentPanel'
+import { guestOrderAccess, rememberGuestOrder } from '../services/orders.api'
 
 const money = (value: string) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 2 }).format(Number(value))
 export default function OrderConfirmationPage() {
@@ -31,9 +32,10 @@ export default function OrderConfirmationPage() {
   const visibleResult = result && (!requestedId || result.id === requestedId) ? result : null
   const acceptOrder = useCallback((order: OnlineOrder, attempt: import('../services/orders.api').OrderAttempt) => {
     rememberOrder(order.id, attempt)
+    if (!customer) rememberGuestOrder(order.id)
     setResult(order); finishAttempt(); clear()
     navigate(`/tienda/confirmar?order_id=${encodeURIComponent(order.id)}`, { replace: true })
-  }, [clear, navigate])
+  }, [clear, navigate, customer])
   useEffect(() => {
     if (sessionLoading || sessionError) return
     const attempt = requestedId ? orderAccess(requestedId) : pendingOrder()
@@ -57,6 +59,15 @@ export default function OrderConfirmationPage() {
     }
     sending.current = true; setBusy(true); setError('')
     try {
+      const previous = !customer ? guestOrderAccess() : null
+      if (previous) {
+        const activeOrder = await recoverOrder(previous)
+        if (!['CANCELADO', 'RETIRADO'].includes(activeOrder.status)) {
+          setResult(activeOrder)
+          navigate(`/tienda/confirmar?order_id=${activeOrder.id}`, { replace: true })
+          return
+        }
+      }
       const attempt = orderAttempt()
       const order = await createOrder(draft, validation.total, customer ? null : guest, attempt)
       acceptOrder(order, attempt)
@@ -73,9 +84,11 @@ export default function OrderConfirmationPage() {
   }
   return <main className="guest-page"><PublicHeader /><header className="store-page-heading"><div><p className="store-page-eyebrow">{visibleResult ? 'SEGUIMIENTO DE TU COMPRA' : 'REVISA TU SELECCIÓN'}</p><h1>{visibleResult ? 'Tu pedido' : 'Confirmar pedido'}</h1><p>{visibleResult ? 'Consulta el estado y los detalles de tu pedido.' : 'Comprueba tus datos, productos y sucursal antes de confirmar.'}</p></div></header>
     {error && <Notification message={error} kind="error" />}
+    {!customer && error.includes('Ya completaste tu compra como invitado') && <section className="guest-review"><h2>Continúa comprando con tu cuenta</h2><p>Tu primera compra como invitado ya fue retirada. Para una nueva compra, inicia sesión o crea tu cuenta.</p><Link className="guest-link" to="/tienda/iniciar-sesion">Iniciar sesión</Link> · <Link className="guest-link" to="/tienda/registro">Crear cuenta</Link></section>}
     {visibleResult ? <section className="guest-review"><h2>Pedido {visibleResult.number}</h2>
 
       <p>Sucursal de retiro: {visibleResult.pickup_branch.name}</p>
+      {!customer && <p>Este es tu único pedido como invitado. Conserva esta pestaña: si la cierras, puedes perder el acceso desde la página. Revisa tu correo para recibir el QR cuando esté listo para retiro.</p>}
       <ul>{visibleResult.items.map(item => <li key={item.product_id}>{item.name} · {item.quantity} unidades · {money(item.subtotal)}</li>)}</ul>
       <p>Total: <strong>{money(visibleResult.total)}</strong></p>
       <OrderPaymentPanel order={visibleResult} key={visibleResult.id} onUpdate={setResult} />
@@ -98,7 +111,7 @@ export default function OrderConfirmationPage() {
             <button type="button" disabled={busy || !confirmed} onClick={() => void submit()}>{busy ? 'Confirmando…' : 'Crear pedido y reservar'}</button>
           </section>
         </> : <>
-          <p>Como invitado, solo necesitamos nombre y correo. No se crea una cuenta.</p>
+          <p>Puedes realizar una primera compra como invitado y tener un solo pedido activo por correo. Después de retirarlo, necesitarás iniciar sesión para volver a comprar. Conserva esta pestaña para seguir tu pedido; si la cierras, puedes perder el acceso en la página. El QR de retiro se envía a tu correo cuando el pedido está listo.</p>
           <GuestForm busy={busy} onSubmit={submit} onEdit={() => { setConfirmation(''); setError('') }} submitDisabled={!confirmed} submitLabel="Crear pedido y reservar">
             <section className="guest-review"><h2>Revisa antes de confirmar</h2><p>Sucursal de retiro: {validation.pickup_branch?.name}</p>
           <ul>{validation.items.map(item => <li key={item.product_id}>{item.name} · {item.quantity} unidades · {money(item.subtotal!)}{item.requires_transfer && <p>Requiere traslado desde otra sucursal. Todavía no está listo para retiro.</p>}</li>)}</ul>

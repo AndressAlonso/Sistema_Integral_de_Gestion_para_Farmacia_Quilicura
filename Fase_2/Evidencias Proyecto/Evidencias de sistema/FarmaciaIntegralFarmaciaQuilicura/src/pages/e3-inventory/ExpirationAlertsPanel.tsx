@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
@@ -384,15 +385,17 @@ export default function ExpirationAlertsPanel({
     ],
   )
 
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading)
   useEffect(() => {
     let active = true
     listInventoryLots().then(records => {
-      if (active) { setLots(records); setLoading(false) }
+      if (active) { setLots(records); setLoading(false); setError('') }
     }).catch((cause: unknown) => {
       if (active) { setError(getErrorMessage(cause)); setLoading(false) }
     })
     return () => { active = false }
-  }, [])
+  }, [autoRevision])
 
   function handleSubmit(
     event: FormEvent<HTMLFormElement>,

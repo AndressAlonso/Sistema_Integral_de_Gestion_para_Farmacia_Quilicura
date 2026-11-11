@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PosPrice from './PosPrice'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
@@ -17,6 +18,7 @@ export default function PosPage() {
   const { user } = useOutletContext<AuthSession>()
   const [scannerLink, setScannerLink] = useState<ScannerLink | null>(null)
   const [search, setSearch] = useState('')
+  const [lastSearch, setLastSearch] = useState<string | null>(null)
   const [showSales, setShowSales] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCartState] = useState<Array<Item & { name: string; available: number }>>([])
@@ -51,6 +53,8 @@ export default function PosPage() {
     onProduct: add,
   })
 
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !busy && !pending && !searching && !showSales)
   useEffect(() => {
     if (!cart.length || pending) return
     let active = true
@@ -60,19 +64,27 @@ export default function PosPage() {
         .catch(cause => { if (active) { setQuote(null); setError(errorMessage(cause)) } })
     }, 250)
     return () => { active = false; clearTimeout(timer) }
-  }, [cart, pending])
+  }, [cart, pending, autoRevision])
 
   useEffect(() => {
     let active = true
     posApi.cash().then(value => { if (active) setCash(value) }).catch(cause => { if (active) setError(errorMessage(cause)) })
     return () => { active = false }
-  }, [])
+  }, [autoRevision])
+
+  useEffect(() => {
+    if (lastSearch === null) return
+    let active = true
+    void posApi.products(lastSearch).then(result => { if (active) setProducts(result.products) })
+      .catch(cause => { if (active) setError(errorMessage(cause)) })
+    return () => { active = false }
+  }, [autoRevision, lastSearch])
 
   async function find(event: FormEvent) {
     event.preventDefault()
     if (searching) return
     setSearching(true); setError('')
-    try { setProducts((await posApi.products(search)).products) } catch (cause) { setError(errorMessage(cause)) }
+    try { setProducts((await posApi.products(search)).products); setLastSearch(search) } catch (cause) { setError(errorMessage(cause)) }
     finally { setSearching(false) }
   }
   function add(product: Product): ScannerAddResult {

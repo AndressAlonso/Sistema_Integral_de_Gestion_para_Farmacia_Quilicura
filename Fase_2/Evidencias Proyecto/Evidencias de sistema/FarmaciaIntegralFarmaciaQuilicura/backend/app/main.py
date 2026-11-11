@@ -74,6 +74,8 @@ def create_app(
                 else create_session_factory(engine)
             )
 
+            factory.configure(info={"runtime_settings": settings})
+
             app.state.users = PostgresUserRepository(factory)
             app.state.branches = PostgresBranchRepository(factory)
             app.state.catalog = PostgresCatalogRepository(factory)

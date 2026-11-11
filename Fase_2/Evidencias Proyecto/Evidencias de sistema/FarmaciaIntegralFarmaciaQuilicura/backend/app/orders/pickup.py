@@ -24,6 +24,10 @@ from app.payments.models import PagoMercadoPago
 
 def paid_sale(db, order):
     sale = db.scalar(select(Venta).where(Venta.pedido_id == order.id))
+    if sale is not None and sale.medio_pago == "SIMULADO":
+        settings = db.info.get("runtime_settings")
+        return sale if (settings is not None and settings.app_environment == "development"
+                        and settings.order_payment_simulation and sale.total == order.total) else None
     payments = list(db.scalars(select(PagoMercadoPago).where(PagoMercadoPago.pedido_id == order.id)))
     if (sale is None or sale.total != order.total or not payments
             or not any(p.estado == "approved" and not p.revision_motivo and p.total == order.total for p in payments)

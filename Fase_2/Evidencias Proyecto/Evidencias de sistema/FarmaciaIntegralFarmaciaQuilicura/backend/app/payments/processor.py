@@ -127,7 +127,7 @@ def release_reservations(db, order):
     order.estado = "CANCELADO"
 
 
-def register_sale(db, order, approved):
+def register_sale(db, order, approved, *, simulated=False):
     # La restricción UNIQUE(pedido_id) refuerza la exclusión por pedido.
     existing = db.scalar(select(Venta).where(Venta.pedido_id == order.id))
     if existing:
@@ -141,7 +141,7 @@ def register_sale(db, order, approved):
         usuario_id=None,
         sucursal_id=order.sucursal_id,
         fecha=approved,
-        medio_pago="MERCADOPAGO",
+        medio_pago="SIMULADO" if simulated else "MERCADOPAGO",
         subtotal=subtotal,
         descuento=subtotal - order.total,
         total=order.total,
@@ -302,6 +302,12 @@ class PaymentNotificationService:
                         raise PaymentVerificationError()
                     register_sale(db, order, approved)
                     generate_order_transfers(db, order)
+                    # Se confirma en la misma transacción; el envío ocurre fuera del webhook.
+                    from app.orders.fulfillment_models import CorreoPedido
+                    if db.scalar(select(CorreoPedido.id).where(
+                        CorreoPedido.pedido_id == order.id, CorreoPedido.tipo == "CONFIRMACION",
+                    )) is None:
+                        db.add(CorreoPedido(pedido_id=order.id, tipo="CONFIRMACION"))
             elif (
                 status in {"rejected", "cancelled"} and order.estado == "PENDIENTE_PAGO"
             ):

@@ -43,3 +43,12 @@ export function orderAccess(orderId: string): OrderAttempt | null {
       && /^[0-9a-f]{64}$/i.test(data.request_token) ? data : null
   } catch { return null }
 }
+
+export function guestOrderAccess(): OrderAttempt | null {
+  const id = sessionStorage.getItem('sigfq_guest_order')
+  return id ? orderAccess(id) : null
+}
+
+export function rememberGuestOrder(orderId: string) {
+  sessionStorage.setItem('sigfq_guest_order', orderId)
+}

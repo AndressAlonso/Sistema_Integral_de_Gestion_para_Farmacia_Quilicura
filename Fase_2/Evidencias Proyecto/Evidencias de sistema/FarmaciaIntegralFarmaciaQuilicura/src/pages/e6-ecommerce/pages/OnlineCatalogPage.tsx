@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import StoreIcon from '../components/StoreIcon'
 import { useEffect, useState, type FormEvent } from 'react'
 import PublicHeader from '../components/PublicHeader'
@@ -17,6 +18,7 @@ export default function OnlineCatalogPage() {
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
 
+  useAutoRefresh(() => setAttempt(n => n + 1), !loading)
   useEffect(() => {
     let active = true
     void listBranches().then(data => { if (active) setBranches(data) }).catch(cause => {
@@ -28,7 +30,7 @@ export default function OnlineCatalogPage() {
   useEffect(() => {
     let active = true
     void listProducts(query, branchId).then(data => {
-      if (active) { setProducts(data); setLoading(false) }
+      if (active) { setProducts(data); setLoading(false); setError('') }
     }).catch(cause => {
       if (active) { setError(cause instanceof Error ? cause.message : 'No pudimos consultar el catálogo.'); setLoading(false) }
     })

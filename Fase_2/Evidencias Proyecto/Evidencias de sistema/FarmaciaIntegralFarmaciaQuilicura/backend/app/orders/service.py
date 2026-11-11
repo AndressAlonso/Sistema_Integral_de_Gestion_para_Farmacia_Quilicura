@@ -5,7 +5,7 @@ from hmac import compare_digest
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select, text, tuple_
+from sqlalchemy import func, select, text, tuple_
 
 from app.customers.models import Cliente
 from app.ecommerce.cart.service import CartService
@@ -108,6 +108,25 @@ class OrderService:
                 name, email = customer.nombre, customer.correo
             elif data.guest:
                 name, email = data.guest.name, str(data.guest.email)
+                email = email.strip().lower()
+                db.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                    {"key": "guest-order:" + email},
+                )
+                active = db.scalar(select(PedidoOnline.id).where(
+                    PedidoOnline.cliente_id.is_(None),
+                    func.lower(PedidoOnline.correo) == email,
+                    PedidoOnline.estado.not_in(("CANCELADO", "RETIRADO")),
+                ).limit(1))
+                if active:
+                    raise HTTPException(409, "No puedes crear otro pedido como invitado con este correo mientras exista uno activo. Revisa tu pedido en la pestaña original o contacta a la farmacia.")
+                completed = db.scalar(select(PedidoOnline.id).where(
+                    PedidoOnline.cliente_id.is_(None),
+                    func.lower(PedidoOnline.correo) == email,
+                    PedidoOnline.estado == "RETIRADO",
+                ).limit(1))
+                if completed:
+                    raise HTTPException(409, "Ya completaste tu compra como invitado. Inicia sesión o crea una cuenta para volver a comprar.")
             else:
                 raise HTTPException(
                     422, "Ingresa nombre y correo para continuar como invitado."

@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
@@ -124,6 +125,7 @@ export default function InventoryMovementHistory({
       return
     }
 
+    setAppliedFilters(filters)
     setLoading(true)
     setError('')
 
@@ -147,17 +149,20 @@ export default function InventoryMovementHistory({
     }
   }
 
+  const [appliedFilters, setAppliedFilters] = useState({ inventoryId: '', movementType: '', startDate: '', endDate: '' })
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading)
   useEffect(() => {
     let active = true
-    void listInventoryMovements({}).then(records => {
-      if (active) setMovements(records)
+    void listInventoryMovements({ inventoryId: appliedFilters.inventoryId || undefined, movementType: appliedFilters.movementType || undefined, startDate: appliedFilters.startDate || undefined, endDate: appliedFilters.endDate || undefined }).then(records => {
+      if (active) { setMovements(records); setError('') }
     }).catch(cause => {
       if (active) setError(getErrorMessage(cause))
     }).finally(() => {
       if (active) setLoading(false)
     })
     return () => { active = false }
-  }, [])
+  }, [autoRevision, appliedFilters])
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,

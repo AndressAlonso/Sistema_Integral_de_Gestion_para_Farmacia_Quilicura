@@ -102,6 +102,7 @@ class AdjustmentRepository:
             "branch_id": row.sucursal_id,
             "user_id": row.usuario_id,
             "reason": row.motivo,
+            "reason_type": row.tipo_motivo,
             "created_at": row.creado_en,
             "items": [
                 {

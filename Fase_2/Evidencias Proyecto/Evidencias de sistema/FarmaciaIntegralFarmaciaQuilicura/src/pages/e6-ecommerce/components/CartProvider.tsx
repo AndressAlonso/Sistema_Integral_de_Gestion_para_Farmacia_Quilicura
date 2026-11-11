@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { CartContext } from '../hooks/useCart'
 import { validateCart } from '../services/cart.api'
@@ -30,11 +31,12 @@ export default function CartProvider({ children }: { children: ReactNode }) {
   const current = useRef(draft)
   const adding = useRef(false)
   const mounted = useRef(false)
+  useAutoRefresh(() => setAttempt(n => n + 1), !loading && draft.items.length > 0)
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   useEffect(() => {
     try { sessionStorage.setItem(key, JSON.stringify(draft)) } catch { /* El carrito continúa en memoria si el navegador bloquea almacenamiento. */ }
     let active = true
-    void validateCart(draft).then(result => { if (active) setValidation(result) })
+    void validateCart(draft).then(result => { if (active) { setValidation(result); setError('') } })
       .catch(cause => { if (active) setError(cause instanceof Error ? cause.message : 'No pudimos validar el carrito.') })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }

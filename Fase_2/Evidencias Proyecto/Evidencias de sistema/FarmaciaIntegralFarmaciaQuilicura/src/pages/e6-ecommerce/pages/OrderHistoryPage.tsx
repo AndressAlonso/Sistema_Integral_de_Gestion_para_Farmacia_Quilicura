@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import { useEffect, useState } from 'react'
 import { useCustomerSession } from '../hooks/useCustomerSession'
 import OrderHistoryState from '../components/OrderHistoryState'
@@ -12,6 +13,7 @@ export default function OrderHistoryPage() {
   const [cursor, setCursor] = useState<string | undefined>()
   const [retry, setRetry] = useState(0)
   const [result, setResult] = useState<{ owner: string; cursor?: string; data?: OrderHistoryResponse; error?: string }>()
+  useAutoRefresh(() => setRetry(n => n + 1), !!session.customer && !session.loading)
   useEffect(() => {
     if (!session.customer || session.loading || session.error) return
     let active = true

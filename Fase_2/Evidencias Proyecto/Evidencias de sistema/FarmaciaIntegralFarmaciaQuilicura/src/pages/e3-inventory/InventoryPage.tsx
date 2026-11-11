@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import {
   useEffect,
@@ -57,6 +58,8 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading && !operation)
   useEffect(() => {
     let active = true
 
@@ -67,6 +70,7 @@ export default function InventoryPage() {
         }
 
         setInventoryRecords(records)
+        setError('')
         setLoading(false)
       })
       .catch((cause: unknown) => {
@@ -107,7 +111,7 @@ export default function InventoryPage() {
     return () => {
       active = false
     }
-  }, [navigate, revision])
+  }, [navigate, revision, autoRevision])
 
   const branches = useMemo(() => {
     const uniqueBranches = new Map<
