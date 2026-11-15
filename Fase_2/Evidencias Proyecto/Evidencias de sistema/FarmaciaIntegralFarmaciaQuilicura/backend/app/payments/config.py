@@ -22,6 +22,7 @@ class PaymentSettings(BaseSettings):
     webhook_secret: SecretStr | None = None
     public_base_url: str | None = None
     checkout_enabled: bool = False
+    test_buyer_id: str | None = None
 
     @field_validator("access_token")
     @classmethod

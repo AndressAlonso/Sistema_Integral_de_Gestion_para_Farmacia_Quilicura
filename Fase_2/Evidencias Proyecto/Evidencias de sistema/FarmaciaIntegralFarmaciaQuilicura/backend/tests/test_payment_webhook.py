@@ -308,3 +308,19 @@ def test_branch_with_paid_or_review_order_cannot_close(webhook, status):
         db.get(PedidoOnline, UUID(webhook.payment_order["request_id"])).estado = status
     with pytest.raises(BranchPendingOrders):
         PostgresBranchRepository(webhook.factory).deactivate(webhook.cart_ids["destination"])
+def test_accepts_configured_test_buyer_with_live_mode(webhook, monkeypatch):
+    monkeypatch.setenv("MP_TEST_BUYER_ID", "123456")
+    webhook.mp_data["live_mode"] = True
+    webhook.mp_data["payer"] = {"id": 123456}
+
+    assert notify(webhook).status_code == 200
+    assert state(webhook)["order"] == "PAGADO"
+
+
+def test_rejects_other_buyer_with_live_mode(webhook, monkeypatch):
+    monkeypatch.setenv("MP_TEST_BUYER_ID", "123456")
+    webhook.mp_data["live_mode"] = True
+    webhook.mp_data["payer"] = {"id": 654321}
+
+    assert notify(webhook).status_code == 422
+    assert state(webhook)["order"] == "PENDIENTE_PAGO"

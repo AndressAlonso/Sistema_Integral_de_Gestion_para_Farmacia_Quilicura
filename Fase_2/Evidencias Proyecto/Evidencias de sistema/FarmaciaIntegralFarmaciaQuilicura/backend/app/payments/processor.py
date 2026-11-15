@@ -50,11 +50,18 @@ def amount(value):
     return result
 
 
-def verify_payment(data, payment_id, account):
+def verify_payment(data, payment_id, account, *, test_buyer_id=None):
     if (
         str(data.get("id")) != payment_id
         or data.get("currency_id") != "CLP"
-        or data.get("live_mode") is not False
+        or (
+            data.get("live_mode") is not False
+            and not (
+                data.get("live_mode") is True
+                and test_buyer_id
+                and str((data.get("payer") or {}).get("id")) == test_buyer_id
+            )
+        )
         or account.get("site_id") != "MLC"
         or "test_user" not in account.get("tags", [])
         or not account.get("id")
@@ -172,6 +179,7 @@ class PaymentNotificationService:
     def __init__(self, factory, settings, client=None):
         self.factory = factory
         self.client = client or MercadoPagoClient(settings)
+        self.test_buyer_id = settings.test_buyer_id
 
     def process(self, payment_id):
         try:
@@ -194,7 +202,12 @@ class PaymentNotificationService:
                 {"key": "mp-payment:" + payment_id},
             )
             data = self.client.get_payment(payment_id)
-            status, total, updated, approved = verify_payment(data, payment_id, account)
+            status, total, updated, approved = verify_payment(
+                data,
+                payment_id,
+                account,
+                test_buyer_id=self.test_buyer_id,
+            )
             try:
                 order_id = UUID(data.get("external_reference", ""))
             except (ValueError, TypeError, AttributeError):
