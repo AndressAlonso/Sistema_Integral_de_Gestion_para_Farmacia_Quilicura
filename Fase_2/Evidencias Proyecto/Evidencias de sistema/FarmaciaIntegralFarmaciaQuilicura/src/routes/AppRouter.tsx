@@ -83,6 +83,7 @@ export default function AppRouter() {
 
         <Route element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
+            <Route path="/session" element={<AdminHome />} />
             <Route path="/admin/reports" element={<Navigate to="/admin/dashboard" replace />} />
             {adminNavigation.map((item) => (
               <Route
