@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="2880" viewBox="0 0 1700 2880">
+<rect width="100%" height="100%" fill="white"/>
+<text x="35" y="38" font-family="Arial" font-size="28" fill="#24425D" text-anchor="start" font-weight="bold">Diagrama de secuencia — Compra online SIGFQ</text>
+<rect x="10" y="80" width="220" height="65" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="120" y="109" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle" font-weight="bold">Cliente / invitado</text>
+<line x1="120" y1="145" x2="120" y2="2810" stroke="#A0B0BD" stroke-width="1.5" stroke-dasharray="6 6"/>
+<rect x="350" y="80" width="220" height="65" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="460" y="109" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle" font-weight="bold">Tienda web</text>
+<line x1="460" y1="145" x2="460" y2="2810" stroke="#A0B0BD" stroke-width="1.5" stroke-dasharray="6 6"/>
+<rect x="710" y="80" width="220" height="65" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="820" y="109" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle" font-weight="bold">Backend SIGFQ</text>
+<line x1="820" y1="145" x2="820" y2="2810" stroke="#A0B0BD" stroke-width="1.5" stroke-dasharray="6 6"/>
+<rect x="1070" y="80" width="220" height="65" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="1180" y="109" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle" font-weight="bold">PostgreSQL</text>
+<line x1="1180" y1="145" x2="1180" y2="2810" stroke="#A0B0BD" stroke-width="1.5" stroke-dasharray="6 6"/>
+<rect x="1440" y="80" width="220" height="65" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="1550" y="109" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle" font-weight="bold">Mercado Pago</text>
+<text x="1550" y="132" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle" font-weight="bold">Modo de pruebas</text>
+<line x1="1550" y1="145" x2="1550" y2="2810" stroke="#A0B0BD" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="120" y1="200" x2="460" y2="200" stroke="#24425D" stroke-width="1.5"/>
+<line x1="460" y1="200" x2="450" y2="194" stroke="#24425D" stroke-width="1.5"/>
+<line x1="460" y1="200" x2="450" y2="206" stroke="#24425D" stroke-width="1.5"/>
+<text x="290.0" y="194" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Selecciona productos y sucursal</text>
+<line x1="460" y1="260" x2="820" y2="260" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="260" x2="810" y2="254" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="260" x2="810" y2="266" stroke="#24425D" stroke-width="1.5"/>
+<text x="640.0" y="254" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Confirma carrito y solicita pedido</text>
+<line x1="820" y1="320" x2="1180" y2="320" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="320" x2="1170" y2="314" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="320" x2="1170" y2="326" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="290" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Valida productos, precios</text>
+<text x="1000.0" y="313" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">y disponibilidad</text>
+<line x1="1180" y1="380" x2="820" y2="380" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="820" y1="380" x2="830" y2="374" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="380" x2="830" y2="386" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="374" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Datos para validar la compra</text>
+<line x1="30" y1="410" x2="1670" y2="410" stroke="#24425D" stroke-width="1.5"/>
+<line x1="30" y1="410" x2="30" y2="570" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1670" y1="410" x2="1670" y2="570" stroke="#24425D" stroke-width="1.5"/>
+<line x1="30" y1="570" x2="1670" y2="570" stroke="#24425D" stroke-width="1.5"/>
+<rect x="30" y="410" width="85" height="29" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="42" y="431" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">break</text>
+<text x="130" y="432" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">[Receta, stock insuficiente u otra validación fallida]</text>
+<line x1="820" y1="480" x2="460" y2="480" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="460" y1="480" x2="470" y2="474" stroke="#24425D" stroke-width="1.5"/>
+<line x1="460" y1="480" x2="470" y2="486" stroke="#24425D" stroke-width="1.5"/>
+<text x="640.0" y="474" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Rechaza la creación del pedido</text>
+<line x1="460" y1="540" x2="120" y2="540" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="120" y1="540" x2="130" y2="534" stroke="#24425D" stroke-width="1.5"/>
+<line x1="120" y1="540" x2="130" y2="546" stroke="#24425D" stroke-width="1.5"/>
+<text x="290.0" y="534" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Informa error para corregir el carrito</text>
+<line x1="820" y1="635" x2="1180" y2="635" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="635" x2="1170" y2="629" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="635" x2="1170" y2="641" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="605" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Crea pedido PENDIENTE_PAGO</text>
+<text x="1000.0" y="628" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">y reserva stock en una transacción</text>
+<line x1="1180" y1="695" x2="820" y2="695" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="820" y1="695" x2="830" y2="689" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="695" x2="830" y2="701" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="689" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Pedido y reservas registrados</text>
+<line x1="820" y1="755" x2="460" y2="755" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="460" y1="755" x2="470" y2="749" stroke="#24425D" stroke-width="1.5"/>
+<line x1="460" y1="755" x2="470" y2="761" stroke="#24425D" stroke-width="1.5"/>
+<text x="640.0" y="749" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Devuelve pedido y acceso privado</text>
+<line x1="460" y1="815" x2="820" y2="815" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="815" x2="810" y2="809" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="815" x2="810" y2="821" stroke="#24425D" stroke-width="1.5"/>
+<text x="640.0" y="809" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Solicita checkout del pedido</text>
+<line x1="820" y1="875" x2="1180" y2="875" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="875" x2="1170" y2="869" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="875" x2="1170" y2="881" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="869" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Registra intento de checkout</text>
+<line x1="820" y1="935" x2="1550" y2="935" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="935" x2="1540" y2="929" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="935" x2="1540" y2="941" stroke="#24425D" stroke-width="1.5"/>
+<text x="1185.0" y="929" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Crea preferencia de pago</text>
+<line x1="1550" y1="995" x2="820" y2="995" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="820" y1="995" x2="830" y2="989" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="995" x2="830" y2="1001" stroke="#24425D" stroke-width="1.5"/>
+<text x="1185.0" y="989" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Devuelve enlace de checkout</text>
+<line x1="820" y1="1055" x2="1180" y2="1055" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="1055" x2="1170" y2="1049" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="1055" x2="1170" y2="1061" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="1049" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Guarda preferencia y enlace</text>
+<line x1="820" y1="1115" x2="460" y2="1115" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="460" y1="1115" x2="470" y2="1109" stroke="#24425D" stroke-width="1.5"/>
+<line x1="460" y1="1115" x2="470" y2="1121" stroke="#24425D" stroke-width="1.5"/>
+<text x="640.0" y="1109" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Devuelve enlace de pago</text>
+<line x1="460" y1="1175" x2="1550" y2="1175" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="1175" x2="1540" y2="1169" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="1175" x2="1540" y2="1181" stroke="#24425D" stroke-width="1.5"/>
+<text x="1005.0" y="1169" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Abre checkout para que el cliente pague</text>
+<line x1="1550" y1="1235" x2="820" y2="1235" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="1235" x2="830" y2="1229" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="1235" x2="830" y2="1241" stroke="#24425D" stroke-width="1.5"/>
+<text x="1185.0" y="1229" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Notifica evento por webhook</text>
+<line x1="820" y1="1290" x2="915" y2="1290" stroke="#24425D" stroke-width="1.5"/>
+<line x1="915" y1="1290" x2="915" y2="1315" stroke="#24425D" stroke-width="1.5"/>
+<line x1="915" y1="1315" x2="820" y2="1315" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="1315" x2="830" y2="1309" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="1315" x2="830" y2="1321" stroke="#24425D" stroke-width="1.5"/>
+<text x="930" y="1300" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start">Valida firma; rechaza</text>
+<text x="930" y="1323" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start">notificaciones inválidas</text>
+<line x1="820" y1="1370" x2="1550" y2="1370" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="1370" x2="1540" y2="1364" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="1370" x2="1540" y2="1376" stroke="#24425D" stroke-width="1.5"/>
+<text x="1185.0" y="1364" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Consulta pago por ID</text>
+<line x1="1550" y1="1430" x2="820" y2="1430" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="820" y1="1430" x2="830" y2="1424" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="1430" x2="830" y2="1436" stroke="#24425D" stroke-width="1.5"/>
+<text x="1185.0" y="1424" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Devuelve datos y estado del pago</text>
+<line x1="820" y1="1485" x2="915" y2="1485" stroke="#24425D" stroke-width="1.5"/>
+<line x1="915" y1="1485" x2="915" y2="1510" stroke="#24425D" stroke-width="1.5"/>
+<line x1="915" y1="1510" x2="820" y2="1510" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="1510" x2="830" y2="1504" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="1510" x2="830" y2="1516" stroke="#24425D" stroke-width="1.5"/>
+<text x="930" y="1495" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start">Verifica importe, cuenta,</text>
+<text x="930" y="1518" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start">pedido e idempotencia</text>
+<line x1="30" y1="1550" x2="1670" y2="1550" stroke="#24425D" stroke-width="1.5"/>
+<line x1="30" y1="1550" x2="30" y2="2130" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1670" y1="1550" x2="1670" y2="2130" stroke="#24425D" stroke-width="1.5"/>
+<line x1="30" y1="2130" x2="1670" y2="2130" stroke="#24425D" stroke-width="1.5"/>
+<rect x="30" y="1550" width="85" height="29" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="42" y="1571" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">alt</text>
+<text x="130" y="1572" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">[Pago aprobado válido y pedido pendiente]</text>
+<line x1="820" y1="1635" x2="1180" y2="1635" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="1635" x2="1170" y2="1629" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="1635" x2="1170" y2="1641" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="1581" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Registra pago y venta única; marca PAGADO.</text>
+<text x="1000.0" y="1604" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Conserva reservas; genera transferencias si hacen falta</text>
+<text x="1000.0" y="1627" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">y encola correo de confirmación.</text>
+<line x1="1180" y1="1695" x2="820" y2="1695" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="820" y1="1695" x2="830" y2="1689" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="1695" x2="830" y2="1701" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="1689" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Confirma transacción</text>
+<line x1="30" y1="1730" x2="1670" y2="1730" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<text x="45" y="1756" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">[Pago rechazado o cancelado; pedido aún pendiente]</text>
+<line x1="820" y1="1810" x2="1180" y2="1810" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="1810" x2="1170" y2="1804" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="1810" x2="1170" y2="1816" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="1780" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Registra resultado, cancela pedido</text>
+<text x="1000.0" y="1803" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">y libera reservas; no crea venta</text>
+<line x1="30" y1="1840" x2="1670" y2="1840" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<text x="45" y="1866" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">[Pago pendiente / en proceso / autorizado]</text>
+<line x1="820" y1="1915" x2="1180" y2="1915" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="1915" x2="1170" y2="1909" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="1915" x2="1170" y2="1921" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="1885" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Registra estado; mantiene pedido pendiente</text>
+<text x="1000.0" y="1908" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">y reserva temporal</text>
+<line x1="30" y1="1950" x2="1670" y2="1950" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<text x="45" y="1976" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">[Notificación repetida o caso especial]</text>
+<line x1="820" y1="2030" x2="1180" y2="2030" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="2030" x2="1170" y2="2024" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="2030" x2="1170" y2="2036" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="2000" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Evita duplicados; registra revisión</text>
+<text x="1000.0" y="2023" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">o aplica el estado que corresponda</text>
+<line x1="820" y1="2190" x2="1550" y2="2190" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="1550" y1="2190" x2="1540" y2="2184" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="2190" x2="1540" y2="2196" stroke="#24425D" stroke-width="1.5"/>
+<text x="1185.0" y="2184" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Acusa recibo tras procesar la notificación</text>
+<line x1="30" y1="2220" x2="1670" y2="2220" stroke="#24425D" stroke-width="1.5"/>
+<line x1="30" y1="2220" x2="30" y2="2510" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1670" y1="2220" x2="1670" y2="2510" stroke="#24425D" stroke-width="1.5"/>
+<line x1="30" y1="2510" x2="1670" y2="2510" stroke="#24425D" stroke-width="1.5"/>
+<rect x="30" y="2220" width="85" height="29" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="42" y="2241" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">opt</text>
+<text x="130" y="2242" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">[Reserva vencida y pedido todavía pendiente: tarea periódica]</text>
+<line x1="820" y1="2295" x2="1550" y2="2295" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="2295" x2="1540" y2="2289" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1550" y1="2295" x2="1540" y2="2301" stroke="#24425D" stroke-width="1.5"/>
+<text x="1185.0" y="2289" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Consulta pagos antes de cancelar</text>
+<line x1="1550" y1="2355" x2="820" y2="2355" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="820" y1="2355" x2="830" y2="2349" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="2355" x2="830" y2="2361" stroke="#24425D" stroke-width="1.5"/>
+<text x="1185.0" y="2349" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Devuelve pagos encontrados</text>
+<line x1="820" y1="2445" x2="1180" y2="2445" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="2445" x2="1170" y2="2439" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1180" y1="2445" x2="1170" y2="2451" stroke="#24425D" stroke-width="1.5"/>
+<text x="1000.0" y="2391" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Procesa pagos; si confirma que procede,</text>
+<text x="1000.0" y="2414" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">cancela y libera reservas.</text>
+<text x="1000.0" y="2437" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Ante error o incertidumbre, reintenta.</text>
+<line x1="30" y1="2540" x2="1670" y2="2540" stroke="#24425D" stroke-width="1.5"/>
+<line x1="30" y1="2540" x2="30" y2="2775" stroke="#24425D" stroke-width="1.5"/>
+<line x1="1670" y1="2540" x2="1670" y2="2775" stroke="#24425D" stroke-width="1.5"/>
+<line x1="30" y1="2775" x2="1670" y2="2775" stroke="#24425D" stroke-width="1.5"/>
+<rect x="30" y="2540" width="85" height="29" fill="#E8F1F9" stroke="#24425D" stroke-width="1.5"/>
+<text x="42" y="2561" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">loop</text>
+<text x="130" y="2562" font-family="Arial" font-size="18" fill="#24425D" text-anchor="start" font-weight="bold">[Consulta del estado desde la tienda]</text>
+<line x1="460" y1="2610" x2="820" y2="2610" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="2610" x2="810" y2="2604" stroke="#24425D" stroke-width="1.5"/>
+<line x1="820" y1="2610" x2="810" y2="2616" stroke="#24425D" stroke-width="1.5"/>
+<text x="640.0" y="2604" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Consulta estado del pedido</text>
+<line x1="820" y1="2670" x2="460" y2="2670" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="460" y1="2670" x2="470" y2="2664" stroke="#24425D" stroke-width="1.5"/>
+<line x1="460" y1="2670" x2="470" y2="2676" stroke="#24425D" stroke-width="1.5"/>
+<text x="640.0" y="2664" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Devuelve estado registrado</text>
+<line x1="460" y1="2735" x2="120" y2="2735" stroke="#24425D" stroke-width="1.5" stroke-dasharray="6 6"/>
+<line x1="120" y1="2735" x2="130" y2="2729" stroke="#24425D" stroke-width="1.5"/>
+<line x1="120" y1="2735" x2="130" y2="2741" stroke="#24425D" stroke-width="1.5"/>
+<text x="290.0" y="2729" font-family="Arial" font-size="18" fill="#24425D" text-anchor="middle">Muestra resultado actualizado</text>
+</svg>
