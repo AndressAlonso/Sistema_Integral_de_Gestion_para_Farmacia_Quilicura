@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { orderStates, type OrderSort } from './orders.api'
@@ -44,10 +45,10 @@ export default function OrderColumnFilter({ states, sort, onApply, column = 'sta
       setPosition({ top: Math.max(8, Math.min(bounds.bottom + 8, window.innerHeight - 420)), left: Math.max(8, Math.min(bounds.right - 300, window.innerWidth - 308)) })
     }}>{title} <span aria-hidden="true">{activeSort.endsWith('_asc') ? '↑' : activeSort.endsWith('_desc') ? '↓' : '⌄'}</span>{states.length < allStates.length && <span className="orders-filter-count">{states.length}</span>}</button>
     {position && createPortal(<div ref={panel} id={id} role="dialog" aria-label={label} className="orders-state-popover" style={position}>
-      <label className="orders-sort-label">Ordenar<select value={ordering} onChange={e => setOrdering(e.target.value as OrderSort)}>
+      <label className="orders-sort-label">Ordenar<SelectMenu value={ordering} onChange={e => setOrdering(e.target.value as OrderSort)}>
         {sort !== 'newest' && !sort.startsWith(column) && <option value={sort}>Mantener orden actual</option>}
         <option value="newest">Más recientes primero</option><option value={`${column}_asc`}>{column === 'state' ? 'Estado: inicio → fin' : 'Nombre: A → Z'}</option><option value={`${column}_desc`}>{column === 'state' ? 'Estado: fin → inicio' : 'Nombre: Z → A'}</option>
-      </select></label>
+      </SelectMenu></label>
       <fieldset><legend>{column === 'state' ? 'Mostrar estados' : 'Mostrar sucursales'}</legend>{allStates.map(state => <label key={state}><input type="checkbox" checked={selected.includes(state)} onChange={e => setSelected(current => e.target.checked ? [...current, state] : current.filter(value => value !== state))} />{options[state]}</label>)}</fieldset>
       <button type="button" className="orders-filter-all" onClick={() => setSelected(selected.length === allStates.length ? [] : allStates)}>{selected.length === allStates.length ? 'Desmarcar todos' : 'Seleccionar todos'}</button>
       {!selected.length && <p role="status">{column === 'state' ? 'Selecciona al menos un estado.' : 'Selecciona al menos una sucursal.'}</p>}

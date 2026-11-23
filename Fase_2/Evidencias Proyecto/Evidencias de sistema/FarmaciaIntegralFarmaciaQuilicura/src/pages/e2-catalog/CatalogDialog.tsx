@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import Notification from '../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import ProductPhoto from './ProductPhoto'
@@ -79,9 +80,9 @@ export default function CatalogDialog({ mode, categories, product, busy, error, 
           <label>Nombre *<input name="name" defaultValue={product?.name ?? ''} required maxLength={150} autoComplete="off" /></label>
           {isProduct && <>
             <label>SKU *<input name="sku" defaultValue={product?.sku ?? ''} required maxLength={64} autoComplete="off" /><small>Identificador único del producto.</small></label>
-            <label>Categoría *<select name="category_id" required defaultValue={product?.category_id ?? ''}><option value="" disabled>Selecciona una categoría</option>
+            <label>Categoría *<SelectMenu name="category_id" required defaultValue={product?.category_id ?? ''}><option value="" disabled>Selecciona una categoría</option>
               {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
-            </select></label>
+            </SelectMenu></label>
             <label>{product ? 'Precio actual (CLP)' : 'Precio inicial (CLP) *'}<input name="price" required={!product} readOnly={!!product} defaultValue={product?.price ?? ''} inputMode="decimal" placeholder="Ej.: 1990,00" autoComplete="off" /><small>{product ? 'El cambio de precio se gestiona por separado con su historial.' : 'Sin separador de miles. Hasta dos decimales.'}</small></label>
             <label className="catalog-full">Descripción<textarea name="description" defaultValue={product?.description ?? ''} rows={3} /></label>
             <h3 className="users-form-section">Imagen principal</h3>

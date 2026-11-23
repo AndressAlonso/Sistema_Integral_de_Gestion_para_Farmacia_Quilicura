@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
@@ -239,7 +240,7 @@ export default function InventoryMovementHistory({
             Producto y sucursal
           </label>
 
-          <select
+          <SelectMenu
             id="movement-inventory"
             value={inventoryId}
             onChange={(event) => {
@@ -261,7 +262,7 @@ export default function InventoryMovementHistory({
                 {record.branch_name}
               </option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
 
         <div className="monitoring-field">
@@ -269,7 +270,7 @@ export default function InventoryMovementHistory({
             Tipo de cambio
           </label>
 
-          <select
+          <SelectMenu
             id="movement-type"
             value={movementType}
             onChange={(event) => {
@@ -320,7 +321,7 @@ export default function InventoryMovementHistory({
             <option value="RECEPCION">
               Recepción de productos
             </option>
-          </select>
+          </SelectMenu>
         </div>
 
         <div className="monitoring-field">

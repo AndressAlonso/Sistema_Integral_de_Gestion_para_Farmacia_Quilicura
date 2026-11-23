@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import Notification from '../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../../services/http'
@@ -58,19 +59,19 @@ export default function TransferForm({ options, userId, onClose, onSaved }: {
       {pending && <p className="transfer-notice" role="status">Solicitud pendiente de confirmación. Reintenta con los mismos datos para evitar una segunda reserva.</p>}
       <fieldset className="users-fields" disabled={busy || pending}>
         <legend className="sr-only">Datos de transferencia</legend>
-        <label>Sucursal origen *<select required value={data.origin_id} onChange={event => setData({ ...data, origin_id: event.target.value, destination_id: '', items: [{ product_id: '', quantity: 1 }] })}>
+        <label>Sucursal origen *<SelectMenu required value={data.origin_id} onChange={event => setData({ ...data, origin_id: event.target.value, destination_id: '', items: [{ product_id: '', quantity: 1 }] })}>
           <option value="">Selecciona el origen</option>{options.branches.filter(b => options.origin_ids.includes(b.id)).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select></label>
-        <label>Sucursal destino *<select required value={data.destination_id} onChange={event => setData({ ...data, destination_id: event.target.value })}>
+        </SelectMenu></label>
+        <label>Sucursal destino *<SelectMenu required value={data.destination_id} onChange={event => setData({ ...data, destination_id: event.target.value })}>
           <option value="">Selecciona el destino</option>{options.branches.filter(b => b.id !== data.origin_id).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select></label>
+        </SelectMenu></label>
         <h3 className="users-form-section">Productos y unidades</h3>
         <p className="transfer-wide">Solo se ofrece stock con lotes activos, no vencidos y sin reservar. Los lotes se asignan automáticamente por FEFO.</p>
         {data.origin_id && !stock.length && <p className="transfer-notice transfer-wide">No hay unidades transferibles en este origen. Revisa su inventario, lotes y reservas.</p>}
         {data.items.map((item, index) => <div className="transfer-item transfer-wide" key={index}>
-          <label>Producto {index + 1} *<select required value={item.product_id} onChange={event => setData({ ...data, items: data.items.map((i, n) => n === index ? { ...i, product_id: event.target.value } : i) })}>
+          <label>Producto {index + 1} *<SelectMenu required value={item.product_id} onChange={event => setData({ ...data, items: data.items.map((i, n) => n === index ? { ...i, product_id: event.target.value } : i) })}>
             <option value="">Selecciona un producto</option>{stock.map(p => <option key={p.product_id} value={p.product_id}>{p.product_name} · {p.sku} · {p.available} disponibles</option>)}
-          </select></label>
+          </SelectMenu></label>
           <label>Cantidad *<input required type="number" min={1} max={1000000} step={1} value={item.quantity || ''} onChange={event => setData({ ...data, items: data.items.map((i, n) => n === index ? { ...i, quantity: Number(event.target.value) } : i) })} /></label>
           {data.items.length > 1 && <button type="button" className="users-button" onClick={() => setData({ ...data, items: data.items.filter((_, n) => n !== index) })}>Quitar producto {index + 1}</button>}
         </div>)}

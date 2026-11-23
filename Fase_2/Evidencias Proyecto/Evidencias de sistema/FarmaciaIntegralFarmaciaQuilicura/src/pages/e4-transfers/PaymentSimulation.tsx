@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import { useEffect, useRef, useState } from 'react'
@@ -64,10 +65,10 @@ export default function PaymentSimulation({ onChanged }: { onChanged: () => void
     <p>Prueba el flujo completo sin cobrar dinero: registra una venta simulada, genera los traslados necesarios y permite preparar y retirar mediante QR. La entrega descuenta stock local. También permite completar simulaciones anteriores.</p>
     {error && <Notification message={error} kind="error" />}
     {message && <Notification message={message} kind="success" />}
-    <label>Pedido de prueba<select value={selected} disabled={busy} onChange={event => { setSelected(event.target.value); setConfirmed(false); setMessage('') }}>
+    <label>Pedido de prueba<SelectMenu value={selected} disabled={busy} onChange={event => { setSelected(event.target.value); setConfirmed(false); setMessage('') }}>
       <option value="">Selecciona un pedido</option>
       {orders.map(row => <option key={row.id} value={row.id}>{row.number} · {row.pickup_branch.name}</option>)}
-    </select></label>
+    </SelectMenu></label>
     {!orders.length && <p>No hay pedidos pendientes. Crea uno desde la tienda y actualiza esta sección.</p>}
     {order && <div><p>{order.pickup_branch.name} · Total: {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP' }).format(Number(order.total))}</p>
       <ul>{order.items.map((item, index) => <li key={index}>{item.name} · {item.quantity} unidades</li>)}</ul>

@@ -1,0 +1,18 @@
+.select-menu { display:inline-flex; position:relative; min-width:0; max-width:100%; vertical-align:middle; }
+.select-menu-native { position:absolute!important; width:1px!important; height:1px!important; opacity:0!important; padding:0!important; pointer-events:none; clip-path:inset(50%); }
+.select-menu .select-menu-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-width:0; min-height:44px; margin:0; padding:10px 13px; border:1px solid #dfd5e6; border-radius:10px; background:#fff; color:#44354e; font:inherit; font-size:14px; font-weight:500; text-align:left; cursor:pointer; }
+.select-menu-trigger > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.select-menu-trigger svg { width:18px; height:18px; flex-shrink:0; color:#702582; }
+.select-menu .select-menu-trigger:hover:not(:disabled), .select-menu .select-menu-trigger[aria-expanded=true] { border-color:#a16cb2; background:#faf6fc; }
+.select-menu .select-menu-trigger:focus-visible { outline:3px solid #bd92cc; outline-offset:2px; }
+.select-menu .select-menu-trigger:disabled { opacity:.55; cursor:not-allowed; }
+.select-menu-panel { position:fixed; inset:auto; margin:0; padding:6px; box-sizing:border-box; overflow-y:auto; overscroll-behavior:contain; border:1px solid #e3d5e9; border-radius:12px; background:#fff; color:#44354e; box-shadow:0 12px 36px #39214826; font:14px/1.4 system-ui,sans-serif; }
+.select-menu-panel [role=option] { display:flex; justify-content:space-between; gap:12px; padding:11px 12px; border-radius:7px; cursor:pointer; overflow-wrap:anywhere; }
+.select-menu-panel [role=option]:hover, .select-menu-panel .is-active { background:#f4edf8; }
+.select-menu-panel [aria-selected=true] { color:#702582; font-weight:650; }
+.select-menu-panel [aria-disabled=true] { opacity:.45; cursor:not-allowed; }
+label > .select-menu { width:100%; }
+@media(prefers-reduced-motion:no-preference) { .select-menu-panel:popover-open { animation:select-enter .12s ease-out; } @keyframes select-enter { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } } }
+.select-menu:has(.select-menu-error) { flex-wrap:wrap; }
+.select-menu-error { flex-basis:100%; color:#ad2f40; font-size:12px; margin-top:4px; }
+.select-menu .select-menu-trigger[aria-invalid=true] { border-color:#ad2f40; }

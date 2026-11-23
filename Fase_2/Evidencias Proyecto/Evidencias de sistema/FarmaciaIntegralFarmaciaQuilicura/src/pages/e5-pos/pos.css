@@ -153,3 +153,41 @@
   .pos-sales-page .pos-search button { padding-inline: 12px; }
   .pos-sales-page .pos-empty { min-height: 160px; padding: 24px 14px; }
 }
+.pos-sales-page .pos-header-actions { margin-left:auto; justify-content:flex-end; }
+.pos-sales-page .pos-header-actions > :is(button, a) { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; white-space:nowrap; }
+.pos-header-actions > :is(button, a) svg { flex-shrink:0; }
+.pos-sales-page .pos-cart-tools { display:flex; flex-wrap:nowrap; gap:6px; margin-left:auto; }
+.pos-sales-page .pos-cart-tools > :is(button,a) { width:36px; min-height:36px; height:36px; padding:8px; border-radius:9px; }
+.pos-cart > .pos-section-title { gap:10px; }
+.pos-cart > .pos-section-title .pos-unit-count { flex-basis:100%; }
+@media (pointer:coarse) { .pos-sales-page .pos-cart-tools > :is(button,a) { width:44px; height:44px; min-height:44px; } }
+.pos-sales-page .pos-cart-tools > :is(button,a) svg { width:22px; height:22px; }
+/* Desktop POS: a narrower catalog that uses the remaining screen height. */
+@media (min-width: 1101px) {
+  .admin-shell .pos-sales-page .pos-workspace {
+    grid-template-columns: minmax(320px, .85fr) minmax(370px, 1.15fr);
+  }
+  .admin-shell .pos-sales-page .pos-catalog-panel {
+    height: calc(100dvh - 126px);
+    min-height: 420px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+  .admin-shell .pos-sales-page .pos-catalog-panel > :not(.pos-products) { flex-shrink: 0; }
+  .admin-shell .pos-sales-page .pos-catalog-panel .pos-products {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+    scrollbar-width: thin;
+  }
+  .admin-shell .pos-sales-page .pos-catalog-panel .pos-products:has(> .pos-empty) {
+    display: flex;
+    align-items: stretch;
+  }
+  .admin-shell .pos-sales-page .pos-catalog-panel .pos-empty { flex: 1; }
+  .admin-shell .pos-sales-page .pos-product { flex-wrap: wrap; }
+  .admin-shell .pos-sales-page .pos-product-pricing { flex: 1 1 100%; min-width: 0; }
+  .admin-shell .pos-sales-page .pos-product-pricing .pos-price { text-align: left; }
+}

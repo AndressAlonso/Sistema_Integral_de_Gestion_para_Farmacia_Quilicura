@@ -1,3 +1,4 @@
+import SelectMenu from '../../../components/SelectMenu'
 import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import { useEffect, useState } from 'react'
@@ -33,7 +34,7 @@ export default function AssignedUsers({ branchId }: { branchId: string }) {
     {users.length > 0 ? <>
       <div className="branches-assigned-filters">
         <label>Buscar usuario<input type="search" placeholder="Nombre o correo" value={query} onChange={event => setQuery(event.target.value)} /></label>
-        <label>Estado<select value={status} onChange={event => setStatus(event.target.value)}><option value="">Todos</option><option value="active">Activos</option><option value="inactive">Inactivos</option></select></label>
+        <label>Estado<SelectMenu value={status} onChange={event => setStatus(event.target.value)}><option value="">Todos</option><option value="active">Activos</option><option value="inactive">Inactivos</option></SelectMenu></label>
       </div>
       <p role="status">{visible.length} {visible.length === 1 ? 'resultado' : 'resultados'}</p>
       <div className="branches-table-scroll" tabIndex={0} role="region" aria-label="Usuarios asignados a la sucursal">

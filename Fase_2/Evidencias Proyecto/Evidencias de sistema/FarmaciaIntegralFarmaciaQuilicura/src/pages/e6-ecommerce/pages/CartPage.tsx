@@ -1,3 +1,4 @@
+import SelectMenu from '../../../components/SelectMenu'
 import StoreIcon from '../components/StoreIcon'
 import Notification from '../../../components/Notification'
 import { useEffect, useState } from 'react'
@@ -35,7 +36,7 @@ export default function CartPage() {
     <section className="cart-summary" aria-label="Resumen del carrito">
     <h2 className="store-label-icon"><StoreIcon name="receipt" />Resumen de tu pedido</h2>
     <fieldset className="cart-pickup"><legend><span className="store-label-icon"><StoreIcon name="location" />¿Dónde quieres retirar?</span></legend>
-      {branches.length <= 4 ? <div className="cart-pickup-options">{branches.map(branch => <label key={branch.id} className={draft.pickup_branch_id === branch.id ? 'is-selected' : ''}><input type="radio" name="pickup-branch" value={branch.id} checked={draft.pickup_branch_id === branch.id} onChange={() => selectBranch(branch.id)} /><span><strong>{branch.name}</strong><small>{branch.address}</small></span></label>)}</div> : <select aria-label="Sucursal de retiro" value={draft.pickup_branch_id ?? ''} onChange={event => selectBranch(event.target.value)}><option value="">Selecciona una sucursal</option>{branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select>}
+      {branches.length <= 4 ? <div className="cart-pickup-options">{branches.map(branch => <label key={branch.id} className={draft.pickup_branch_id === branch.id ? 'is-selected' : ''}><input type="radio" name="pickup-branch" value={branch.id} checked={draft.pickup_branch_id === branch.id} onChange={() => selectBranch(branch.id)} /><span><strong>{branch.name}</strong><small>{branch.address}</small></span></label>)}</div> : <SelectMenu aria-label="Sucursal de retiro" value={draft.pickup_branch_id ?? ''} onChange={event => selectBranch(event.target.value)}><option value="">Selecciona una sucursal</option>{branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</SelectMenu>}
       {missingBranch && <p className="cart-error">La sucursal guardada ya no está disponible. Elige otra.</p>}
       {branchError && <p role="alert" className="cart-error">{branchError}</p>}
     </fieldset>

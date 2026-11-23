@@ -1,3 +1,4 @@
+import SelectMenu from '../../../components/SelectMenu'
 import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
@@ -134,8 +135,8 @@ export default function UsersPage() {
       </p>
       <div className="users-filters">
         <label className="users-search"><span className="sr-only">Buscar por nombre o correo</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6" /><path d="m15 15 5 5" /></svg><input type="search" placeholder="Buscar por nombre o correo…" value={query} onChange={event => setQuery(event.target.value)} /></label>
-        <label><span className="sr-only">Filtrar por rol</span><select value={role} onChange={event => setRole(event.target.value)}><option value="">Todos los roles</option>{data.roles.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
-        <label><span className="sr-only">Filtrar por estado</span><select value={status} onChange={event => setStatus(event.target.value)}><option value="">Todos los estados</option><option value="active">Activos</option><option value="inactive">Inactivos</option></select></label>
+        <label><span className="sr-only">Filtrar por rol</span><SelectMenu value={role} onChange={event => setRole(event.target.value)}><option value="">Todos los roles</option>{data.roles.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</SelectMenu></label>
+        <label><span className="sr-only">Filtrar por estado</span><SelectMenu value={status} onChange={event => setStatus(event.target.value)}><option value="">Todos los estados</option><option value="active">Activos</option><option value="inactive">Inactivos</option></SelectMenu></label>
         {data.current_user.permissions.includes('roles.gestionar') && <button type="button" className="users-button" onClick={() => setShowRoles(true)}><ActionIcon name="edit" />Gestionar roles</button>}
         <button className="users-button primary" disabled={!data.current_user.permissions.includes('roles.gestionar')} title={!data.current_user.permissions.includes('roles.gestionar') ? 'Se requiere permiso para asignar roles' : undefined} onClick={() => openEditor({ mode: 'create', user: null })}><ActionIcon name="add" />Nuevo usuario</button>
       </div>

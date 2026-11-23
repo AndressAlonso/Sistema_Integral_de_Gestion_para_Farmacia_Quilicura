@@ -72,13 +72,13 @@ export default function PromotionsPage() {
     finally { setBusy(false) }
   }
   return <main className="promotions-page">
-    <header className="promotions-heading app-page-heading"><div><p className="promotions-kicker">CATÁLOGO</p><h1>Promociones</h1><p>Configura descuentos por producto o categoría.</p></div><button type="button" className="promotions-primary" disabled={loading || busy} onClick={create}>Nueva promoción</button></header>
+    
     <p className="promotions-alert">Los descuentos no se acumulan. Se aplica únicamente la promoción vigente que deje el menor precio final. Un precio fijo es el precio final del producto.</p>
     {error && !editorOpen && <Notification message={error} kind="error" />}
     {notice && <Notification message={notice} kind="info" />}
     {loading ? <p role="status">Cargando promociones…</p> : <>
       {editorOpen && <PromotionDialog form={form} setForm={setForm} products={products} categories={categories} editing={!!editing} busy={busy} error={error} onSubmit={submit} onClose={closeEditor} />}
-      <section className="promotions-panel"><h2>Promociones registradas</h2>{rows.length === 0 ? <p>No hay promociones registradas.</p> : <div className="promotions-table"><table className="responsive-admin-table"><thead><tr><th>Nombre y destino</th><th>Descuento</th><th>Vigencia</th><th>Estado</th><th>Acción</th></tr></thead><PaginatedTableBody total={rows.length} columns={5} labels={["Nombre y destino", "Descuento", "Vigencia", "Estado", "Acción"]}>{rows.map(row => <tr key={row.id}>
+      <section className="promotions-panel"><div className="admin-panel-toolbar"><h2>Promociones registradas</h2><button type="button" className="promotions-primary" disabled={loading || busy} onClick={create}>Nueva promoción</button></div>{rows.length === 0 ? <p>No hay promociones registradas.</p> : <div className="promotions-table"><table className="responsive-admin-table"><thead><tr><th>Nombre y destino</th><th>Descuento</th><th>Vigencia</th><th>Estado</th><th>Acción</th></tr></thead><PaginatedTableBody total={rows.length} columns={5} labels={["Nombre y destino", "Descuento", "Vigencia", "Estado", "Acción"]}>{rows.map(row => <tr key={row.id}>
         <td><strong>{row.name}</strong><small>{row.product_id ? products.find(item => item.id === row.product_id)?.name ?? 'Producto' : categories.find(item => item.id === row.category_id)?.name ?? 'Categoría'}</small></td>
         <td>{row.kind === 'PERCENT' ? `${row.value}%` : `$${Number(row.value).toLocaleString('es-CL')}`}<small>{row.kind === 'PERCENT' ? 'Porcentaje' : 'Precio final fijo'}</small></td>
         <td>{new Date(row.starts_at).toLocaleString('es-CL')}<small>Hasta {new Date(row.ends_at).toLocaleString('es-CL')}</small></td><td>{status(row)}</td><td><button disabled={busy} onClick={() => edit(row)}>Editar</button></td>

@@ -1,3 +1,4 @@
+import SelectMenu from '../../../components/SelectMenu'
 import Notification from '../../../components/Notification'
 import PasswordInput from '../../../components/PasswordInput'
 import ActionIcon from '../ActionIcon'
@@ -360,7 +361,7 @@ export default function UserDialog({
             <label>
               Sucursal
 
-              <select
+              <SelectMenu
                 value={branchId}
                 required
                 onChange={(event) => {
@@ -389,7 +390,7 @@ export default function UserDialog({
                     {branch.name}
                   </option>
                 ))}
-              </select>
+              </SelectMenu>
 
               {currentInactiveBranch && (
                 <small>

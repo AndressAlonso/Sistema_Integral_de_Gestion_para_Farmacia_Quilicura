@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import useAutoRefresh from '../../hooks/useAutoRefresh'
 import { chileToday } from '../../utils/businessDate'
 import Notification from '../../components/Notification'
@@ -132,16 +133,16 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
       {pending && <p className="transfer-notice" role="status">Hay una operación pendiente de confirmación. Conservamos sus datos para que puedas reintentar sin duplicarla.</p>}
       <fieldset className="users-fields" disabled={busy || pending || loading || !options}>
         <legend className="sr-only">Tipo de operación y respaldo</legend>
-        <label>Tipo de operación<select value={draft.kind} onChange={event => { update({ kind: event.target.value as Operation, rows: [] }); setLotId('') }}>
+        <label>Tipo de operación<SelectMenu value={draft.kind} onChange={event => { update({ kind: event.target.value as Operation, rows: [] }); setLotId('') }}>
           {(options?.can_receive || receipt) && <option value="receipt" disabled={!options?.can_receive}>Recepción de mercadería</option>}
           {(options?.can_adjust || !receipt) && <option value="adjustment" disabled={!options?.can_adjust}>Ajuste de inventario</option>}
-        </select></label>
-        <label>Sucursal *<select required value={draft.branchId} onChange={event => { update({ branchId: event.target.value, rows: [] }); setLotId('') }}>
+        </SelectMenu></label>
+        <label>Sucursal *<SelectMenu required value={draft.branchId} onChange={event => { update({ branchId: event.target.value, rows: [] }); setLotId('') }}>
           <option value="">Selecciona una sucursal</option>{options?.branches.map(branch => <option key={branch.id} value={branch.id}>{branch.name}</option>)}
-        </select></label>
+        </SelectMenu></label>
         {receipt ? <>
           <label>Proveedor *<input required maxLength={150} value={draft.supplier} onChange={event => update({ supplier: event.target.value })} /></label>
-          <label>Documento<select value={draft.documentType} onChange={event => update({ documentType: event.target.value as 'GUIA' | 'FACTURA' })}><option value="FACTURA">Factura</option><option value="GUIA">Guía de despacho</option></select></label>
+          <label>Documento<SelectMenu value={draft.documentType} onChange={event => update({ documentType: event.target.value as 'GUIA' | 'FACTURA' })}><option value="FACTURA">Factura</option><option value="GUIA">Guía de despacho</option></SelectMenu></label>
           <label>Número de documento *<input required maxLength={80} value={draft.documentNumber} onChange={event => update({ documentNumber: event.target.value })} /></label>
           <label>Fecha del documento *<input type="date" required max={today} value={draft.documentDate} onChange={event => update({ documentDate: event.target.value })} /></label>
         </> : <div className="transfer-wide adjustment-reason">
@@ -157,11 +158,11 @@ export default function StockOperationDialog({ userId, canReceive, initialOperat
           <label>{draft.reasonType === 'OTRO' ? 'Explica el motivo *' : 'Observación (opcional)'}<textarea required={draft.reasonType === 'OTRO'} maxLength={220} placeholder={draft.reasonType === 'OTRO' ? 'Describe por qué necesitas ajustar las existencias' : 'Añade un detalle si es necesario'} value={draft.reason} onChange={event => update({ reason: event.target.value })} /></label>
         </div>}
         {receipt && <p className="transfer-wide">Selecciona productos del catálogo, aunque no tengan existencias. Ingresa las unidades recibidas y el lote y vencimiento del envase. Al confirmar se registrarán los lotes y se sumarán las cantidades; no necesitas crearlos antes en Inventario.</p>}
-        <label className="transfer-wide">{receipt ? 'Producto del catálogo' : 'Producto y lote que quieres ajustar'}<select disabled={!draft.branchId} value={lotId} onChange={event => setLotId(event.target.value)}>
+        <label className="transfer-wide">{receipt ? 'Producto del catálogo' : 'Producto y lote que quieres ajustar'}<SelectMenu disabled={!draft.branchId} value={lotId} onChange={event => setLotId(event.target.value)}>
           <option value="">{draft.branchId ? 'Selecciona un producto' : 'Primero selecciona una sucursal'}</option>{receipt
             ? products.map(product => <option key={product.id} value={product.id}>{product.name} · {product.sku}</option>)
             : available.filter(lot => !draft.rows.some(row => row.lot.id === lot.id)).map(lot => <option key={lot.id} value={lot.id}>{lot.product_name} · {lot.sku} · Lote {lot.number} · {lot.available ?? lot.quantity} disponibles{lot.expiration_date <= today ? ' · Vencido' : ''}{lot.is_active === false ? ' · Deshabilitado' : ''}{lot.product_active === false ? ' · Producto inactivo' : ''}</option>)}
-        </select></label>
+        </SelectMenu></label>
         <button type="button" className="users-button" disabled={!lotId || draft.rows.length >= 100} onClick={() => {
           if (receipt) {
             const product = products.find(item => item.id === lotId)

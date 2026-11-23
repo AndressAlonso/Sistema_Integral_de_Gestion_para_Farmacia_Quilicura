@@ -1,0 +1,88 @@
+/* E6-H1: navigation and merchandising using the public catalog's real categories and prices. */
+.online-shop .store-discovery { margin-top: 20px; scroll-margin-top: 16px; }
+.store-browse { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 12px 0; border-bottom: 1px solid #e3dce7; }
+.online-shop .store-browse button, .online-shop .store-change-category { display: inline-flex; gap: 8px; align-items: center; background: transparent; color: #594760; padding: 10px 14px; font-size: 13px; }
+.online-shop .store-browse button:hover, .online-shop .store-browse button[aria-pressed="true"] { background: #f0e6f5; color: #702582; }
+.online-shop .store-browse .store-category-toggle { background: #702582; color: white; }
+.store-browse a { display: inline-flex; align-items: center; gap: 7px; margin-left: auto; font-size: 12px; color: #526b37; text-decoration: none; }
+.store-count { min-width: 22px; padding: 0 4px; border-radius: 20px; background: #e9d9ef; color: #702582; text-align: center; }
+.store-category-panel { padding: 20px; border: 1px solid #e3dce7; border-radius: 0 0 16px 16px; background: #fff; }
+.store-category-panel[hidden] { display: none; }
+.store-category-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.online-shop .store-category-heading button { background: #f5f0f8; color: #702582; padding: 8px 16px; font-size: 20px; }
+.store-category-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 8px; }
+.online-shop .store-category-options button { display: flex; align-items: center; gap: 10px; text-align: left; background: #faf8fb; border: 1px solid #e8e0ed; color: #594760; overflow-wrap: anywhere; }
+.online-shop .store-category-options button[aria-pressed="true"], .online-shop .store-category-options button:hover { background: #f0e6f5; border-color: #9a6eab; color: #702582; }
+.store-welcome { display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px; align-items: center; padding: clamp(24px, 4vw, 46px); margin: 22px 0 32px; border-radius: 24px; background: linear-gradient(110deg, #f2e9f6 0%, #faf7fc 58%, #eaf2e1 100%); border: 1px solid #ece3ef; }
+.store-welcome h1 { color: #35223f; font-size: clamp(30px, 4vw, 46px); line-height: 1.15; letter-spacing: -.045em; margin: 10px 0 16px; }
+.store-welcome h1 span { color: #702582; }
+.store-welcome p { color: #6c5d75; font-size: 14px; }
+.store-welcome .online-eyebrow { font-size: 11px; color: #702582; }
+.store-welcome .online-shop-cta { margin-top: 10px; }
+.store-welcome-card { position: relative; padding: 26px; border-radius: 20px; background: #fffdf9; border: 1px solid #e0e9d6; box-shadow: 0 12px 30px #45305208; }
+.store-welcome-card strong { display: block; font-size: clamp(24px, 3vw, 34px); line-height: 1.2; letter-spacing: -.03em; color: #536e38; }
+.store-welcome-card > span:last-of-type { display: block; font-size: 13px; color: #67745b; margin-top: 16px; max-width: 240px; }
+.store-welcome-icon { display: grid; place-items: center; float: right; width: 48px; height: 48px; border-radius: 15px; background: #edf4e4; color: #536e38; }
+.store-welcome-icon svg { width: 26px; height: 26px; }
+.store-welcome-card a { display: inline-block; color: #702582; font-size: 13px; font-weight: 600; margin-top: 18px; text-underline-offset: 4px; }
+.store-catalog-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.store-catalog-heading h2 { font-size: clamp(22px, 3vw, 28px); margin: 4px 0; line-height: 1.3; letter-spacing: -.03em; }
+.store-catalog-heading p { font-size: 13px; color: #73667a; margin: 6px 0; }
+.store-catalog-heading .online-eyebrow { font-size: 10px; color: #702582; letter-spacing: .1em; }
+.online-shop .store-change-category { border: 1px solid #dfd2e5; }
+.online-shop .online-photo { height: 180px; }
+.store-how { margin-top: 40px; padding: 24px; border: 1px solid #e4dce8; border-radius: 18px; background: #faf8fb; scroll-margin-top: 24px; }
+.store-how h2 { font-size: 22px; margin: 4px 0 20px; }
+.store-how .online-eyebrow { font-size: 10px; }
+.store-how ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; list-style: none; padding: 0; margin: 0; }
+.store-how li { display: flex; gap: 12px; align-items: flex-start; }
+.store-how li > svg { color: #702582; margin-top: 4px; }
+.store-how strong { font-size: 13px; }
+.store-how li p { font-size: 12px; color: #73667a; margin: 4px 0 0; }
+@media (max-width: 750px) {
+  .store-browse a { margin-left: 0; width: 100%; padding: 4px 12px; }
+  .store-welcome { gap: 20px; padding: 26px; }
+  .store-welcome-card { padding: 18px; }
+  .store-how ol { grid-template-columns: 1fr; gap: 18px; }
+}
+@media (max-width: 550px) {
+  .store-welcome { grid-template-columns: 1fr; padding: 24px; }
+  .store-welcome-card { display: none; }
+  .online-shop .store-browse button { padding: 9px 10px; font-size: 12px; gap: 5px; }
+  .store-category-panel { padding: 14px; }
+  .store-catalog-heading { gap: 8px; }
+}
+.store-search-row { display: flex; align-items: center; gap: 24px; padding: 4px 0 12px; }
+.store-search-bar { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; background: #fff; border: 1px solid #dcd2e2; border-radius: 30px; padding: 5px 6px 5px 18px; transition: border-color .15s ease, box-shadow .15s ease; }
+.store-search-bar:focus-within { border-color: #87549a; box-shadow: 0 0 0 3px #70258210; }
+.store-search-bar > svg { color: #917c9b; }
+.store-search-bar input { flex: 1; min-width: 0; width: 100%; padding: 10px 0; min-height: 40px; border: 0; background: transparent; color: #352b3b; font: inherit; font-size: 15px; }
+.store-search-bar input::placeholder { color: #84758c; }
+.online-shop .store-search-bar input:focus-visible { outline: none; }
+.online-shop .store-search-bar button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 24px; min-height: 42px; padding: 10px 20px; font-size: 13px; }
+.store-search-bar button > svg { display: none; }
+@media (max-width: 750px) {
+  .store-search-row { flex-direction: column; align-items: stretch; gap: 8px; }
+}
+@media (max-width: 550px) {
+  .store-search-bar { gap: 8px; padding-left: 14px; }
+  .store-search-bar input { font-size: 16px; }
+  .online-shop .store-search-bar button { width: 44px; min-height: 44px; padding: 10px; flex-shrink: 0; }
+  .store-search-bar button > svg { display: block; }
+  .store-search-bar button > span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .store-search-bar { transition: none; } }
+.store-branch-menu { position: relative; width: 260px; flex-shrink: 0; z-index: 5; }
+.online-shop .store-branch-trigger { display: flex; align-items: center; gap: 10px; width: 100%; background: transparent; color: #702582; text-align: left; padding: 8px 12px; border-radius: 14px; }
+.online-shop .store-branch-trigger:hover, .online-shop .store-branch-trigger[aria-expanded="true"] { background: #f0e6f5; }
+.store-branch-trigger > span:first-of-type { flex: 1; min-width: 0; }
+.store-branch-trigger small { display: block; font-size: 11px; font-weight: 400; color: #817389; }
+.store-branch-trigger strong { display: block; font-size: 13px; overflow-wrap: anywhere; }
+.store-branch-options { position: absolute; right: 0; top: calc(100% + 8px); width: 320px; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 8px; background: #fff; border: 1px solid #e3d6e9; border-radius: 16px; box-shadow: 0 14px 40px #40204e24; max-height: 320px; overflow-y: auto; }
+.store-branch-options > p { margin: 8px 10px 12px; font-size: 11px; color: #817389; }
+.online-shop .store-branch-options button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px; text-align: left; color: #594760; background: white; border-radius: 10px; }
+.online-shop .store-branch-options button:hover { background: #f8f4fa; }
+.online-shop .store-branch-options button[aria-pressed="true"] { color: #702582; background: #f0e6f5; }
+.store-branch-options strong { font-size: 13px; overflow-wrap: anywhere; }
+.store-branch-options small { display: block; font-size: 11px; font-weight: 400; color: #817389; margin-top: 3px; }
+@media (max-width: 750px) { .store-branch-menu { width: 100%; } .store-branch-options { width: 100%; } }

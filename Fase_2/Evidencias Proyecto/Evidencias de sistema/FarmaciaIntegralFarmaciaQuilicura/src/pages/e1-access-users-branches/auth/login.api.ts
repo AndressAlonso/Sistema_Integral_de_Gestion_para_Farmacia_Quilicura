@@ -4,6 +4,7 @@ export { ApiError as AuthError } from '../../../services/http'
 
 export interface AuthSession {
   user: { id: string; email: string; name: string; permissions: string[]; roles: string[]; branch_id: string; branch_name: string }
+  started_at?: string
   expires_at: string
 }
 

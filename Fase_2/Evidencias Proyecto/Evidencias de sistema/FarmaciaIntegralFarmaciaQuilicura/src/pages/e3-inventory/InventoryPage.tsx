@@ -221,20 +221,10 @@ export default function InventoryPage() {
   return (
     <div className="inventory-app">
       <main className="inventory-main">
-        <header className="inventory-title-row inventory-heading app-page-heading">
-          <div>
-            <p className="eyebrow">CONTROL DE EXISTENCIAS</p>
-            <h1>Inventario</h1>
-            <p className="inventory-description">Consulta cantidades por sucursal, revisa lotes y registra entradas o ajustes.</p>
-          </div>
-          <div className="inventory-heading-actions">
-            {canAdjust && <button type="button" className="users-button" onClick={() => setOperation('adjustment')}>Ajustar inventario</button>}
-            {canReceive && <button type="button" className="users-button primary" onClick={() => setOperation('receipt')}>+ Crear lotes / recibir mercadería</button>}
-          </div>
-        </header>
+        
         {message && <Notification message={message} kind="success" />}
 
-        <nav
+<div className="admin-panel-toolbar inventory-toolbar">        <nav
           className="inventory-tabs"
           aria-label="Secciones del inventario"
           role="tablist"
@@ -298,7 +288,11 @@ export default function InventoryPage() {
           >
             Historial
           </button>
-        </nav>
+        </nav><div className="inventory-heading-actions">
+            {canAdjust && <button type="button" className="users-button" onClick={() => setOperation('adjustment')}>Ajustar inventario</button>}
+            {canReceive && <button type="button" className="users-button primary" onClick={() => setOperation('receipt')}>+ Crear lotes / recibir mercadería</button>}
+          </div>
+        </div>
 
         {activeTab === 'availability' && (
           <div

@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
@@ -259,12 +260,17 @@ export default function CatalogPage() {
 
   return (
     <div className="users-page catalog-page">
-      <header className="users-heading catalog-heading app-page-heading">
-        <div>
-          <h1>Gestión de productos</h1>
-          <p>Administra el catálogo, las categorías y los códigos de barras de la farmacia.</p>
-        </div>
-        <div className="catalog-heading-actions">
+
+
+      {message && <Notification message={message} kind="success" />}
+      {notice && <Notification message={notice} kind="info" />}
+      {!categories.length && (
+        <p className="catalog-notice" role="status">
+          Crea una categoría para comenzar a registrar productos.
+        </p>
+      )}
+
+      <div className="users-filters"><div className="catalog-heading-actions">
           <button className="users-button" onClick={() => open('category')}>
             + Nueva categoría
           </button>
@@ -276,17 +282,6 @@ export default function CatalogPage() {
             + Nuevo producto
           </button>
         </div>
-      </header>
-
-      {message && <Notification message={message} kind="success" />}
-      {notice && <Notification message={notice} kind="info" />}
-      {!categories.length && (
-        <p className="catalog-notice" role="status">
-          Crea una categoría para comenzar a registrar productos.
-        </p>
-      )}
-
-      <div className="users-filters">
         <label className="users-search">
           <span className="sr-only">Buscar productos</span>
           <svg
@@ -307,21 +302,21 @@ export default function CatalogPage() {
 
         <label>
           <span className="sr-only">Filtrar por categoría</span>
-          <select value={categoryId} onChange={event => setCategoryId(event.target.value)}>
+          <SelectMenu value={categoryId} onChange={event => setCategoryId(event.target.value)}>
             <option value="">Todas las categorías</option>
             {categories.map(category => (
               <option key={category.id} value={category.id}>{category.name}</option>
             ))}
-          </select>
+          </SelectMenu>
         </label>
 
         <label>
           <span className="sr-only">Filtrar por estado</span>
-          <select value={status} onChange={event => setStatus(event.target.value)}>
+          <SelectMenu value={status} onChange={event => setStatus(event.target.value)}>
             <option value="">Todos los estados</option>
             <option value="active">Activos</option>
             <option value="inactive">Inactivos</option>
-          </select>
+          </SelectMenu>
         </label>
 
         {(query || categoryId || status) && (

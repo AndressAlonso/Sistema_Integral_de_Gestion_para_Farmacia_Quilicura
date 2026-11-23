@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import useAutoRefresh from '../../hooks/useAutoRefresh'
 import { chileToday } from '../../utils/businessDate'
 import Notification from '../../components/Notification'
@@ -474,7 +475,7 @@ export default function ExpirationAlertsPanel({
             Producto
           </label>
 
-          <select
+          <SelectMenu
             id="expiration-product"
             value={productId}
             onChange={(event) => {
@@ -494,7 +495,7 @@ export default function ExpirationAlertsPanel({
                 {product.name} ({product.sku})
               </option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
 
         <div className="monitoring-field">
@@ -502,7 +503,7 @@ export default function ExpirationAlertsPanel({
             Sucursal
           </label>
 
-          <select
+          <SelectMenu
             id="expiration-branch"
             value={branchId}
             onChange={(event) => {
@@ -522,7 +523,7 @@ export default function ExpirationAlertsPanel({
                 {branch.name} ({branch.code})
               </option>
             ))}
-          </select>
+          </SelectMenu>
         </div>
 
         <div className="monitoring-field">
@@ -530,7 +531,7 @@ export default function ExpirationAlertsPanel({
             Periodo de vencimiento
           </label>
 
-          <select
+          <SelectMenu
             id="expiration-period"
             value={period}
             onChange={(event) => {
@@ -566,7 +567,7 @@ export default function ExpirationAlertsPanel({
             <option value="EXPIRED">
               Solo lotes vencidos
             </option>
-          </select>
+          </SelectMenu>
         </div>
 
         <div className="monitoring-field">
@@ -574,7 +575,7 @@ export default function ExpirationAlertsPanel({
             Estado del vencimiento
           </label>
 
-          <select
+          <SelectMenu
             id="expiration-status"
             value={statusFilter}
             onChange={(event) => {
@@ -608,7 +609,7 @@ export default function ExpirationAlertsPanel({
             <option value="SEGUIMIENTO">
               Sin alerta (más de 30 días)
             </option>
-          </select>
+          </SelectMenu>
         </div>
 
         <button
