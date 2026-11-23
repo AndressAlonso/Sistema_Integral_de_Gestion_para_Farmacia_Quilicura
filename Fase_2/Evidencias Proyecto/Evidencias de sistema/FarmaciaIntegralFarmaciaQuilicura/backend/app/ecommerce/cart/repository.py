@@ -1,5 +1,6 @@
 from sqlalchemy import func, select, text
 
+from app.business_time import business_date
 from app.models import (
     InventarioSucursal,
     LoteInventario,
@@ -19,7 +20,6 @@ class CartRepository:
             # Una sola instantánea consistente; además PostgreSQL prohíbe escrituras.
             if not db.connection().in_nested_transaction():
                 db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
-            today = db.scalar(select(func.current_date()))
             branches = list(db.scalars(select(Sucursal).where(Sucursal.activa.is_(True))))
             products = list(db.scalars(select(Producto).where(Producto.id.in_(product_ids))))
             inventories = list(db.scalars(select(InventarioSucursal).where(
@@ -31,4 +31,5 @@ class CartRepository:
             reservations = TransferRepository.reserved_lots_for(db, inventory_ids)
             promotions = PromotionRepository.pricing(db)
             now = db.scalar(select(func.current_timestamp()))
+            today = business_date(now)
             return today, branches, products, inventories, lots, reservations, promotions, now

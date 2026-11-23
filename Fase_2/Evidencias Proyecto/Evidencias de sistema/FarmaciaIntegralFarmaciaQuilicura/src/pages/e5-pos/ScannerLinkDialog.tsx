@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Notification from '../../components/Notification'
 import { QRCodeSVG } from 'qrcode.react'
 
 import { ApiError } from '../../services/http'
@@ -235,9 +236,7 @@ export default function ScannerLinkDialog({
           )}
 
           {(error || connectionError) && (
-            <p className="pos-error" role="alert">
-              {error || connectionError}
-            </p>
+            <Notification message={error || connectionError} kind="error" />
           )}
 
           <div className="scanner-link-actions">

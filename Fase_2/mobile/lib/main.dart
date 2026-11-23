@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
           foregroundColor: Color(0xFF26332D),
-          centerTitle: false,
+          centerTitle: true,
           elevation: 0,
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -70,6 +70,8 @@ class MyApp extends StatelessWidget {
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             foregroundColor: pharmacyPurple,
+            minimumSize: const Size.fromHeight(48),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             side: const BorderSide(color: Color(0xFFDFD7E4)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
@@ -328,219 +330,185 @@ class _ScannerPageState extends State<ScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 60,
-        centerTitle: false,
-        leadingWidth: 64,
-        leading: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Image.asset(
-            'assets/isotipo-farmacia.png',
-            fit: BoxFit.contain,
-            excludeFromSemantics: true,
-          ),
-        ),
-        title: const Text(
-          'Escáner de productos',
-          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
-        ),
-      ),
+      appBar: AppBar(title: const Text('Escáner de productos')),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.science_outlined, size: 18, color: pharmacyPurple),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Lectura de códigos · POS',
-                      style: TextStyle(color: pharmacyPurple, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _linked ? Icons.link : Icons.link_off,
-                        color: _linked ? pharmacyGreen : pharmacyPurple,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _linked ? 'POS vinculado' : 'Vincula una caja',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: _connectionBusy ? null : _toggleConnection,
-                        child: Text(
-                          _connectionBusy
-                              ? 'Espera…'
-                              : _linked
-                              ? 'Desvincular'
-                              : 'Vincular',
-                        ),
-                      ),
-                    ],
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Center(
+                  child: Image.asset(
+                    'assets/logo-farmacia.png',
+                    width: 220,
+                    height: 88,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'Farmacia Quilicura',
                   ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFFE3E9E5)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x08000000),
-                        blurRadius: 20,
-                        offset: Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final compact = constraints.maxHeight < 280;
-
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Flexible(
-                            child: Center(
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Container(
-                                  width: compact ? 84 : 112,
-                                  height: compact ? 84 : 112,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF3EDF6),
-                                    borderRadius: BorderRadius.circular(28),
-                                  ),
-                                  child: Icon(
-                                    Icons.qr_code_scanner_rounded,
-                                    size: compact ? 44 : 58,
-                                    color: pharmacyPurple,
-                                  ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Venta en caja',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Vincula este dispositivo y envía productos al POS.',
+                  style: TextStyle(color: Color(0xFF526159), height: 1.5),
+                ),
+                const SizedBox(height: 20),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              _linked ? Icons.link : Icons.link_off,
+                              color: pharmacyGreen,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _linked ? 'POS vinculado' : 'Vincula una caja',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _linked
+                              ? 'Ya puedes escanear productos para esta caja.'
+                              : 'Abre Vincular sesión en el POS del computador y escanea su QR.',
+                          style: const TextStyle(
+                            height: 1.5,
+                            color: Color(0xFF526159),
                           ),
-                          SizedBox(height: compact ? 12 : 22),
-                          const Text(
-                            'Escanea un producto',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFF26332D),
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        ),
+                        const SizedBox(height: 14),
+                        OutlinedButton.icon(
+                          onPressed: _connectionBusy ? null : _toggleConnection,
+                          icon: Icon(_linked ? Icons.link_off : Icons.qr_code),
+                          label: Text(
+                            _connectionBusy
+                                ? 'Espera…'
+                                : _linked
+                                ? 'Desvincular'
+                                : 'Vincular con el POS',
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _linked
-                                ? 'Coloca el código frente a la cámara.'
-                                : 'Vincula una caja para comenzar.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFF748078),
-                              fontSize: 14,
-                              height: 1.4,
-                            ),
-                          ),
-                          SizedBox(height: compact ? 16 : 26),
-                          FilledButton.icon(
-                            onPressed: _linked && !_connectionBusy
-                                ? _openCamera
-                                : null,
-                            icon: const Icon(
-                              Icons.camera_alt_outlined,
-                              size: 20,
-                            ),
-                            label: const Text(
-                              'Abrir cámara',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: _linked && !_connectionBusy ? _manualEntry : null,
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                ),
-                icon: const Icon(Icons.keyboard_outlined),
-                label: const Text('Ingresar código manualmente'),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF3E7),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle_outline,
-                      color: pharmacyGreen,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _lastCode == null
-                                ? 'Todavía no hay lecturas'
-                                : _lastReadLabel,
-                            style: const TextStyle(
-                              color: pharmacyGreen,
-                              fontSize: 12,
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(22),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Center(
+                          child: CircleAvatar(
+                            radius: 36,
+                            backgroundColor: Color(0xFFF3EDF6),
+                            child: Icon(
+                              Icons.qr_code_scanner_rounded,
+                              size: 36,
+                              color: pharmacyPurple,
                             ),
                           ),
-                          if (_lastCode != null)
-                            Text(
-                              _lastCode!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
-                              ),
-                            ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Escanea un producto',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _linked ? 'Enfoca el código de barras del envase.' : 'Primero vincula una caja para activar el lector.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            height: 1.5,
+                            color: Color(0xFF526159),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          onPressed: _linked && !_connectionBusy
+                              ? _openCamera
+                              : null,
+                          icon: const Icon(Icons.camera_alt_outlined),
+                          label: const Text('Abrir cámara'),
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: _linked && !_connectionBusy
+                              ? _manualEntry
+                              : null,
+                          icon: const Icon(Icons.keyboard_outlined),
+                          label: const Text(
+                            'Ingresar código manualmente',
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF3E7),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _lastCode == null
+                            ? Icons.history
+                            : Icons.check_circle_outline,
+                        color: pharmacyGreen,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _lastCode == null
+                                  ? 'Todavía no hay lecturas'
+                                  : _lastReadLabel,
+                              style: const TextStyle(color: pharmacyGreen),
+                            ),
+                            if (_lastCode != null)
+                              Text(
+                                _lastCode!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 18,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

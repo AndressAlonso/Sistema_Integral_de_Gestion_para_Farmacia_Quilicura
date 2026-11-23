@@ -1,0 +1,10 @@
+.order-payment { margin: 24px 0 16px; padding: 22px; border: 1px solid var(--store-border, #d9dedb); border-left: 4px solid var(--brand-purple, #6c4384); border-radius: 12px; background: #f8faf9; }
+.order-payment .order-payment-status { margin: 0 0 8px; font-size: 19px; font-weight: 700; color: var(--brand-purple, #6c4384); }
+.order-payment-resolved { border-left-color: #28754b; }
+.order-payment-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.order-payment-actions button { min-height: 46px; padding: 11px 20px; border-radius: 9px; font: inherit; font-weight: 650; cursor: pointer; }
+.order-payment-primary { background: #246c48; color: white; border: 1px solid #246c48; }
+.order-payment-primary:hover { background: #1b5538; }
+.order-payment-secondary { background: white; color: var(--brand-purple, #6c4384); border: 1px solid currentColor; }
+.order-payment-actions button:disabled { opacity: .6; cursor: default; }
+@media (max-width: 600px) { .order-payment { padding: 16px; } .order-payment-actions button { width: 100%; } }

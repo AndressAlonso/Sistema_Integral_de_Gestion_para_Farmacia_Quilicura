@@ -176,16 +176,23 @@ class _BarcodeCameraPageState extends State<BarcodeCameraPage> {
   }
 
   Widget _camera() {
-    return Column(
+    return ListView(
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.sizeOf(context).width > 760
+            ? (MediaQuery.sizeOf(context).width - 720) / 2
+            : 16,
+      ),
       children: [
         const Padding(
           padding: EdgeInsets.all(20),
           child: Text(
             'Apunta a un solo código de barras',
+            textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white),
           ),
         ),
-        Expanded(
+        SizedBox(
+          height: (MediaQuery.sizeOf(context).height * .6).clamp(240.0, 520.0),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(24),
             child: MobileScanner(
@@ -213,6 +220,7 @@ class _BarcodeCameraPageState extends State<BarcodeCameraPage> {
           padding: EdgeInsets.all(20),
           child: Text(
             'Los códigos se enviarán al POS vinculado.',
+            textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white70),
           ),
         ),

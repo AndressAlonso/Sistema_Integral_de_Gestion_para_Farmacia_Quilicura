@@ -98,7 +98,7 @@ class TransferRepository:
             .join(TransferenciaDetalle, TransferenciaDetalle.id == TransferenciaLote.detalle_id)
             .join(Transferencia, Transferencia.id == TransferenciaDetalle.transferencia_id)
             .join(LoteInventario, LoteInventario.id == TransferenciaLote.lote_origen_id)
-            .where(Transferencia.estado.in_(RESERVED_STATES), LoteInventario.inventario_sucursal_id.in_(inventory_ids))
+            .where(Transferencia.pedido_id.is_(None), Transferencia.estado.in_(RESERVED_STATES), LoteInventario.inventario_sucursal_id.in_(inventory_ids))
             .group_by(TransferenciaLote.lote_origen_id)).all())
         online = db.execute(select(ReservaPedido.lote_id, func.sum(ReservaPedido.cantidad))
             .join(LoteInventario, LoteInventario.id == ReservaPedido.lote_id)
@@ -161,7 +161,7 @@ class TransferRepository:
         admin = "ADMINISTRADOR" in actor.roles
         permissions = actor.permissions
         actions = []
-        if admin and "transferencias.autorizar" in permissions:
+        if not row.pedido_id and admin and "transferencias.autorizar" in permissions:
             if row.estado == "SOLICITADA":
                 actions.append("approve")
             if row.estado in RESERVED_STATES:
@@ -186,7 +186,9 @@ class TransferRepository:
             "destination_name": row.destino.nombre,
             "state": row.estado,
             "created_at": row.solicitada_en,
-            "requested_by": row.solicitante.nombre,
+            "requested_by": row.solicitante.nombre if row.solicitante else "Sistema",
+            "order_id": row.pedido_id,
+            "order_number": "WEB-" + row.pedido_id.hex.upper() if row.pedido_id else None,
             "items": [
                 {
                     "product_id": item.producto_id,
@@ -219,6 +221,6 @@ class TransferRepository:
             ("Rechazada", row.rechazada_en, row.rechazada_por_id),
         ):
             if timestamp:
-                user = db.get(UsuarioInterno, user_id)
-                result.append({"event": event, "at": timestamp, "user": user.nombre})
+                user = db.get(UsuarioInterno, user_id) if user_id else None
+                result.append({"event": event, "at": timestamp, "user": user.nombre if user else "Sistema · Pedido online"})
         return result

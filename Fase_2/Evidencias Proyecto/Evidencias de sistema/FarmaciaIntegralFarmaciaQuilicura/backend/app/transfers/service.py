@@ -5,6 +5,7 @@ from hashlib import sha256
 
 from sqlalchemy import select
 
+from app.business_time import business_date
 from app.models import (
     InventarioSucursal,
     LoteInventario,
@@ -54,7 +55,7 @@ class TransferService:
 
     def options(self, actor):
         self.authorize(actor)
-        today = datetime.now(timezone.utc).date()
+        today = business_date()
         with self.repo.factory() as db:
             branches = [
                 {"id": b.id, "name": b.nombre}
@@ -152,7 +153,7 @@ class TransferService:
                 403, "Solo puedes solicitar desde tu sucursal asignada."
             )
         fingerprint = sha256(data.model_dump_json().encode()).hexdigest()
-        today = datetime.now(timezone.utc).date()
+        today = business_date()
         with self.repo.factory.begin() as db:
             self.repo.lock_request(db, data.request_id)
             existing = self.repo.get(db, data.request_id)
@@ -237,6 +238,13 @@ class TransferService:
             if row is None:
                 raise TransferError(404, "La transferencia no existe.")
             self.check_scope(actor, row)
+            if row.pedido_id:
+                from app.orders.transfers import lock_order
+                order = lock_order(db, row.pedido_id)
+                if action in ("approve", "reject"):
+                    raise TransferError(409, "La transferencia de un pedido online no admite aprobación ni rechazo manual.")
+                if order.estado not in ("PAGADO", "EN_PREPARACION", "LISTO_PARA_RETIRO"):
+                    raise TransferError(409, "El pedido debe estar pagado para continuar.")
             # Bloqueo de sucursales antes de la transferencia: coordina con desactivación.
             branches = self.repo.branches(db, [row.origen_id, row.destino_id])
             row = self.repo.get(db, transfer_id, lock=True)
@@ -313,7 +321,7 @@ class TransferService:
                     data.reason,
                 )
             elif action == "dispatch":
-                self.dispatch(db, row, actor, now.date())
+                self.dispatch(db, row, actor, business_date(now))
                 row.despachador_id, row.despachada_en = actor.id, now
             else:
                 self.receive(db, row, actor)
@@ -348,6 +356,13 @@ class TransferService:
                         "Un lote reservado ya no está disponible o venció; rechaza la solicitud para liberar su reserva.",
                     )
                 self.validate_destination(db, product, row.destino_id, lot)
+                if row.pedido_id:
+                    from app.orders.models import ReservaPedido
+                    reservation = db.get(ReservaPedido, allocation.reserva_pedido_id)
+                    if (not reservation or not reservation.activa or reservation.pedido_id != row.pedido_id
+                            or reservation.lote_id != lot.id or reservation.cantidad != allocation.cantidad):
+                        raise TransferError(409, "La reserva del pedido requiere revisión.")
+                    reservation.activa = False
                 lot.cantidad -= allocation.cantidad
             self.repo.movement(
                 db,
@@ -404,6 +419,22 @@ class TransferService:
                 lot.cantidad += allocation.cantidad
                 db.flush()
                 allocation.lote_destino_id = lot.id
+                if row.pedido_id:
+                    from app.orders.models import ReservaPedido
+                    source_reservation = db.get(ReservaPedido, allocation.reserva_pedido_id)
+                    if (not source_reservation or source_reservation.activa
+                            or source_reservation.pedido_id != row.pedido_id):
+                        raise TransferError(409, "La reserva en tránsito requiere revisión.")
+                    destination_reservation = db.scalar(select(ReservaPedido).where(
+                        ReservaPedido.detalle_id == source_reservation.detalle_id,
+                        ReservaPedido.lote_id == lot.id))
+                    if destination_reservation:
+                        if not destination_reservation.activa:
+                            raise TransferError(409, "La reserva de destino requiere revisión.")
+                        destination_reservation.cantidad += allocation.cantidad
+                    else:
+                        db.add(ReservaPedido(pedido_id=row.pedido_id, detalle_id=source_reservation.detalle_id,
+                                             lote_id=lot.id, cantidad=allocation.cantidad, activa=True))
             self.repo.movement(
-                db, inv, actor, row.id, detail.cantidad, 0, "TRANSFERENCIA_ENTRADA"
+                db, inv, actor, row.id, detail.cantidad, detail.cantidad if row.pedido_id else 0, "TRANSFERENCIA_ENTRADA"
             )

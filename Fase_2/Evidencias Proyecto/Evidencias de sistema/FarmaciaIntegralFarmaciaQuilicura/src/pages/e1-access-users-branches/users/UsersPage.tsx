@@ -1,3 +1,5 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
+import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import ActionIcon from '../ActionIcon'
 import { useEffect, useRef, useState } from 'react'
@@ -24,10 +26,11 @@ export default function UsersPage() {
   const [message, setMessage] = useState('')
   const sending = useRef(false)
 
+  useAutoRefresh(() => setAttempt(n => n + 1), !loading && !busy && !editor && !showRoles)
   useEffect(() => {
     let active = true
     listUsers().then(result => {
-      if (active) { setData(result); setLoading(false) }
+      if (active) { setData(result); setLoading(false); setLoadError('') }
     }).catch((cause: unknown) => {
       if (!active) return
       if (cause instanceof ApiError && cause.status === 401) navigate('/login', { replace: true })
@@ -123,7 +126,7 @@ export default function UsersPage() {
 
   return (
     <div className="users-page">
-      <header className="users-heading"><h1>Gestión de usuarios</h1><p>Administra las cuentas y el acceso del personal interno.</p></header>
+      <header className="users-heading app-page-heading"><h1>Gestión de usuarios</h1><p>Administra las cuentas y el acceso del personal interno.</p></header>
       <p className="access-summary" aria-label="Recuento de usuarios">
         <span><strong>{data.users.length}</strong> {data.users.length === 1 ? 'usuario' : 'usuarios'}</span>
         <span><i className="access-summary-dot active" aria-hidden="true" /><strong>{data.users.filter(user => user.is_active).length}</strong> activos</span>
@@ -136,7 +139,7 @@ export default function UsersPage() {
         {data.current_user.permissions.includes('roles.gestionar') && <button type="button" className="users-button" onClick={() => setShowRoles(true)}><ActionIcon name="edit" />Gestionar roles</button>}
         <button className="users-button primary" disabled={!data.current_user.permissions.includes('roles.gestionar')} title={!data.current_user.permissions.includes('roles.gestionar') ? 'Se requiere permiso para asignar roles' : undefined} onClick={() => openEditor({ mode: 'create', user: null })}><ActionIcon name="add" />Nuevo usuario</button>
       </div>
-      {message && <p className="users-success" role="status">{message}</p>}
+      {message && <Notification message={message} kind="success" />}
       {showRoles && data.current_user.permissions.includes('roles.gestionar') && <RoleDialog onClose={() => setShowRoles(false)} onSaved={() => setAttempt(value => value + 1)} />}
       <section className="users-panel" aria-labelledby="users-list-title">
         <div className="users-panel-heading"><h2 id="users-list-title">Usuarios internos</h2><p>Pulsa el nombre para gestionar la cuenta.</p><p role="status">{users.length} {users.length === 1 ? 'usuario encontrado' : 'usuarios encontrados'}</p></div>

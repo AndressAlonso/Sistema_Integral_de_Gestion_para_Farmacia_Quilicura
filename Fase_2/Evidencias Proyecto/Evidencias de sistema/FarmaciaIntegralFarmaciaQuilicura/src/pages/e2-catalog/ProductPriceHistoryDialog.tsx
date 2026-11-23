@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -112,7 +113,7 @@ export default function ProductPriceHistoryDialog({
 
         {error && (
           <div>
-            <p className="users-error" role="alert">{error}</p>
+            <Notification message={error} kind="error" />
             <button
               type="button"
               className="users-button"

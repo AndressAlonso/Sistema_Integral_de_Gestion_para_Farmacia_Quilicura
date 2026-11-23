@@ -1,3 +1,5 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
+import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
 import ActionIcon from '../ActionIcon'
 // HU: E1-H5 - Crear, actualizar y desactivar sucursales
@@ -36,6 +38,7 @@ export default function BranchesPage() {
 
   const sending = useRef(false)
 
+  useAutoRefresh(() => setAttempt(n => n + 1), !loading && !busy && !editor)
   useEffect(() => {
     let active = true
 
@@ -46,6 +49,7 @@ export default function BranchesPage() {
         }
 
         setBranches(result.branches)
+        setLoadError('')
         setLoading(false)
       })
       .catch((cause: unknown) => {
@@ -250,7 +254,7 @@ export default function BranchesPage() {
 
   return (
     <div className="branches-page">
-      <header className="branches-heading">
+      <header className="branches-heading app-page-heading">
         <h1>Gestión de sucursales</h1>
 
         <p>
@@ -315,9 +319,7 @@ export default function BranchesPage() {
       </div>
 
       {message && (
-        <p className="branches-message" role="status">
-          {message}
-        </p>
+        <Notification message={message} kind="success" />
       )}
 
       <section

@@ -22,6 +22,34 @@ from test_auth import login
 URL = "/api/inventory-adjustments"
 
 
+def test_typed_reason_persisted_and_retry_safe(adjustment):
+    payload = adjustment.payload | {"reason_type": "DANADO", "reason": "Envase roto"}
+    response = adjustment.client.post(URL, json=payload)
+    assert response.status_code == 201, response.text
+    assert response.json()["reason_type"] == "DANADO"
+    assert response.json()["reason"] == "Envase roto"
+    assert adjustment.client.post(URL, json=payload).status_code == 200
+    saved = adjustment.client.get(URL + "/" + payload["request_id"]).json()
+    assert saved["reason_type"] == "DANADO"
+    with adjustment.factory() as db:
+        movements = db.scalars(select(MovimientoInventario).where(MovimientoInventario.referencia_id == UUID(payload["request_id"]))).all()
+        assert len(movements) == 2
+        assert all(row.motivo == "Producto dañado: Envase roto" for row in movements)
+
+
+@pytest.mark.parametrize("kind,reason,valid", [("OTRO", "   ", False), ("OTRO", "Corrección documentada", True), ("CONTEO", "", True), ("INVALIDO", "Texto", False)])
+def test_reason_validation(kind, reason, valid):
+    from pydantic import ValidationError
+    from app.inventory_adjustments.schemas import CreateAdjustment
+    payload = dict(request_id=uuid4(), branch_id=uuid4(), reason_type=kind, reason=reason,
+                   items=[dict(lot_id=uuid4(), expected_quantity=2, new_quantity=1)])
+    if valid:
+        assert CreateAdjustment(**payload).reason_type == kind
+    else:
+        with pytest.raises(ValidationError):
+            CreateAdjustment(**payload)
+
+
 @pytest.fixture
 def adjustment(setup):
     with setup.factory.begin() as db:
@@ -279,6 +307,15 @@ def test_transfer_reservation_protected_by_lot_even_with_other_stock(adjustment)
         "items": [{"product_id": str(product_id), "quantity": 10}],
     }
     assert adjustment.client.post("/api/transfers", json=transfer).status_code == 201
+    options = adjustment.client.get("/api/stock-operations/options").json()
+    option = next(lot for lot in options["lots"] if lot["id"] == str(adjustment.lot_ids[0]))
+    assert option["quantity"] == 20
+    assert option["available"] == 10
+    adjustment.payload["items"][0]["expected_reserved"] = 0
+    stale = adjustment.client.post(URL, json=adjustment.payload)
+    assert stale.status_code == 409
+    assert "disponibles cambiaron" in stale.json()["detail"]
+    adjustment.payload["items"][0]["expected_reserved"] = 10
     adjustment.payload["items"][0]["new_quantity"] = 9
     assert adjustment.client.post(URL, json=adjustment.payload).status_code == 409
     adjustment.payload["items"][0]["new_quantity"] = 10

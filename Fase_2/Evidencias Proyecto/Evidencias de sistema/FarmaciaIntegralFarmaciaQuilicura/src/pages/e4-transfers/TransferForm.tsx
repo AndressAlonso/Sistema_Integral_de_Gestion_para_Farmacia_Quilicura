@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError } from '../../services/http'
 import { createTransfer, type Transfer, type TransferInput, type TransferOptions } from './transfers.api'
@@ -75,7 +76,7 @@ export default function TransferForm({ options, userId, onClose, onSaved }: {
         </div>)}
         <button type="button" className="users-button" disabled={!stock.length || data.items.length >= 100} onClick={() => setData({ ...data, items: [...data.items, { product_id: '', quantity: 1 }] })}>+ Agregar producto</button>
       </fieldset>
-      {error && <p className="users-error" role="alert">{error}</p>}
+      {error && <Notification message={error} kind="error" />}
       <footer className="users-dialog-actions"><button type="button" className="users-button" disabled={busy} onClick={onClose}>{pending ? 'Cerrar y conservar pendiente' : 'Cancelar'}</button>
         <button className="users-button primary" type="submit" disabled={busy || (!pending && !stock.length)}>{busy ? 'Solicitando…' : pending ? 'Reintentar confirmación' : 'Solicitar y reservar'}</button></footer>
     </form>

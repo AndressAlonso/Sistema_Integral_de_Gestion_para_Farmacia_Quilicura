@@ -220,3 +220,22 @@ def test_history_cursor_private_ownership_and_branch_guard(cart):
         json={"email": other["email"], "password": other["password"]},
     )
     assert cart.client.get("/api/customers/orders").json()["orders"] == []
+
+def test_guest_has_one_active_order_per_email(cart):
+    first = order_payload(cart, quantity=1)
+    assert cart.client.post('/api/customers/orders', json=first).status_code == 201
+    assert cart.client.post('/api/customers/orders', json=first).status_code == 200
+    before = snapshot(cart)
+    second = order_payload(cart, quantity=1)
+    second['guest']['email'] = 'GUEST@example.com'
+    assert cart.client.post('/api/customers/orders', json=second).status_code == 409
+    assert snapshot(cart) == before
+    with cart.factory.begin() as db:
+        db.get(PedidoOnline, UUID(first['request_id'])).estado = 'RETIRADO'
+    response = cart.client.post('/api/customers/orders', json=second)
+    assert response.status_code == 409
+    assert 'Inicia sesión' in response.json()['detail']
+    assert snapshot(cart) == before
+    with cart.factory.begin() as db:
+        db.get(PedidoOnline, UUID(first['request_id'])).estado = 'CANCELADO'
+    assert cart.client.post('/api/customers/orders', json=second).status_code == 201

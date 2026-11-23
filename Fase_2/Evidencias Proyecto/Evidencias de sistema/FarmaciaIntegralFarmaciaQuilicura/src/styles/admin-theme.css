@@ -1,0 +1,106 @@
+/* Shared administrative presentation (E1–E9); business rules remain in their modules. */
+:root {
+  --ui-heading-color: #203658;
+  --ui-muted-color: #65748b;
+  --ui-border-color: #dce2ec;
+  --ui-danger: #ad2f40;
+  --ui-warning: #85500c;
+  --ui-warning-soft: #fff3df;
+  --ui-control-radius: 10px;
+  --ui-control-height: 44px;
+}
+
+.admin-shell .admin-content { color: var(--ui-heading-color); font-size: var(--ui-text); line-height: 1.5; }
+.admin-shell .admin-content :is(.users-page, .promotions-page, .dashboard-page, .pos-page, .inventory-main) {
+  width: 100%; max-width: none; margin-inline: 0;
+}
+.admin-shell .admin-content :is(.promotions-page, .inventory-main) { padding: 0; }
+.admin-shell .admin-content .app-page-heading {
+  margin: 0 0 24px; padding: 0; gap: 16px; align-items: center; flex-wrap: wrap;
+}
+.admin-shell .admin-content .app-page-heading h1 {
+  margin: 0; color: var(--ui-heading-color); font-size: var(--ui-page-title);
+  font-weight: 700; line-height: 1.25; letter-spacing: -.025em; overflow-wrap: anywhere;
+}
+.admin-shell .admin-content .app-page-heading p {
+  margin: 8px 0 0; color: var(--ui-muted-color); font-size: var(--ui-text); line-height: 1.6;
+}
+.admin-shell .app-page-heading :is(.eyebrow, .promotions-kicker, .dashboard-eyebrow, .pos-eyebrow) { display: none; }
+.admin-shell .admin-content :is(.users-panel-heading, .branches-panel-heading, .panel-heading,
+  .lot-panel-heading, .monitoring-panel-heading, .promotions-panel, .dashboard-panel > header) h2 {
+  color: var(--ui-heading-color); font-size: 18px; line-height: 1.4; font-weight: 650;
+}
+
+/* Same geometry for actions; filters, steppers and icon controls keep their own layout. */
+.admin-shell :is(.users-button, .branches-button, .s1-button, .pos-secondary, .promotions-page button,
+  .minimum-edit-button, .minimum-save-button, .minimum-cancel-button,
+  .lot-submit-button, .monitoring-submit-button, .lot-status-dialog button,
+  .pos-page button:not(.pos-product):not(.pos-quantity-stepper button)) {
+  min-height: var(--ui-control-height); border-radius: var(--ui-control-radius);
+  padding: 10px 16px; font-family: inherit; font-size: var(--ui-text);
+  font-weight: 600; line-height: 1.4;
+}
+.admin-shell :is(.users-button, .branches-button, .s1-button, .pos-secondary, .promotions-page button,
+  .minimum-edit-button, .minimum-cancel-button, .lot-status-dialog button) {
+  background: white; border: 1px solid var(--ui-border-color); color: var(--ui-heading-color);
+}
+.admin-shell :is(.users-button.primary, .branches-button.primary, .s1-button.primary, .promotions-page .promotions-primary,
+  .minimum-save-button, .lot-submit-button, .monitoring-submit-button, .lot-status-dialog .lot-status-primary) {
+  background: var(--brand-purple); border-color: var(--brand-purple); color: white;
+}
+.admin-shell :is(.users-button.primary, .branches-button.primary, .s1-button.primary, .promotions-page .promotions-primary,
+  .minimum-save-button, .lot-submit-button, .monitoring-submit-button, .lot-status-primary):hover:not(:disabled) {
+  background: #592067; border-color: #592067; color: white;
+}
+.admin-shell :is(.users-button.danger, .branches-button.danger, .s1-button.danger, .pos-page .danger) {
+  background: var(--ui-danger); border-color: var(--ui-danger); color: white;
+}
+.admin-shell :is(.users-button.danger, .branches-button.danger, .s1-button.danger, .pos-page .danger):hover:not(:disabled) { background: #8e2534; border-color: #8e2534; }
+.admin-shell button:disabled { opacity: .55; cursor: not-allowed; }
+.admin-shell :is(button, a, input, select, textarea, summary):focus-visible, .lot-status-dialog :focus-visible {
+  outline: 3px solid var(--brand-purple); outline-offset: 3px;
+}
+.admin-shell :is(.inventory-tab.active, .lot-branch-options button[aria-pressed=true],
+  .roles-sidebar li button[aria-pressed=true], .operational-periods button[aria-pressed=true],
+  .operational-chips button[aria-pressed=true], .inventory-filters button[aria-pressed=true]) {
+  color: var(--brand-green-dark); background: var(--brand-green-soft); border-color: #c9dfa7;
+}
+
+/* Dialog titles and fields share the page hierarchy at a smaller scale. */
+.admin-shell dialog { font-family: inherit; color: var(--ui-heading-color); font-size: var(--ui-text); }
+.admin-shell dialog.app-modal.users-dialog-fullscreen,
+.admin-shell .users-dialog-fullscreen .users-dialog-actions { background: white; }
+.admin-shell dialog :is(.users-dialog-heading, .promotions-dialog-heading, .s1-dialog-head) {
+  align-items: flex-start; gap: 16px;
+}
+.admin-shell dialog :is(.users-dialog-heading, .promotions-dialog-heading, .s1-dialog-head) h2,
+.admin-shell dialog.lot-status-dialog h2 {
+  margin: 0; font-size: clamp(22px, 2vw, 26px); line-height: 1.3; font-weight: 700; letter-spacing: -.02em;
+}
+.admin-shell dialog :is(.users-dialog-heading, .promotions-dialog-heading, .s1-dialog-head) p {
+  margin: 8px 0 0; color: var(--ui-muted-color); font-size: var(--ui-text); line-height: 1.6;
+}
+.admin-shell :is(.users-close, .lot-status-close, .promotions-dialog-heading > button) {
+  display: inline-grid; place-items: center; flex-shrink: 0;
+  width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 10px;
+  border: 1px solid var(--ui-border-color); background: white; color: var(--ui-heading-color); font-size: 24px;
+}
+.admin-shell dialog :is(input:not([type=checkbox]):not([type=radio]), select, textarea) {
+  border-color: var(--ui-border-color); border-radius: var(--ui-control-radius); font-family: inherit;
+}
+.admin-shell dialog :is(input:not([type=checkbox]):not([type=radio]), select) { min-height: 44px; }
+.admin-shell dialog :is(input[type=checkbox], input[type=radio]) { accent-color: var(--brand-purple); }
+.admin-shell .stock-change-decrease { background: var(--ui-warning-soft); color: var(--ui-warning); }
+
+/* Lot review is mounted in a portal outside the administrative shell. */
+dialog.lot-status-dialog { color: var(--ui-heading-color); font-size: var(--ui-text); }
+dialog.lot-status-dialog h2 { font-size: clamp(22px, 2vw, 26px); line-height: 1.3; font-weight: 700; }
+dialog.lot-status-dialog button { min-height: 44px; border-radius: 10px; font-size: var(--ui-text); font-weight: 600; }
+dialog.lot-status-dialog .lot-status-close { width: 44px; height: 44px; padding: 0; font-size: 24px; }
+dialog.lot-status-dialog .danger { background: var(--ui-danger); border-color: var(--ui-danger); color: white; }
+
+@media (max-width: 600px) {
+  .admin-shell .admin-content .app-page-heading { align-items: flex-start; margin-bottom: 20px; }
+  .admin-shell .app-page-heading > :is(button, .catalog-heading-actions, .inventory-heading-actions) { width: 100%; }
+  .admin-shell .app-page-heading :is(.catalog-heading-actions, .inventory-heading-actions) > button { flex: 1 1 180px; }
+}

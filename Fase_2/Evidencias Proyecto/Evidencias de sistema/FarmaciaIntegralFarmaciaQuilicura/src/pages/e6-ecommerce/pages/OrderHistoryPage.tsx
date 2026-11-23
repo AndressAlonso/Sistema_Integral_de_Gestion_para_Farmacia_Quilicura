@@ -1,3 +1,4 @@
+import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import { useEffect, useState } from 'react'
 import { useCustomerSession } from '../hooks/useCustomerSession'
 import OrderHistoryState from '../components/OrderHistoryState'
@@ -12,6 +13,7 @@ export default function OrderHistoryPage() {
   const [cursor, setCursor] = useState<string | undefined>()
   const [retry, setRetry] = useState(0)
   const [result, setResult] = useState<{ owner: string; cursor?: string; data?: OrderHistoryResponse; error?: string }>()
+  useAutoRefresh(() => setRetry(n => n + 1), !!session.customer && !session.loading)
   useEffect(() => {
     if (!session.customer || session.loading || session.error) return
     let active = true
@@ -24,7 +26,7 @@ export default function OrderHistoryPage() {
     return () => { active = false }
   }, [session.customer, session.loading, session.error, cursor, retry])
   const current = result?.owner === session.customer?.id && result?.cursor === cursor ? result : undefined
-  return <main className="order-history-page"><PublicHeader /><h1>Mis pedidos</h1>
+  return <main className="order-history-page"><PublicHeader /><header className="store-page-heading"><div><p className="store-page-eyebrow">TU CUENTA</p><h1>Mis pedidos</h1><p>Revisa el estado, el total y la sucursal de tus pedidos.</p></div></header>
     {session.loading ? <OrderHistoryState state="loading" />
       : session.error ? <OrderHistoryState state="error" message={session.error} />
       : !session.customer ? <OrderHistoryState state="session-required" />

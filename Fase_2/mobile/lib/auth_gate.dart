@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'auth_api.dart';
+import 'pickup_page.dart';
 
 class AuthGate extends StatefulWidget {
   const AuthGate({required this.scannerBuilder, super.key});
@@ -184,7 +185,7 @@ class _AuthGateState extends State<AuthGate> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFF748078),
-                            fontSize: 12,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -218,6 +219,26 @@ class _AuthGateState extends State<AuthGate> {
                 child: widget.scannerBuilder(context, _api),
               ),
             ),
+            if (session.permissions.contains('pedidos.retirar') &&
+                session.permissions.contains('pedidos.consultar'))
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    backgroundColor: const Color(0xFF702583),
+                  ),
+                  onPressed: _busy
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => PickupPage(api: _api),
+                          ),
+                        ),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('Retirar pedido'),
+                ),
+              ),
           ],
         ),
       ),
@@ -256,7 +277,9 @@ class _AuthGateState extends State<AuthGate> {
                         ),
                         const SizedBox(height: 28),
                         Container(
-                          padding: const EdgeInsets.all(24),
+                          padding: EdgeInsets.all(
+                            constraints.maxWidth < 360 ? 16 : 24,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
@@ -285,7 +308,7 @@ class _AuthGateState extends State<AuthGate> {
                                 ),
                                 const SizedBox(height: 8),
                                 const Text(
-                                  'Ingresa con tu cuenta para usar el escáner.',
+                                  'Accede con tu cuenta de personal para trabajar en tu sucursal.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: Color(0xFF748078),
@@ -387,8 +410,9 @@ class _AuthGateState extends State<AuthGate> {
                           ),
                         ),
                         const SizedBox(height: 22),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        const Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Icon(
                               Icons.qr_code_scanner_rounded,
@@ -397,7 +421,7 @@ class _AuthGateState extends State<AuthGate> {
                             ),
                             SizedBox(width: 8),
                             Text(
-                              'Escáner · Uso interno',
+                              'Personal de farmacia · Uso interno',
                               style: TextStyle(
                                 color: Color(0xFF748078),
                                 fontSize: 12,

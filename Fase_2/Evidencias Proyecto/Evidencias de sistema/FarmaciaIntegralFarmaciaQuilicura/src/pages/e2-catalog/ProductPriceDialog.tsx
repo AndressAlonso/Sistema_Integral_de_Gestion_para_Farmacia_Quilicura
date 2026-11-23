@@ -1,3 +1,4 @@
+import Notification from '../../components/Notification'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { Product, ProductPriceInput } from './catalog.api'
 
@@ -132,11 +133,7 @@ export default function ProductPriceDialog({
           </p>
         </fieldset>
 
-        {(validation || error) && (
-          <p className="users-error" role="alert">
-            {validation || error}
-          </p>
-        )}
+        {error && <Notification message={error} kind="error" />}{validation && <p className="users-error" role="alert">{validation}</p>}
 
         <footer className="users-dialog-actions">
           <button

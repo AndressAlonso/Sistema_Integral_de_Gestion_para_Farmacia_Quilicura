@@ -5,6 +5,10 @@ import {
   Routes,
 } from 'react-router-dom'
 
+import OrdersPage from '../pages/e7-orders/OrdersPage'
+import AuditPage from '../pages/e9-audit/AuditPage'
+import DashboardPage from '../pages/e9-dashboard/DashboardPage'
+import AdminHome from '../pages/e9-dashboard/AdminHome'
 import AdminLayout from '../layouts/AdminLayout'
 import { adminNavigation } from '../layouts/adminNavigation'
 import LoginPage from '../pages/e1-access-users-branches/auth/LoginPage'
@@ -27,6 +31,10 @@ import OrderConfirmationPage from '../pages/e6-ecommerce/pages/OrderConfirmation
 import OrderHistoryPage from '../pages/e6-ecommerce/pages/OrderHistoryPage'
 
 function getAdminPage(path: string) {
+  if (path === '/session') return <AdminHome />
+  if (path === '/admin/dashboard') return <DashboardPage />
+  if (path === '/admin/audit') return <AuditPage />
+  if (path === '/admin/orders') return <OrdersPage />
   if (path === '/admin/promotions') return <PromotionsPage />
   if (path === '/admin/pos') return <PosPage />
   if (path === '/admin/cash') return <CashPage />
@@ -75,6 +83,8 @@ export default function AppRouter() {
 
         <Route element={<RequireAuth />}>
           <Route element={<AdminLayout />}>
+            <Route path="/session" element={<AdminHome />} />
+            <Route path="/admin/reports" element={<Navigate to="/admin/dashboard" replace />} />
             {adminNavigation.map((item) => (
               <Route
                 key={item.path}

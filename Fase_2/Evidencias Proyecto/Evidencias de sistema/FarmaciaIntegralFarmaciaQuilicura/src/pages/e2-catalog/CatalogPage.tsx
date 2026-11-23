@@ -1,3 +1,5 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 // E2-H1/E2-H2: catálogo y cambio de precio con auditoría.
 import { useEffect, useRef, useState } from 'react'
@@ -59,6 +61,7 @@ export default function CatalogPage() {
   const [notice, setNotice] = useState('')
   const sending = useRef(false)
 
+  useAutoRefresh(() => setAttempt(n => n + 1), allowed && !loading && !busy && !editor && !priceProduct && !historyProduct)
   useEffect(() => {
     if (!allowed) return
     let active = true
@@ -68,6 +71,7 @@ export default function CatalogPage() {
         if (!active) return
         setProducts(items)
         setCategories(groups)
+        setLoadError('')
         setLoading(false)
       })
       .catch((cause: unknown) => {
@@ -255,7 +259,7 @@ export default function CatalogPage() {
 
   return (
     <div className="users-page catalog-page">
-      <header className="users-heading catalog-heading">
+      <header className="users-heading catalog-heading app-page-heading">
         <div>
           <h1>Gestión de productos</h1>
           <p>Administra el catálogo, las categorías y los códigos de barras de la farmacia.</p>
@@ -274,8 +278,8 @@ export default function CatalogPage() {
         </div>
       </header>
 
-      {message && <p className="users-success" role="status">{message}</p>}
-      {notice && <p className="catalog-notice" role="status">{notice}</p>}
+      {message && <Notification message={message} kind="success" />}
+      {notice && <Notification message={notice} kind="info" />}
       {!categories.length && (
         <p className="catalog-notice" role="status">
           Crea una categoría para comenzar a registrar productos.

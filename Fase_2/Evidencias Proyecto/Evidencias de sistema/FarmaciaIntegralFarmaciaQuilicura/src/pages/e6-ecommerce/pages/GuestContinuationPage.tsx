@@ -1,3 +1,4 @@
+import Notification from '../../../components/Notification'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PublicHeader from '../components/PublicHeader'
@@ -35,13 +36,13 @@ export default function GuestContinuationPage() {
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'No pudimos revisar los datos.') }
     finally { setBusy(false) }
   }
-  return <main className="guest-page"><PublicHeader /><h1>Revisión como invitado</h1>
+  return <main className="guest-page"><PublicHeader /><header className="store-page-heading"><div><p className="store-page-eyebrow">CONTINÚA SIN CREAR UNA CUENTA</p><h1>Revisión como invitado</h1><p>Solo necesitamos tu nombre y correo para continuar.</p></div></header>
     <p className="guest-notice">Esta es una revisión previa. El pedido todavía no ha sido creado; no se reservan unidades ni se realiza ningún pago.</p>
     {loading ? <p role="status">Consultando sesión…</p> : sessionError ? <p role="alert">{sessionError}</p> : customer ? <p>Hay una sesión de cliente activa. Continúa con tu cuenta desde el carrito.</p> : <>
       <p>Solicitamos únicamente nombre y correo. No se creará una cuenta.</p>
       <p>Los datos del invitado se pierden al recargar esta página. El carrito y la sucursal se conservan.</p>
       <GuestForm busy={busy} onSubmit={submit} onEdit={() => { setResult(null); setError('') }} />
-      {error && <p role="alert" className="guest-error">{error}</p>}
+      {error && <Notification message={error} kind="error" />}
       {review && (!review.cart.valid ? <div role="alert" className="guest-error"><p>El carrito necesita correcciones. Conservamos tus datos mientras navegas dentro de la tienda.</p>{review.cart.issues.map(issue => <p key={issue}>{issue}</p>)}{review.cart.items.flatMap(line => line.issues.map(issue => <p key={`${line.product_id}:${issue}`}>{line.name ?? 'Producto'}: {issue}</p>))}</div> :
         <section className="guest-review" aria-labelledby="guest-review-title"><h2 id="guest-review-title">Revisión previa</h2>
           <p>Nombre: {review.guest.name}</p><p>Correo: {review.guest.email}</p>

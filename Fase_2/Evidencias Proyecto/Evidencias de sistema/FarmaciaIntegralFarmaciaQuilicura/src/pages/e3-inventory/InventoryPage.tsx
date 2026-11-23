@@ -1,3 +1,5 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
+import Notification from '../../components/Notification'
 import {
   useEffect,
   useMemo,
@@ -56,6 +58,8 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading && !operation)
   useEffect(() => {
     let active = true
 
@@ -66,6 +70,7 @@ export default function InventoryPage() {
         }
 
         setInventoryRecords(records)
+        setError('')
         setLoading(false)
       })
       .catch((cause: unknown) => {
@@ -106,7 +111,7 @@ export default function InventoryPage() {
     return () => {
       active = false
     }
-  }, [navigate, revision])
+  }, [navigate, revision, autoRevision])
 
   const branches = useMemo(() => {
     const uniqueBranches = new Map<
@@ -198,12 +203,7 @@ export default function InventoryPage() {
   if (error) {
     return (
       <main className="inventory-main inventory-error">
-        <p
-          className="users-error"
-          role="alert"
-        >
-          {error}
-        </p>
+        <Notification message={error} kind="error" />
 
         <button
           type="button"
@@ -221,7 +221,7 @@ export default function InventoryPage() {
   return (
     <div className="inventory-app">
       <main className="inventory-main">
-        <header className="inventory-title-row inventory-heading">
+        <header className="inventory-title-row inventory-heading app-page-heading">
           <div>
             <p className="eyebrow">CONTROL DE EXISTENCIAS</p>
             <h1>Inventario</h1>
@@ -232,7 +232,7 @@ export default function InventoryPage() {
             {canReceive && <button type="button" className="users-button primary" onClick={() => setOperation('receipt')}>+ Crear lotes / recibir mercadería</button>}
           </div>
         </header>
-        {message && <p className="users-success" role="status">{message}</p>}
+        {message && <Notification message={message} kind="success" />}
 
         <nav
           className="inventory-tabs"
@@ -388,6 +388,7 @@ export default function InventoryPage() {
               </div>
 
               <InventoryTable
+                canConfigureMinimum={session.user.permissions.includes('inventario.configurar_minimo')}
                 records={records}
                 productFilter={<input type="search" aria-label="Buscar producto por nombre o SKU" placeholder="Nombre o SKU…" value={query} onChange={event => setQuery(event.target.value)} />}
                 branchFilter={<div className="lot-branch-options" aria-label="Filtrar disponibilidad por sucursal">

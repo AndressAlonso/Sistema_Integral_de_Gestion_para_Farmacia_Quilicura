@@ -1,3 +1,6 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
+import { chileToday } from '../../utils/businessDate'
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   type FormEvent,
@@ -70,13 +73,7 @@ function formatDate(value: string): string {
 }
 
 function todayAsUtc(): number {
-  const today = new Date()
-
-  return Date.UTC(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  )
+  return dateAsUtc(chileToday())
 }
 
 function dateAsUtc(value: string): number {
@@ -383,15 +380,17 @@ export default function ExpirationAlertsPanel({
     ],
   )
 
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading)
   useEffect(() => {
     let active = true
     listInventoryLots().then(records => {
-      if (active) { setLots(records); setLoading(false) }
+      if (active) { setLots(records); setLoading(false); setError('') }
     }).catch((cause: unknown) => {
       if (active) { setError(getErrorMessage(cause)); setLoading(false) }
     })
     return () => { active = false }
-  }, [])
+  }, [autoRevision])
 
   function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -631,12 +630,7 @@ export default function ExpirationAlertsPanel({
       </form>
 
       {error && (
-        <p
-          className="lot-message lot-error"
-          role="alert"
-        >
-          {error}
-        </p>
+        <Notification message={error} kind="error" />
       )}
 
       {loading ? (

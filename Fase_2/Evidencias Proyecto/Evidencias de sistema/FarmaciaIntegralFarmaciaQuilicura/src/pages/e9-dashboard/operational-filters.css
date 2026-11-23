@@ -1,0 +1,25 @@
+.operational-filters { border: 1px solid #e6e9f0; border-radius: 16px; background: #fff; padding: 13px 18px; margin-bottom: 20px; color: #34435b; }
+.operational-filter-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.operational-filter-row + .operational-filter-row { border-top: 1px solid #f0f1f5; padding-top: 10px; margin-top: 10px; }
+.operational-filter-label { display: inline-flex; align-items: center; gap: 8px; width: 88px; font-size: 12px; font-weight: 650; flex-shrink: 0; color: #667085; }
+.operational-chips, .operational-periods { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.operational-filters button { font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid transparent; border-radius: 8px; padding: 8px 12px; min-height: 36px; background: transparent; color: #536079; transition: background .16s, color .16s; }
+.operational-chips button { display: inline-flex; align-items: center; gap: 6px; background: #f7f8fb; border-color: #eef0f5; }
+.operational-chips button svg { width: 14px; height: 14px; }
+.operational-filters button:hover { background: #f1edf6; color: #702582; }
+.operational-chips button[aria-pressed=true] { color: #632077; background: #f3eaf8; border-color: #dfc9e8; }
+.operational-periods { padding: 3px; border-radius: 10px; background: #f5f6f9; gap: 2px; }
+.operational-periods button { padding: 6px 11px; min-height: 32px; }
+.operational-periods button[aria-pressed=true] { background: #fff; color: #632077; box-shadow: 0 1px 4px #23345116; }
+.operational-range { margin-left: auto; font-size: 12px; color: #667085; }
+.operational-range small { font-size: inherit; color: #737e8f; }
+.operational-custom { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding-top: 14px; margin-top: 12px; border-top: 1px solid #eef0f5; }
+.operational-custom label { display: grid; gap: 5px; font-size: 12px; }
+.operational-custom input { background: #fff; border: 1px solid #d9dfea; border-radius: 8px; font: inherit; padding: 8px 10px; color: #34435b; min-height: 36px; box-sizing: border-box; }
+.operational-custom > span { align-self: center; }
+.operational-custom button { background: #702582; color: #fff; }
+.operational-custom button:hover { background: #542061; color: #fff; }
+.operational-custom .operational-error { color: #b42336; font-size: 12px; flex-basis: 100%; }
+.operational-filters :focus-visible { outline: 3px solid #a25bbb; outline-offset: 3px; }
+@media(max-width: 650px) { .operational-filters { padding: 12px; } .operational-filter-row { gap: 8px; } .operational-filter-label { width: 100%; } .operational-range { margin-left: 0; } .operational-chips { max-height: 132px; overflow: auto; } }
+@media(prefers-reduced-motion: reduce) { .operational-filters button { transition: none; } }

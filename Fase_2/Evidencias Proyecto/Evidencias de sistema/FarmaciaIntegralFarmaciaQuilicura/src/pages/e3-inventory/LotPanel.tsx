@@ -1,3 +1,6 @@
+import useAutoRefresh from '../../hooks/useAutoRefresh'
+import { chileToday } from '../../utils/businessDate'
+import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
 import {
   useDeferredValue,
@@ -83,19 +86,18 @@ export default function LotPanel({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const [autoRevision, setAutoRevision] = useState(0)
+  useAutoRefresh(() => setAutoRevision(n => n + 1), !loading && !statusLot)
   useEffect(() => {
     let active = true
     listInventoryLots()
-      .then(records => { if (active) setLots(records) })
+      .then(records => { if (active) { setLots(records); setError('') } })
       .catch(cause => { if (active) setError(getErrorMessage(cause)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
-  // FEFO visual: la fecha alcanzada tampoco es vendible. Usar el día local.
-  const today = new Date()
-  const localToday = [today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0')].join('-')
+  }, [autoRevision])
+  // FEFO visual: la fecha alcanzada tampoco es vendible. Usar el día de negocio chileno.
+  const localToday = chileToday()
   const firstFefoLotIds = useMemo(() => {
     const firstLotByInventory = new Map<string, string>()
 
@@ -161,16 +163,11 @@ export default function LotPanel({
       <span className="lot-cell-detail">Usa «Crear lotes / recibir mercadería» en la cabecera de Inventario.</span></div>
       </div>
       <div className="lot-entry-note" aria-label="Cómo interpretar los lotes"><p><strong>Deshabilitado:</strong> bloqueado para salidas. <strong>Vencido:</strong> no vendible, aunque esté habilitado. <strong>Sin unidades:</strong> cantidad 0; conserva su historial.</p><p>Reactivar quita el bloqueo: no agrega unidades ni cambia el vencimiento. Recibir mercadería aumenta cantidades; ajustar inventario corrige cantidades con un motivo.</p></div>
-      {notice && <p className="lot-message" role="status">{notice}</p>}
+      {notice && <Notification message={notice} kind="info" />}
       {targetLotId && <div className="lot-navigation"><p>Mostrando el lote seleccionado desde la transferencia.</p><Link to="/admin/inventory?tab=lots">Ver todos los lotes</Link>
         {returnTransferId && <Link to={`/admin/transfers?transfer_id=${encodeURIComponent(returnTransferId)}`}>Volver a la transferencia</Link>}</div>}
       {error && (
-        <p
-          className="lot-message lot-error"
-          role="alert"
-        >
-          {error}
-        </p>
+        <Notification message={error} kind="error" />
       )}
 
 

@@ -316,4 +316,37 @@ class AuthApi {
   void dispose() {
     _dio.close(force: true);
   }
+
+  Future<Map<String, dynamic>> pickupOrder(
+    String code, {
+    String? expectedOrderId,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/orders/pickup/${expectedOrderId == null ? 'validate' : 'confirm'}',
+        data: {
+          'code': code.trim(),
+          if (expectedOrderId != null) ...{
+            'expected_order_id': expectedOrderId,
+            'confirmed': true,
+          },
+        },
+      );
+      final data = response.data;
+      if (data == null ||
+          data['id'] is! String ||
+          data['items'] is! List ||
+          data['pickup_branch'] is! Map ||
+          (expectedOrderId != null &&
+              (data['id'] != expectedOrderId ||
+                  data['status'] != 'RETIRADO'))) {
+        throw const AuthApiException(
+          'No pudimos verificar la respuesta. Reintenta la misma operación.',
+        );
+      }
+      return data;
+    } on DioException catch (error) {
+      throw _translateError(error);
+    }
+  }
 }

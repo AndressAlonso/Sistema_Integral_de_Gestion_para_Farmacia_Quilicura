@@ -134,7 +134,12 @@ class _ScannerPairingPageState extends State<ScannerPairingPage> {
           automaticallyImplyLeading: !_busy,
         ),
         body: SafeArea(
-          child: Column(
+          child: ListView(
+            padding: EdgeInsets.symmetric(
+              horizontal: MediaQuery.sizeOf(context).width > 760
+                  ? (MediaQuery.sizeOf(context).width - 720) / 2
+                  : 0,
+            ),
             children: [
               const Padding(
                 padding: EdgeInsets.fromLTRB(24, 16, 24, 20),
@@ -149,7 +154,11 @@ class _ScannerPairingPageState extends State<ScannerPairingPage> {
                   ),
                 ),
               ),
-              Expanded(
+              SizedBox(
+                height: (MediaQuery.sizeOf(context).height * .58).clamp(
+                  260.0,
+                  520.0,
+                ),
                 child: _busy
                     ? const Center(
                         child: Column(
