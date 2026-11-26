@@ -73,7 +73,10 @@ describe('Sesión compartida del ecommerce', () => {
       expect(screen.queryByText(session.customer.name)).toBeNull()
       expect(screen.queryByRole('link', { name: 'Mis pedidos' })).toBeNull()
       expect(within(screen.getByRole('navigation', { name: 'Navegación pública' })).getByRole('link', { name: 'Iniciar sesión' })).toBeTruthy()
-      expect(screen.getByRole('link', { name: 'Acceso interno' })).toBeTruthy()
+      const internalAccess = screen.getByRole('link', {
+        name: 'Acceso del personal',
+      })
+      expect(internalAccess.getAttribute('href')).toBe('/login')
       if (section === 'cart') {
         expect(screen.getByText('Continuar sin cuenta')).toBeTruthy()
         expect(screen.queryByText(/Confirma los productos y reserva/)).toBeNull()

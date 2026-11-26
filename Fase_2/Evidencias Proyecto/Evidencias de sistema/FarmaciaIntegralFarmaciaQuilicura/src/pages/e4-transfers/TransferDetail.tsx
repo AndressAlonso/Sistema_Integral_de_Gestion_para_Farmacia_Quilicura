@@ -51,23 +51,16 @@ export default function TransferDetail({ transfer, initialAction, onClose, onCha
   return <dialog ref={dialog} className="app-modal users-dialog users-dialog-fullscreen transfers-dialog transfer-detail-dialog" aria-labelledby="transfer-detail-title" aria-busy={busy}
     onCancel={event => { event.preventDefault(); if (!sending.current && !busy) onClose() }}>
     <form onSubmit={event => { void submit(event) }}>
-      <header className="users-dialog-heading"><div><p className="transfer-detail-eyebrow">DETALLE DE TRANSFERENCIA</p><h2 id="transfer-detail-title">{transferCode(current.id)}</h2></div><button type="button" className="users-close" aria-label="Cerrar detalle" disabled={busy} onClick={onClose}>×</button></header>
-      <div className="transfer-detail-body"><div className="transfer-detail-content">
-      <section className="transfer-detail-overview" aria-label="Resumen de la transferencia">
+      <header className="users-dialog-heading"><div className="transfer-detail-identity"><p className="transfer-detail-eyebrow">DETALLE DE TRANSFERENCIA</p><div className="transfer-detail-title-line"><h2 id="transfer-detail-title">{transferCode(current.id)}</h2><span className={`transfer-state ${current.state.toLowerCase()}`}>{states[current.state]}</span></div></div><section className="transfer-detail-overview" aria-label="Resumen de la transferencia">
         <div><span>Origen</span><strong>{current.origin_name}</strong></div>
         <span className="transfer-detail-route-arrow" aria-hidden="true">→</span>
         <div><span>Destino</span><strong>{current.destination_name}</strong></div>
-        <div><span>Estado actual</span><strong><span className={`transfer-state ${current.state.toLowerCase()}`}>{states[current.state]}</span></strong></div>
         <div><span>Solicitada por</span><strong>{current.requested_by}</strong></div>
-      </section>
+      </section><button type="button" className="users-close" aria-label="Cerrar detalle" disabled={busy} onClick={onClose}>×</button></header>
+      <div className="transfer-detail-body"><div className="transfer-detail-content">
+
       {current.order_id && <section className="transfer-online-note"><div><span className="transfer-online-badge">Pedido online</span><strong>{current.order_number}</strong></div><p>Generada y autorizada automáticamente tras confirmar el pago. Las unidades recibidas siguen reservadas para este pedido.</p></section>}
       {loading && <p role="status">Comprobando estado y permisos actuales…</p>}
-      <section className="users-panel" aria-label="Cómo funciona la transferencia">
-        <h3>{current.order_id ? "Pago aceptado → Autorizada → Enviar → Recibir" : "Solicitar → Autorizar → Enviar → Recibir"}</h3>
-        <p>{current.order_id ? "Utiliza las reservas del pedido. El personal confirma la salida y la llegada física; no requiere aprobación manual." : "Solicitar aparta unidades en origen. Autorizar permite enviarlas. Confirmar salida registra que salieron físicamente. Confirmar recepción las incorpora al destino."}</p>
-        {current.state === 'EN_TRANSITO' && <p><strong>Los productos ya salieron del origen.</strong> No se puede rechazar esta transferencia. Si la recepción está bloqueada, revisa el lote destino en Inventario; no lo reactives sin comprobar que corresponde.</p>}
-        {!current.order_id && (current.state === 'SOLICITADA' || current.state === 'AUTORIZADA') && <p>Puedes rechazar antes de confirmar la salida: se liberan las unidades reservadas y se conserva el historial.</p>}
-      </section>
       <div className="transfer-detail-columns"><section className="users-panel"><div className="transfer-detail-section-heading"><h3>Productos y lotes</h3><span>{units(current)} unidades</span></div>
         {current.items.map(item => <div className="transfer-detail-item" key={item.product_id}>
           <div className="transfer-detail-product-heading"><div><strong>{item.product_name}</strong><small>SKU: {item.sku}</small></div><span>{item.quantity} unidades</span></div>

@@ -38,6 +38,7 @@ class PublicUser(BaseModel):
 class SessionResponse(BaseModel):
     user: PublicUser
     expires_at: datetime
+    started_at: datetime
 
 
 def check_origin(request: Request):
@@ -94,6 +95,7 @@ def login(data: LoginRequest, request: Request, response: Response) -> SessionRe
             branch_id=user.branch_id, branch_name=user.branch_name,
         ),
         expires_at=expires,
+        started_at=datetime.fromtimestamp(validate_token(token, settings)["iat"], timezone.utc),
     )
 
 
@@ -124,6 +126,7 @@ def me(request: Request) -> SessionResponse:
             branch_id=user.branch_id, branch_name=user.branch_name,
         ),
         expires_at=datetime.fromtimestamp(claims["exp"], timezone.utc),
+        started_at=datetime.fromtimestamp(claims["iat"], timezone.utc),
     )
 
 

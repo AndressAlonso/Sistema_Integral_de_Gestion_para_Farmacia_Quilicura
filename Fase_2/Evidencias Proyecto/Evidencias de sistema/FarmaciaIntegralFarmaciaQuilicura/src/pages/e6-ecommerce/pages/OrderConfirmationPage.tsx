@@ -11,7 +11,7 @@ import { createOrder, finishAttempt, orderAttempt, pendingOrder, recoverOrder, r
 import type { OnlineOrder } from '../services/orders.api'
 import '../guest.css'
 import OrderPaymentPanel from '../components/OrderPaymentPanel'
-import { guestOrderAccess, rememberGuestOrder } from '../services/orders.api'
+import { rememberGuestOrder } from '../services/orders.api'
 
 const money = (value: string) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 2 }).format(Number(value))
 export default function OrderConfirmationPage() {
@@ -59,15 +59,6 @@ export default function OrderConfirmationPage() {
     }
     sending.current = true; setBusy(true); setError('')
     try {
-      const previous = !customer ? guestOrderAccess() : null
-      if (previous) {
-        const activeOrder = await recoverOrder(previous)
-        if (!['CANCELADO', 'RETIRADO'].includes(activeOrder.status)) {
-          setResult(activeOrder)
-          navigate(`/tienda/confirmar?order_id=${activeOrder.id}`, { replace: true })
-          return
-        }
-      }
       const attempt = orderAttempt()
       const order = await createOrder(draft, validation.total, customer ? null : guest, attempt)
       acceptOrder(order, attempt)

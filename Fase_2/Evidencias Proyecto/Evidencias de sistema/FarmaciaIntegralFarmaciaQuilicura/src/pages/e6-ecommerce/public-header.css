@@ -10,7 +10,7 @@
 .public-header { padding: 10px 0; border-bottom: 1px solid var(--store-border); }
 .public-header-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .public-header .public-header-brand { display: inline-flex; align-items: center; gap: 12px; flex-shrink: 0; color: var(--brand-purple); text-decoration: none; }
-.public-header-brand img { display: block; width: clamp(68px, 7vw, 84px); height: auto; object-fit: contain; mix-blend-mode: multiply; }
+.public-header-brand img { display: block; width: 190px; height: 86px; object-fit: cover; object-position: center; mix-blend-mode: multiply; }
 .public-header-brand > span { font-size: 13px; font-weight: 650; border-left: 1px solid var(--store-border); padding-left: 12px; }
 .public-header-nav, .public-header-customer { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .public-header-nav { justify-content: flex-end; }
@@ -31,8 +31,18 @@
   .public-header-nav { justify-content: flex-start; width: 100%; }
 }
 @media (max-width: 600px) {
+  .public-header-brand img { width: 150px; height: 68px; }
+  .public-header-brand > span { display: none; }
   :is(.online-store, .customer-auth, .cart-page, .guest-page, .order-history-page) { padding: 0 16px 32px; }
   .public-header-nav, .public-header-customer { gap: 4px; }
   .public-header-name { max-width: 100%; }
   .public-header-nav .public-header-internal { margin-left: 0; }
 }
+
+.public-header .public-header-customer .public-header-logout { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; min-width:44px; padding:10px; border:1px solid #e6dbea; border-radius:10px; background:#faf6fc; color:#702582; }
+.public-header .public-header-customer .public-header-logout:hover:not(:disabled) { background:#f0e6f5; border-color:#c6a8d1; }
+.public-header-logout:focus-visible { outline:2px solid #702582; outline-offset:3px; }
+.public-header-logout:disabled { opacity:.5; cursor:wait; }
+.public-header .public-header-nav .public-header-internal { display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; min-width:44px; padding:10px; box-sizing:border-box; border:1px solid #e6dbea; border-radius:10px; background:#faf6fc; color:#702582; }
+.public-header .public-header-nav .public-header-internal:hover { background:#f0e6f5; border-color:#c6a8d1; }
+.public-header .public-header-nav .public-header-internal:focus-visible { outline:2px solid #702582; outline-offset:3px; }

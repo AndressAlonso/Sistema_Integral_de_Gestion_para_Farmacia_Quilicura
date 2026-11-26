@@ -27,10 +27,12 @@ export default function LogoutButton() {
 
   return (
     <div className="auth-logout">
-      <button type="button" className="auth-logout-button" disabled={loading} onClick={closeSession}>
-        {loading ? 'Cerrando sesión…' : 'Cerrar sesión'}
+      <button type="button" className="auth-logout-button" disabled={loading} aria-busy={loading} aria-label={loading ? 'Cerrando sesión…' : 'Cerrar sesión'} title={loading ? 'Cerrando sesión…' : 'Cerrar sesión'} onClick={closeSession}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 5H4v14h5M10 12h11m-4-4 4 4-4 4" /></svg>
       </button>
       {error && <Notification message={error} kind="error" />}
     </div>
   )
 }
+
+

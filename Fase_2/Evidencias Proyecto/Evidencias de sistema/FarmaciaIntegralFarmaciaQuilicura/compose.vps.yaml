@@ -1,0 +1,114 @@
+name: sigfq-vps
+
+x-api: &api
+  image: sigfq-api:local
+  build:
+    context: .
+    dockerfile: deploy/vps/Dockerfile.api
+  environment: &api-env
+    DB_HOST: db
+    DB_PORT: "5432"
+    DB_NAME: ${DB_NAME:?Falta DB_NAME}
+    DB_USER: ${DB_USER:?Falta DB_USER}
+    DB_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD}
+    JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Falta JWT_SECRET_KEY}
+    APP_ENVIRONMENT: production
+    ORDER_PAYMENT_SIMULATION: "false"
+    COOKIE_SECURE: "true"
+    CORS_ORIGINS: '["https://sigfq.duckdns.org"]'
+    MP_PUBLIC_BASE_URL: https://sigfq.duckdns.org
+    MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-}
+    MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET:-}
+    MP_CHECKOUT_ENABLED: ${MP_CHECKOUT_ENABLED:-false}
+    MP_EXPIRATION_ENABLED: ${MP_EXPIRATION_ENABLED:-false}
+    MP_TEST_BUYER_ID: ${MP_TEST_BUYER_ID:-}
+    ORDER_MAIL_ENABLED: ${ORDER_MAIL_ENABLED:-false}
+    ORDER_MAIL_HOST: ${ORDER_MAIL_HOST:-smtp.gmail.com}
+    ORDER_MAIL_PORT: ${ORDER_MAIL_PORT:-465}
+    ORDER_MAIL_SENDER: ${ORDER_MAIL_SENDER:-}
+    ORDER_MAIL_USERNAME: ${ORDER_MAIL_USERNAME:-}
+    ORDER_MAIL_PASSWORD: ${ORDER_MAIL_PASSWORD:-}
+    ORDER_MAIL_STARTTLS: ${ORDER_MAIL_STARTTLS:-false}
+    ORDER_MAIL_SSL: ${ORDER_MAIL_SSL:-true}
+    ORDER_MAIL_REMINDER_ENABLED: ${ORDER_MAIL_REMINDER_ENABLED:-false}
+    SIGFQ_PRODUCT_MEDIA_DIR: /app/media/products
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:?Falta DB_NAME}
+      POSTGRES_USER: ${DB_USER:?Falta DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  migrate:
+    <<: *api
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *api
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 90s
+    volumes:
+      - media:/app/media
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openapi.json', timeout=5).close()"]
+      interval: 15s
+      timeout: 7s
+      start_period: 30s
+      retries: 5
+
+  web:
+    image: sigfq-web:local
+    build:
+      context: .
+      dockerfile: deploy/vps/Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  pgdata:
+  media:
+  caddy_data:
+  caddy_config:

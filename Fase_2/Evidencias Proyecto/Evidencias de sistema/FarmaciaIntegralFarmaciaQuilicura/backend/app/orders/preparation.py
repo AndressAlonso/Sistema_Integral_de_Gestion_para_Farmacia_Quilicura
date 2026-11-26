@@ -58,7 +58,8 @@ class PreparationService:
                 query = query.join(Sucursal, Sucursal.id == PedidoOnline.sucursal_id)
                 name = func.lower(Sucursal.nombre)
                 ordering.append(name.asc() if sort == "branch_asc" else name.desc())
-            rows = db.scalars(query.order_by(*ordering, PedidoOnline.creado_en.desc(), PedidoOnline.id)
+            date_order = PedidoOnline.creado_en.asc() if sort == "oldest" else PedidoOnline.creado_en.desc()
+            rows = db.scalars(query.order_by(*ordering, date_order, PedidoOnline.id)
                               .offset((page - 1) * limit).limit(limit))
             branches = select(Sucursal).order_by(Sucursal.nombre)
             if "ADMINISTRADOR" not in actor.roles:

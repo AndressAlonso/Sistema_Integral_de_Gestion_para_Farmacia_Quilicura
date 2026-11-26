@@ -25,3 +25,4 @@
 @media (prefers-reduced-motion: reduce) { .app-notification.app-notification { animation: none; transition: none; } }
 @media (max-width: 600px) { .app-notification.app-notification { right: 16px; } }
 @media print { .app-notification.app-notification { display: none !important; } }
+.app-notification .app-notification-copy .app-notification-message { margin:0; color:#35445e; font-weight:550; line-height:1.6; }

@@ -1,3 +1,4 @@
+import SelectMenu from '../../../components/SelectMenu'
 import useAutoRefresh from '../../../hooks/useAutoRefresh'
 import Notification from '../../../components/Notification'
 import PaginatedTableBody from '../../../components/PaginatedTableBody'
@@ -297,11 +298,11 @@ export default function BranchesPage() {
 
         <label className="branches-state-filter">
           <span>Estado</span>
-          <select value={status} onChange={(event) => setStatus(event.target.value)}>
+          <SelectMenu value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="">Todas</option>
             <option value="active">Activas</option>
             <option value="inactive">Inactivas</option>
-          </select>
+          </SelectMenu>
         </label>
 
         <button

@@ -104,3 +104,36 @@ dialog.lot-status-dialog .danger { background: var(--ui-danger); border-color: v
   .admin-shell .app-page-heading > :is(button, .catalog-heading-actions, .inventory-heading-actions) { width: 100%; }
   .admin-shell .app-page-heading :is(.catalog-heading-actions, .inventory-heading-actions) > button { flex: 1 1 180px; }
 }
+/* Compact content spacing after moving page titles into the shared topbar. */
+.admin-shell .admin-workspace > .admin-content {
+  padding: 16px clamp(12px, 2vw, 32px) 24px;
+}
+.admin-shell .admin-content .app-page-heading {
+  min-height: 0;
+  padding: 0;
+  margin: 0 0 12px;
+  gap: 10px;
+}
+.admin-shell .admin-content .app-page-heading:not(:has(button, a, input, select)) {
+  display: none;
+  margin: 0;
+}
+/* Grid pages already provide the separation between the action row and content. */
+.admin-shell .admin-content .pos-page > .app-page-heading { margin-bottom: 0; }
+.admin-shell .admin-content .promotions-heading + .promotions-panel { margin-top: 0; }
+/* Actions share the relevant controls/panel instead of an empty page heading. */
+.admin-panel-toolbar, .admin-inline-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.admin-panel-toolbar { margin-bottom:16px; }
+.admin-panel-toolbar > h2, .pos-page .admin-panel-toolbar > h2 { margin:0; }
+.admin-inline-actions { justify-content:flex-end; }
+.admin-content .catalog-page .users-filters .catalog-heading-actions { order:1; margin-left:auto; }
+.admin-content .inventory-toolbar { gap:12px; }
+.admin-content .inventory-toolbar .inventory-tabs { margin:0; flex:1 1 360px; }
+.admin-content .inventory-toolbar .inventory-heading-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.admin-content .orders-state-and-date { flex-wrap:wrap; }
+.admin-content .orders-pickup-action { margin:0; order:2; }
+@media(max-width:600px) {
+ .admin-panel-toolbar, .admin-inline-actions { align-items:stretch; }
+ .admin-content .catalog-page .users-filters .catalog-heading-actions { margin:0; width:100%; }
+ .admin-content .inventory-toolbar .inventory-tabs { flex-basis:100%; min-width:0; }
+}

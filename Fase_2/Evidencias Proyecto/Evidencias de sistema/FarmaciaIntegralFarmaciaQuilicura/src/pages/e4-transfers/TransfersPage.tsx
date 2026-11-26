@@ -1,3 +1,4 @@
+import SelectMenu from '../../components/SelectMenu'
 import useAutoRefresh from '../../hooks/useAutoRefresh'
 import Notification from '../../components/Notification'
 import PaginatedTableBody from '../../components/PaginatedTableBody'
@@ -48,7 +49,7 @@ export default function TransfersPage() {
   function refresh() { setLoading(true); setAttempt(value => value + 1) }
   function saved(transfer: Transfer) {
     setCreating(false); setSelected(null); clearReturn()
-    setMessage(`${transferCode(transfer.id)}: ${states[transfer.state]}. Operación confirmada.`)
+    setMessage(`Transferencia ${transferCode(transfer.id)}: ${states[transfer.state]}.`)
     refresh()
   }
   const branches = new Map(options?.branches.map(branch => [branch.id, branch.name]))
@@ -70,35 +71,32 @@ export default function TransfersPage() {
   ] as const
 
   return <div className="users-page transfers-page">
-    <header className="users-heading transfer-heading app-page-heading"><div><h1>Transferencias</h1><p>Gestiona solicitudes, autorizaciones, despachos y recepciones entre sucursales.</p></div>
-      <div className="transfer-actions">
-        {options?.can_create && <button type="button" className="users-button primary" disabled={loading} onClick={() => { setMessage(''); setCreating(true) }}>+ Nueva transferencia</button>}
-      </div></header>
+    
     {session.user.roles.includes("ADMINISTRADOR") && <PaymentSimulation onChanged={refresh} />}
-    <section className="users-panel transfer-flow" aria-label="Flujo de transferencia"><div><strong>Flujo de transferencia</strong><p>Se reserva al solicitar; el stock físico sale al confirmar el despacho.</p></div>
-      <div>{(['SOLICITADA', 'AUTORIZADA', 'EN_TRANSITO', 'RECIBIDA'] as const).map((state, index) => <span key={state}>{index > 0 && <span aria-hidden="true"> → </span>}<span className={`transfer-state ${state.toLowerCase()}`}>{states[state]}</span></span>)}</div></section>
-    <div className="transfer-summaries" aria-label="Resumen de las transferencias visibles">{summaries.map(([label, count, help]) => <div key={label}><span>{label}</span><strong>{loading ? '—' : count}</strong><small>{help}</small></div>)}</div>
+    <div className="transfer-summaries" aria-label="Resumen de las transferencias visibles">{summaries.map(([label, count]) => <div key={label}><span>{label}</span><strong>{loading ? '—' : count}</strong></div>)}</div>
     {message && <Notification message={message} kind="success" />}
     {error && <Notification message={error} kind="error" />}
-    <section className="users-panel transfer-filter-panel" aria-label="Filtros de transferencias"><h2>Transferencias entre sucursales</h2><p>Filtra por producto, responsable, estado, ruta o fecha de solicitud.</p>
+    <section className="users-panel transfer-filter-panel" aria-label="Filtros de transferencias"><div className="admin-panel-toolbar"><h2>Transferencias</h2><div className="transfer-actions">
+        {options?.can_create && <button type="button" className="users-button primary" disabled={loading} onClick={() => { setMessage(''); setCreating(true) }}>+ Nueva transferencia</button>}
+      </div></div>
       <div className="transfer-filters">
         <label>Buscar<input type="search" placeholder="ID, producto o responsable…" value={filters.query} onChange={event => setFilters({ ...filters, query: event.target.value })} /></label>
-        <label>Estado<select value={filters.state} onChange={event => setFilters({ ...filters, state: event.target.value })}><option value="">Todos</option>{Object.entries(states).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-        <label>Origen<select value={filters.origin} onChange={event => setFilters({ ...filters, origin: event.target.value })}><option value="">Todas</option>{[...branches].map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
-        <label>Destino<select value={filters.destination} onChange={event => setFilters({ ...filters, destination: event.target.value })}><option value="">Todas</option>{[...branches].map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+        <label>Estado<SelectMenu value={filters.state} onChange={event => setFilters({ ...filters, state: event.target.value })}><option value="">Todos</option>{Object.entries(states).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</SelectMenu></label>
+        <label>Origen<SelectMenu value={filters.origin} onChange={event => setFilters({ ...filters, origin: event.target.value })}><option value="">Todas</option>{[...branches].map(([id, name]) => <option key={id} value={id}>{name}</option>)}</SelectMenu></label>
+        <label>Destino<SelectMenu value={filters.destination} onChange={event => setFilters({ ...filters, destination: event.target.value })}><option value="">Todas</option>{[...branches].map(([id, name]) => <option key={id} value={id}>{name}</option>)}</SelectMenu></label>
         <label>Fecha<input type="date" value={filters.date} onChange={event => setFilters({ ...filters, date: event.target.value })} /></label>
-      </div><div className="transfer-actions"><button type="button" className="users-button" disabled={!Object.values(filters).some(Boolean)} onClick={() => setFilters({ query: '', state: '', origin: '', destination: '', date: '' })}>Limpiar filtros</button></div>
+      <button type="button" className="users-button transfer-clear-filters" aria-label="Limpiar filtros" title="Limpiar filtros" disabled={!Object.values(filters).some(Boolean)} onClick={() => setFilters({ query: '', state: '', origin: '', destination: '', date: '' })}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" /></svg></button></div>
     </section>
     <section className="users-panel" aria-busy={loading}><header className="users-panel-heading"><h2>Listado de transferencias</h2><p>{filtered.length} resultados · Las acciones dependen del estado, permisos y sucursal asignada.</p></header>
       <div className="users-table-scroll"><table className="users-table transfer-table responsive-admin-table"><thead><tr>{['ID', 'Fecha', 'Ruta', 'Productos', 'Unidades', 'Reserva', 'Responsable', 'Estado', 'Acciones'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
         <PaginatedTableBody total={filtered.length} columns={9} labels={["ID", "Fecha", "Ruta", "Productos", "Unidades", "Reserva", "Responsable", "Estado", "Acciones"]}>{!filtered.length && <tr><td colSpan={9} className="users-empty">{loading ? 'Cargando transferencias…' : error ? 'No se pudo actualizar el listado.' : 'No hay transferencias que coincidan con los filtros.'}</td></tr>}
-          {filtered.map(transfer => <tr key={transfer.id}>
-            <td><button type="button" className="transfer-link" onClick={() => setSelected({ transfer })}>{transferCode(transfer.id)}</button>{transfer.order_id && <><span className="transfer-online-badge">Pedido online</span><small>{transfer.order_number}</small></>}</td>
+          {filtered.map(transfer => <tr key={transfer.id} className="transfer-clickable-row" onClick={() => setSelected({ transfer })}>
+            <td><button type="button" className="transfer-link" aria-label={`Abrir transferencia ${transferCode(transfer.id)}`} onClick={event => { event.stopPropagation(); setSelected({ transfer }) }}>{transferCode(transfer.id)}</button>{transfer.order_id && <><span className="transfer-online-badge">Pedido online</span><small>{transfer.order_number}</small></>}</td>
             <td>{new Date(transfer.created_at).toLocaleDateString('es-CL')}<small>{new Date(transfer.created_at).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}</small></td>
             <td>{transfer.origin_name}<span className="transfer-route-arrow">→</span>{transfer.destination_name}</td><td>{transfer.items.length}</td><td>{units(transfer)}</td>
             <td>{['SOLICITADA', 'AUTORIZADA'].includes(transfer.state) ? `${units(transfer)} reservadas` : transfer.order_id ? (transfer.state === 'RECIBIDA' ? 'Reservadas para el pedido en destino' : 'En tránsito para el pedido') : transfer.state === 'RECHAZADA' ? 'Liberada al rechazar' : 'Liberada al despachar'}</td>
             <td>{transfer.requested_by}</td><td><span className={`transfer-state ${transfer.state.toLowerCase()}`}>{states[transfer.state]}</span></td>
-            <td><div className="users-row-actions">{transfer.actions.map(action => <button type="button" key={action} onClick={() => setSelected({ transfer, action })}>{actions[action]}</button>)}<button type="button" aria-label={`Ver detalle ${transferCode(transfer.id)}`} onClick={() => setSelected({ transfer })}>Ver detalle</button></div></td>
+            <td><div className="users-row-actions">{transfer.actions.map(action => <button type="button" key={action} onClick={event => { event.stopPropagation(); setSelected({ transfer, action }) }}>{actions[action]}</button>)}</div></td>
           </tr>)}</PaginatedTableBody></table></div></section>
     {creating && options && <TransferForm options={options} userId={session.user.id} onClose={() => { setCreating(false); refresh() }} onSaved={saved} />}
     {selected && <TransferDetail transfer={selected.transfer} initialAction={selected.action} onClose={() => { setSelected(null); clearReturn(); refresh() }} onChanged={saved} />}

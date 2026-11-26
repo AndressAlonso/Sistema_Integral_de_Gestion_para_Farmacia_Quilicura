@@ -1,0 +1,14 @@
+**
+!backend/
+!backend/requirements.txt
+!backend/alembic.ini
+!backend/app/
+!backend/app/**
+!backend/migrations/
+!backend/migrations/**
+!deploy/
+!deploy/vps/
+!deploy/vps/bootstrap_admin.py
+**/__pycache__/**
+**/.env
+**/.env.*

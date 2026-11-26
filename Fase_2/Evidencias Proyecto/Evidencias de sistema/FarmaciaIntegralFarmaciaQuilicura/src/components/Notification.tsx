@@ -78,7 +78,6 @@ function NotificationItem({ message, kind }: { message: string; kind: Kind }) {
     return () => window.clearTimeout(timer)
   }, [kind, dismissed, closing, paused, isVisible, close])
 
-  const title = { success: 'Operación realizada', error: 'No pudimos completar la acción', info: 'Información' }[kind]
   const supportsPopover = typeof HTMLElement !== 'undefined' && typeof HTMLElement.prototype.showPopover === 'function'
   return <><span hidden ref={anchor} />{!dismissed && isVisible && <div ref={ref} popover={supportsPopover ? 'manual' : undefined} className={`app-notification app-notification-${kind}${closing ? ' is-closing' : ''}`}
     style={{ top: offset }} role={kind === 'error' ? 'alert' : 'status'} aria-atomic="true"
@@ -86,11 +85,10 @@ function NotificationItem({ message, kind }: { message: string; kind: Kind }) {
     onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
     <span className="app-notification-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="9" />
-        {kind === 'success' ? <path d="m8 12 3 3 5-6" /> : <path d="M12 7v6m0 4h.01" />}
+        {kind === 'error' ? <><path d="m8 3-5 5v8l5 5h8l5-5V8l-5-5H8Z" /><path d="m9 9 6 6m0-6-6 6" /></> : <><circle cx="12" cy="12" r="9" /><path d={kind === 'success' ? 'm8 12 3 3 5-6' : 'M12 11v6m0-10h.01'} /></>}
       </svg>
     </span>
-    <div className="app-notification-copy"><strong>{title}</strong><p>{message}</p></div>
+    <div className="app-notification-copy"><p className="app-notification-message">{message}</p></div>
     <button className="app-notification-close" type="button" aria-label="Cerrar notificación" onClick={close}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
     </button>

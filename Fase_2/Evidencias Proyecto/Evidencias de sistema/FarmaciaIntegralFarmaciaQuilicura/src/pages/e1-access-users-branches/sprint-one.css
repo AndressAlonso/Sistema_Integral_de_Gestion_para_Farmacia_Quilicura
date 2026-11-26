@@ -21,7 +21,8 @@
 .s1-success { background: var(--brand-green-soft); border: 1px solid #d5e6b7; padding: 13px; border-radius: 8px; color: var(--brand-green-dark); margin: 18px 0; }
 .s1-login { min-height: 100svh; display: grid; grid-template-columns: 1fr 1fr; background: white; }
 .s1-login-story { background: #f2edf5; padding: 30px clamp(28px, 5vw, 78px); display: flex; flex-direction: column; position: relative; overflow: hidden; }
-.s1-login-story::after { content: ''; position: absolute; width: 350px; height: 350px; border: 65px solid #e6eed8; border-radius: 50%; bottom: -220px; right: -130px; pointer-events: none; }
+.s1-login-story > * { position: relative; z-index: 1; }
+.s1-login-story::after { z-index: 0; content: ''; position: absolute; width: 350px; height: 350px; border: 65px solid #e6eed8; border-radius: 50%; bottom: -220px; right: -130px; pointer-events: none; }
 .s1-login-story .s1-logo { background:transparent; border-radius:0; }
 .s1-login-brand { display:block; width:fit-content; max-width:100%; position:relative; z-index:1; mix-blend-mode:multiply; }
 .s1-login-brand:focus-visible { outline:3px solid var(--brand-purple); outline-offset:6px; border-radius:6px; }
@@ -101,3 +102,4 @@
   .s1 table { min-width: 660px; }
   .s1-profile { font-size: 11px; }
 }
+

@@ -7,7 +7,7 @@ export const orderStates: Record<string, string> = {
 }
 export const orderStateLabel = (state: string) => orderStates[state] ?? state
 export type OrderAction = 'preparation' | 'ready'
-export type OrderSort = 'newest' | 'state_asc' | 'state_desc' | 'branch_asc' | 'branch_desc'
+export type OrderSort = 'newest' | 'oldest' | 'state_asc' | 'state_desc' | 'branch_asc' | 'branch_desc'
 export interface OrderDetail extends OnlineOrder {
   customer: { name: string; email: string }
   actions: OrderAction[]
