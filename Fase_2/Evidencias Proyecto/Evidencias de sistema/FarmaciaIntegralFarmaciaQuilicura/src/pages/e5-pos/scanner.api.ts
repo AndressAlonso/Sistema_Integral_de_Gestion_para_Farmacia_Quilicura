@@ -47,6 +47,9 @@ async function request<T>(
 }
 
 export const scannerApi = {
+  current: () =>
+    request<ScannerLink | null>('/api/scanner/links/current', 'GET'),
+
   create: () =>
     request<CreatedScannerLink>('/api/scanner/links', 'POST'),
 

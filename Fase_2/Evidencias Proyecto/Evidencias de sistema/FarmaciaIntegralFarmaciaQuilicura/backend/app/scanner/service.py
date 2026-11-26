@@ -113,7 +113,35 @@ class ScannerService:
             "expires_at": link.expira_en,
             "linked_at": link.vinculada_en,
         }
+    def current(self, actor, token):
+        self._authorize(actor)
 
+        with self.factory.begin() as db:
+            now = datetime.now(timezone.utc)
+            web = self._session(db, actor, token, now)
+
+            links = db.scalars(
+                select(VinculacionScanner)
+                .where(
+                    VinculacionScanner.usuario_id == actor.id,
+                    VinculacionScanner.sucursal_id == actor.branch_id,
+                    VinculacionScanner.sesion_web_id == web.id,
+                    VinculacionScanner.revocada_en.is_(None),
+                    VinculacionScanner.expira_en > now,
+                    VinculacionScanner.vinculada_en.is_not(None),
+                )
+                .order_by(
+                    VinculacionScanner.creada_en.desc(),
+                    VinculacionScanner.id.desc(),
+                )
+            )
+
+            for link in links:
+                state = self._state(db, link, now)
+                if state == "LINKED":
+                    return self._response(link, state)
+
+            return None
     def create(self, actor, token):
         self._authorize(actor)
 

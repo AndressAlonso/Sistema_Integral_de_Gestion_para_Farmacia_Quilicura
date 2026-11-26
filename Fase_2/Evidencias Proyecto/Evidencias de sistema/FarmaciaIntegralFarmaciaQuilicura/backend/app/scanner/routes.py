@@ -60,6 +60,16 @@ def claim_link(data: ClaimScanner, request: Request):
         ),
     )
 
+@router.get(
+    "/links/current",
+    response_model=ScannerLinkResponse | None,
+)
+def current_link(request: Request):
+    return execute(
+        request,
+        lambda service, actor, token: service.current(actor, token),
+    )
+
 
 @router.get(
     "/links/{link_id}",

@@ -35,13 +35,49 @@ export default function ScannerLinkDialog({
 
   const [link, setLink] = useState<ScannerLink | null>(null)
   const [code, setCode] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(true)
   const [error, setError] = useState('')
   const [connectionError, setConnectionError] = useState('')
 
   const linkId = link?.id
   const linkState = link?.state
   const active = linkState === 'PENDING' || linkState === 'LINKED'
+    useEffect(() => {
+    let disposed = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    async function restore() {
+      try {
+        const current = await scannerApi.current()
+        if (disposed) return
+
+        setLink(current)
+        setConnectionError('')
+        setBusy(false)
+      } catch (cause) {
+        if (disposed) return
+
+        setConnectionError(message(cause))
+
+        if (
+          cause instanceof ApiError &&
+          [401, 403, 404].includes(cause.status)
+        ) {
+          setBusy(false)
+          return
+        }
+
+        timer = setTimeout(() => void restore(), 3000)
+      }
+    }
+
+    void restore()
+
+    return () => {
+      disposed = true
+      if (timer !== undefined) clearTimeout(timer)
+    }
+  }, [])
 
   useEffect(() => {
     onLinkChange(
@@ -232,8 +268,8 @@ export default function ScannerLinkDialog({
 
           {link?.state === 'LINKED' && !connectionError && (
             <p>
-              El backend confirmó la vinculación. El envío de
-              productos se incorporará en el siguiente bloque.
+              Teléfono conectado. Puedes escanear productos para
+              agregarlos a esta venta.
             </p>
           )}
 
